@@ -7,6 +7,8 @@ import apiRoutes from './routes/sample.js';
 import loginRoutes from './routes/login.js';
 import partnerRoutes from './routes/partner.js';
 import userRoutes from './routes/user.js';
+import categoriesRoutes from './routes/categories.js';
+import questionsRoutes from './routes/questions.js';
 import initializeSocket from './socket/index.js';
 
 dotenv.config();
@@ -33,6 +35,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/login', loginRoutes);
 app.use('/api/partner', partnerRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/categories', categoriesRoutes);
+app.use('/api/questions', questionsRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);
