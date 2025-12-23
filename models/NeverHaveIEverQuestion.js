@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
-const confessionQuestionSchema = new mongoose.Schema({
-    statement: {
+const neverHaveIEverQuestionSchema = new mongoose.Schema({
+    question: {
         type: String,
         required: true
     },
@@ -25,10 +25,7 @@ const confessionQuestionSchema = new mongoose.Schema({
         default: 'mild'
     },
     // Category tag
-    tag: {
-        type: String,
-        default: 'general'
-    },
+  
     isActive: {
         type: Boolean,
         required: true,
@@ -36,7 +33,7 @@ const confessionQuestionSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
-confessionQuestionSchema.index({ isActive: 1, spiceLevel: 1 });
+neverHaveIEverQuestionSchema.index({ isActive: 1, spiceLevel: 1 });
 
-const ConfessionQuestion = mongoose.model("ConfessionQuestion", confessionQuestionSchema);
-export default ConfessionQuestion;
+const NeverHaveIEverQuestion = mongoose.model("NeverHaveIEverQuestion", neverHaveIEverQuestionSchema);
+export default NeverHaveIEverQuestion;

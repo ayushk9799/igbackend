@@ -9,6 +9,7 @@ import partnerRoutes from './routes/partner.js';
 import userRoutes from './routes/user.js';
 import categoriesRoutes from './routes/categories.js';
 import questionsRoutes from './routes/questions.js';
+import dailyChallengeRoutes from './routes/dailyChallenge.js';
 import initializeSocket from './socket/index.js';
 
 dotenv.config();
@@ -37,6 +38,7 @@ app.use('/api/partner', partnerRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/questions', questionsRoutes);
+app.use('/api/daily-challenge', dailyChallengeRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);

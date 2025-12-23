@@ -6,14 +6,14 @@
 import LikelyToQuestion from './LikelyToQuestion.js';
 import KnowledgeQuestion from './KnowledgeQuestion.js';
 import AgreementQuestion from './AgreementQuestion.js';
-import ConfessionQuestion from './ConfessionQuestion.js';
+import NeverHaveIEverQuestion from './NeverHaveIEverQuestion.js';
 
 // Map modelName (from Categories) to actual Mongoose model
 const modelRegistry = {
     'LikelyToQuestion': LikelyToQuestion,
     'KnowledgeQuestion': KnowledgeQuestion,
     'AgreementQuestion': AgreementQuestion,
-    'ConfessionQuestion': ConfessionQuestion,
+    'NeverHaveIEverQuestion': NeverHaveIEverQuestion,
 };
 
 // Map category slug to modelName for convenience
@@ -21,7 +21,7 @@ const slugToModelName = {
     'likelyto': 'LikelyToQuestion',
     'knowledge': 'KnowledgeQuestion',
     'agreement': 'AgreementQuestion',
-    'confessions': 'ConfessionQuestion',
+    'neverhaveiever': 'NeverHaveIEverQuestion',
 };
 
 /**

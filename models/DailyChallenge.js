@@ -1,15 +1,15 @@
 import mongoose from "mongoose";
 
 // Individual question schema within a set
-const questionItemSchema = new mongoose.Schema({
-    question: {
+const taskItemSchema = new mongoose.Schema({
+    taskstatement: {
         type: String,
         required: true
     },
     category: {
         type: String,
         required: true,
-        enum: ['likelyto', 'confession','deep',]
+        enum: ['likelyto', 'neverhaveiever', 'deep',"takephoto"]
     },
     options: {
         type: [String],
@@ -23,11 +23,11 @@ const questionItemSchema = new mongoose.Schema({
         enum: ['none', 'drag_select', 'multiple_choice', 'slider', 'text_input', 'yes_no', 'scale']
     },
     // Additional styling options
-   
+
 }, { _id: true });
 
 // Main Daily Question Set schema
-const dailyQuestionSetSchema = new mongoose.Schema({
+const dailyChallengeSchema = new mongoose.Schema({
     date: {
         type: String,
         required: true,
@@ -37,8 +37,8 @@ const dailyQuestionSetSchema = new mongoose.Schema({
         type: String,
         default: "Daily Questions"
     },
-    questions: {
-        type: [questionItemSchema],
+    tasks: {
+        type: [taskItemSchema],
         required: true,
         validate: {
             validator: function (v) {
@@ -54,8 +54,8 @@ const dailyQuestionSetSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-dailyQuestionSetSchema.index({ date: 1 });
-dailyQuestionSetSchema.index({ isActive: 1 });
+dailyChallengeSchema.index({ date: 1 });
+dailyChallengeSchema.index({ isActive: 1 });
 
-const DailyQuestion = mongoose.model("DailyQuestion", dailyQuestionSetSchema);
-export default DailyQuestion;
+const DailyChallenge = mongoose.model("DailyChallenge", dailyChallengeSchema);
+export default DailyChallenge;
