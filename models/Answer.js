@@ -19,6 +19,12 @@ const answerSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    // Type of the answer value: text, photo, or video
+    answerType: {
+        type: String,
+        enum: ['text', 'photo', 'video'],
+        default: 'text',
+    },
     // For true/false or rating type questions
     answerValue: {
         type: mongoose.Schema.Types.Mixed,

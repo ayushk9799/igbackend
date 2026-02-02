@@ -16,7 +16,6 @@ export const handleScribbleSend = async (socket, io, data) => {
             return;
         }
 
-        console.log(`✏️ Scribble from ${userName}: ${paths.length} paths`);
 
         // Save scribble to partner's record (for offline delivery)
         if (partnerId) {
@@ -28,7 +27,6 @@ export const handleScribbleSend = async (socket, io, data) => {
                     receivedAt: new Date(),
                 },
             });
-            console.log(`💾 Scribble saved to partner's record`);
 
             // Send push notification to partner (for widget update when app killed)
             sendScribbleNotification(partnerId, userName, paths);
@@ -43,7 +41,6 @@ export const handleScribbleSend = async (socket, io, data) => {
                 paths,
                 timestamp: new Date().toISOString(),
             });
-            console.log(`📤 Scribble sent to room: ${roomId}`);
 
             // Confirm to sender
             socket.emit('scribble:sent', {
@@ -82,7 +79,6 @@ export const handleScribbleRequest = async (socket, io) => {
             return;
         }
 
-        console.log(`📤 Sending partner scribble to ${socket.userName}:`, user.lastScribble.paths.length, 'paths');
 
         socket.emit('scribble:partnerScribble', {
             hasScribble: true,

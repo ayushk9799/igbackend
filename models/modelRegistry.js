@@ -1,32 +1,29 @@
 /**
  * Model Registry for Dynamic Question Model Routing
- * Maps category slugs to their corresponding Mongoose models
+ * Simplified to only include the 3 visual types used in TaskCard.jsx
  */
 
 import LikelyToQuestion from './LikelyToQuestion.js';
-import KnowledgeQuestion from './KnowledgeQuestion.js';
-import AgreementQuestion from './AgreementQuestion.js';
 import NeverHaveIEverQuestion from './NeverHaveIEverQuestion.js';
+import DeepQuestion from './DeepQuestion.js';
 
-// Map modelName (from Categories) to actual Mongoose model
+// Map modelName to actual Mongoose model
 const modelRegistry = {
     'LikelyToQuestion': LikelyToQuestion,
-    'KnowledgeQuestion': KnowledgeQuestion,
-    'AgreementQuestion': AgreementQuestion,
     'NeverHaveIEverQuestion': NeverHaveIEverQuestion,
+    'DeepQuestion': DeepQuestion,
 };
 
-// Map category slug to modelName for convenience
+// Map category slug (visual type) to modelName
 const slugToModelName = {
     'likelyto': 'LikelyToQuestion',
-    'knowledge': 'KnowledgeQuestion',
-    'agreement': 'AgreementQuestion',
     'neverhaveiever': 'NeverHaveIEverQuestion',
+    'deep': 'DeepQuestion',
 };
 
 /**
  * Get the Mongoose model for a given modelName
- * @param {string} modelName - The model name from Categories collection
+ * @param {string} modelName - The model name
  * @returns {Model|null} - The Mongoose model or null if not found
  */
 export const getModelByName = (modelName) => {
@@ -35,7 +32,7 @@ export const getModelByName = (modelName) => {
 
 /**
  * Get the Mongoose model for a given category slug
- * @param {string} slug - The category slug
+ * @param {string} slug - The category slug (visual type)
  * @returns {Model|null} - The Mongoose model or null if not found
  */
 export const getModelBySlug = (slug) => {

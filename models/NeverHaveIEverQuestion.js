@@ -24,8 +24,13 @@ const neverHaveIEverQuestionSchema = new mongoose.Schema({
         enum: ['mild', 'medium', 'spicy', 'extra_spicy'],
         default: 'mild'
     },
-    // Category tag
-  
+    // Topic for categorization
+    topic: {
+        type: String,
+        enum: ['future', 'money', 'hotspicy', 'political', 'fitness', 'travel', 'family'],
+        required: true,
+        index: true
+    },
     isActive: {
         type: Boolean,
         required: true,

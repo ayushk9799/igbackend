@@ -15,12 +15,19 @@ const likelyToQuestionSchema = new mongoose.Schema({
     visualAspect: {
         type: String,
         required: true,
-        default: "drag_select" // LikelyTo typically uses drag/select UI
+        default: "likelyto" // LikelyTo typically uses drag/select UI
     },
     // Optional: predefined options like "Both", "Neither"
     additionalOptions: [{
         type: String
     }],
+    // Topic for categorization
+    topic: {
+        type: String,
+        enum: ['future', 'money', 'hotspicy', 'political', 'fitness', 'travel', 'family'],
+        required: true,
+        index: true
+    },
     isActive: {
         type: Boolean,
         required: true,

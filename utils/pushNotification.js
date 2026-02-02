@@ -13,7 +13,6 @@ try {
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
-    console.log('✅ Firebase Admin initialized');
 } catch (error) {
     console.error('❌ Firebase initialization error:', error.message);
 }
@@ -125,9 +124,119 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
     }
 };
 
+/**
+ * Send a push notification for a new puzzle
+ * @param {string} userId - Target user's ID
+ * @param {string} senderName - Name of person who sent the puzzle
+ */
+export const sendPuzzleNotification = async (userId, senderName) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user?.fcmToken) {
+            console.log('⚠️ No FCM token for user:', userId);
+            return false;
+        }
+
+        const message = {
+            token: user.fcmToken,
+            notification: {
+                title: '🧩 New Puzzle!',
+                body: `${senderName} sent you a puzzle to solve! 💕`,
+            },
+            data: {
+                type: 'puzzle',
+                senderName: senderName || 'Your Love',
+                timestamp: new Date().toISOString(),
+            },
+            apns: {
+                headers: {
+                    'apns-priority': '10',
+                },
+                payload: {
+                    aps: {
+                        sound: 'default',
+                    },
+                },
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default',
+                },
+            },
+        };
+
+        const response = await admin.messaging().send(message);
+        console.log('📤 Puzzle push sent:', response);
+        return true;
+
+    } catch (error) {
+        console.error('❌ Push notification error:', error);
+        return false;
+    }
+};
+
+/**
+ * Send a generic push notification
+ * @param {string} userId - Target user's ID
+ * @param {string} title - Notification title
+ * @param {string} body - Notification body
+ * @param {object} data - Optional data payload
+ */
+export const sendPushNotification = async (userId, title, body, data = {}) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user?.fcmToken) {
+            console.log('⚠️ No FCM token for user:', userId);
+            return false;
+        }
+
+        const message = {
+            token: user.fcmToken,
+            notification: {
+                title,
+                body,
+            },
+            data: {
+                type: data.type || 'general',
+                ...Object.fromEntries(
+                    Object.entries(data).map(([k, v]) => [k, String(v)])
+                ),
+                timestamp: new Date().toISOString(),
+            },
+            apns: {
+                headers: {
+                    'apns-priority': '10',
+                },
+                payload: {
+                    aps: {
+                        sound: 'default',
+                    },
+                },
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default',
+                },
+            },
+        };
+
+        const response = await admin.messaging().send(message);
+        console.log('📤 Push notification sent:', response);
+        return true;
+
+    } catch (error) {
+        console.error('❌ Push notification error:', error);
+        return false;
+    }
+};
+
 export { admin };
 
 export default {
     sendSilentPush,
     sendScribbleNotification,
+    sendPuzzleNotification,
+    sendPushNotification,
 };

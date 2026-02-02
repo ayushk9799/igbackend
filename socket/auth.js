@@ -50,7 +50,6 @@ export const getCoupleRoomId = (userId, partnerId) => {
 export const handleConnection = async (socket, io) => {
     const { userId, partnerId, userName } = socket;
 
-    console.log(`🔌 User connected: ${userName} (${userId})`);
 
     // Track this user's connection
     connectedUsers.set(userId, {
@@ -69,7 +68,6 @@ export const handleConnection = async (socket, io) => {
     const roomId = getCoupleRoomId(userId, partnerId);
     if (roomId) {
         socket.join(roomId);
-        console.log(`   → Joined room: ${roomId}`);
 
         // Notify partner that this user is now online
         socket.to(roomId).emit('presence:online', {
@@ -81,7 +79,6 @@ export const handleConnection = async (socket, io) => {
 
     // Handle disconnection
     socket.on('disconnect', async (reason) => {
-        console.log(`🔌 User disconnected: ${userName} (${reason})`);
 
         // Remove from connected users
         connectedUsers.delete(userId);

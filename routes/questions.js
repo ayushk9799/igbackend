@@ -1,66 +1,115 @@
 import express from 'express';
 import Categories from '../models/Categories.js';
-import { getModelByName, getModelBySlug } from '../models/modelRegistry.js';
+
+// Import topic-specific models
+import FutureQuestion from '../models/FutureQuestion.js';
+import HotSpicyQuestion from '../models/HotSpicyQuestion.js';
+import MoneyQuestion from '../models/MoneyQuestion.js';
+import PoliticalQuestion from '../models/PoliticalQuestion.js';
+import FitnessQuestion from '../models/FitnessQuestion.js';
+import TravelQuestion from '../models/TravelQuestion.js';
+import FamilyQuestion from '../models/FamilyQuestion.js';
 
 const router = express.Router();
 
-/**
- * Helper: Get model from category slug (via Categories collection or direct mapping)
- */
-const getModelForCategory = async (categorySlug) => {
-    // First try to get from Categories collection (for dynamic modelName)
-    const category = await Categories.findOne({ slug: categorySlug, isActive: true });
-
-    if (category && category.modelName) {
-        const model = getModelByName(category.modelName);
-        if (model) return { model, category };
-    }
-
-    // Fallback to direct slug mapping
-    const directModel = getModelBySlug(categorySlug);
-    if (directModel) return { model: directModel, category };
-
-    return { model: null, category: null };
+// Map topic IDs to their models
+const TOPIC_MODELS = {
+    'future': FutureQuestion,
+    'hotspicy': HotSpicyQuestion,
+    'money': MoneyQuestion,
+    'political': PoliticalQuestion,
+    'fitness': FitnessQuestion,
+    'travel': TravelQuestion,
+    'family': FamilyQuestion,
 };
 
 /**
- * GET /api/questions/:category
- * Get all questions for a specific category
+ * GET /api/questions/topic/:topicId
+ * Get questions for a specific topic from its dedicated model
+ * Topics: future, hotspicy (more can be added)
  */
-router.get('/:category', async (req, res) => {
+router.get('/topic/:topicId', async (req, res) => {
     try {
-        const { category: categorySlug } = req.params;
-        const { limit = 50, skip = 0, active = 'true' } = req.query;
+        const { topicId } = req.params;
+        const { limit = 20, shuffle = 'true' } = req.query;
 
-        const { model, category } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
-            return res.status(404).json({
+        if (!TopicModel) {
+            return res.status(400).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}. Available topics: ${Object.keys(TOPIC_MODELS).join(', ')}`
             });
         }
 
-        const query = active === 'true' ? { isActive: true } : {};
-        const questions = await model
-            .find(query)
-            .limit(parseInt(limit))
-            .skip(parseInt(skip))
-            .sort({ createdAt: -1 });
+        // Fetch all active questions from this topic's model
+        let questions = await TopicModel.find({ isActive: true }).lean();
 
-        const total = await model.countDocuments(query);
+        // Transform questions for frontend TaskCard
+        questions = questions.map(q => ({
+            ...q,
+            category: q.visualType,  // TaskCard.jsx uses 'category' to pick the card component
+            taskstatement: q.question || q.statement || q.taskstatement
+        }));
+
+        // Shuffle if requested
+        if (shuffle === 'true') {
+            questions = questions.sort(() => Math.random() - 0.5);
+        }
+
+        // Limit results
+        const limitedQuestions = questions.slice(0, parseInt(limit));
 
         res.status(200).json({
             success: true,
             data: {
-                category: category || { slug: categorySlug },
-                questions,
-                pagination: {
-                    total,
-                    limit: parseInt(limit),
-                    skip: parseInt(skip),
-                    hasMore: (parseInt(skip) + questions.length) < total
-                }
+                topic: topicId,
+                questions: limitedQuestions,
+                total: questions.length,
+                returned: limitedQuestions.length
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching questions by topic:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch questions by topic',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/questions/:topicId/all
+ * Get all questions for a topic (admin use)
+ */
+router.get('/:topicId/all', async (req, res) => {
+    try {
+        const { topicId } = req.params;
+        const { active = 'true' } = req.query;
+
+        const TopicModel = TOPIC_MODELS[topicId];
+
+        if (!TopicModel) {
+            return res.status(404).json({
+                success: false,
+                message: `No model found for topic: ${topicId}`
+            });
+        }
+
+        const query = active === 'true' ? { isActive: true } : {};
+        const questions = await TopicModel.find(query).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                topic: topicId,
+                questions: questions.map(q => ({
+                    ...q.toObject(),
+                    category: q.visualType,
+                    taskstatement: q.question
+                })),
+                total: questions.length
             }
         });
     } catch (error) {
@@ -74,23 +123,23 @@ router.get('/:category', async (req, res) => {
 });
 
 /**
- * GET /api/questions/:category/:id
+ * GET /api/questions/:topicId/:id
  * Get a single question by ID
  */
-router.get('/:category/:id', async (req, res) => {
+router.get('/:topicId/:id', async (req, res) => {
     try {
-        const { category: categorySlug, id } = req.params;
+        const { topicId, id } = req.params;
 
-        const { model } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
+        if (!TopicModel) {
             return res.status(404).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}`
             });
         }
 
-        const question = await model.findById(id);
+        const question = await TopicModel.findById(id);
 
         if (!question) {
             return res.status(404).json({
@@ -101,7 +150,11 @@ router.get('/:category/:id', async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: question
+            data: {
+                ...question.toObject(),
+                category: question.visualType,
+                taskstatement: question.question
+            }
         });
     } catch (error) {
         console.error('Error fetching question:', error);
@@ -114,24 +167,24 @@ router.get('/:category/:id', async (req, res) => {
 });
 
 /**
- * POST /api/questions/:category
- * Create a new question for a specific category
+ * POST /api/questions/:topicId
+ * Create a new question for a specific topic
  */
-router.post('/:category', async (req, res) => {
+router.post('/:topicId', async (req, res) => {
     try {
-        const { category: categorySlug } = req.params;
+        const { topicId } = req.params;
         const questionData = req.body;
 
-        const { model, category } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
+        if (!TopicModel) {
             return res.status(404).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}`
             });
         }
 
-        const newQuestion = new model(questionData);
+        const newQuestion = new TopicModel(questionData);
         await newQuestion.save();
 
         res.status(201).json({
@@ -150,12 +203,12 @@ router.post('/:category', async (req, res) => {
 });
 
 /**
- * POST /api/questions/:category/bulk
+ * POST /api/questions/:topicId/bulk
  * Create multiple questions at once
  */
-router.post('/:category/bulk', async (req, res) => {
+router.post('/:topicId/bulk', async (req, res) => {
     try {
-        const { category: categorySlug } = req.params;
+        const { topicId } = req.params;
         const { questions } = req.body;
 
         if (!Array.isArray(questions) || questions.length === 0) {
@@ -165,12 +218,12 @@ router.post('/:category/bulk', async (req, res) => {
             });
         }
 
-        const { model } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
+        if (!TopicModel) {
             return res.status(404).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}`
             });
         }
 
@@ -181,7 +234,7 @@ router.post('/:category/bulk', async (req, res) => {
 
         for (const questionData of questions) {
             try {
-                const newQuestion = new model(questionData);
+                const newQuestion = new TopicModel(questionData);
                 await newQuestion.save();
                 results.created.push(newQuestion);
             } catch (err) {
@@ -208,24 +261,24 @@ router.post('/:category/bulk', async (req, res) => {
 });
 
 /**
- * PUT /api/questions/:category/:id
+ * PUT /api/questions/:topicId/:id
  * Update a question
  */
-router.put('/:category/:id', async (req, res) => {
+router.put('/:topicId/:id', async (req, res) => {
     try {
-        const { category: categorySlug, id } = req.params;
+        const { topicId, id } = req.params;
         const updateData = req.body;
 
-        const { model } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
+        if (!TopicModel) {
             return res.status(404).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}`
             });
         }
 
-        const question = await model.findByIdAndUpdate(
+        const question = await TopicModel.findByIdAndUpdate(
             id,
             updateData,
             { new: true, runValidators: true }
@@ -254,23 +307,23 @@ router.put('/:category/:id', async (req, res) => {
 });
 
 /**
- * DELETE /api/questions/:category/:id
+ * DELETE /api/questions/:topicId/:id
  * Soft delete a question (sets isActive to false)
  */
-router.delete('/:category/:id', async (req, res) => {
+router.delete('/:topicId/:id', async (req, res) => {
     try {
-        const { category: categorySlug, id } = req.params;
+        const { topicId, id } = req.params;
 
-        const { model } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
+        if (!TopicModel) {
             return res.status(404).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}`
             });
         }
 
-        const question = await model.findByIdAndUpdate(
+        const question = await TopicModel.findByIdAndUpdate(
             id,
             { isActive: false },
             { new: true }
@@ -299,23 +352,23 @@ router.delete('/:category/:id', async (req, res) => {
 });
 
 /**
- * GET /api/questions/:category/random/:count
- * Get random questions for a category (useful for gameplay)
+ * GET /api/questions/:topicId/random/:count
+ * Get random questions for a topic (useful for gameplay)
  */
-router.get('/:category/random/:count', async (req, res) => {
+router.get('/:topicId/random/:count', async (req, res) => {
     try {
-        const { category: categorySlug, count } = req.params;
+        const { topicId, count } = req.params;
 
-        const { model, category } = await getModelForCategory(categorySlug);
+        const TopicModel = TOPIC_MODELS[topicId];
 
-        if (!model) {
+        if (!TopicModel) {
             return res.status(404).json({
                 success: false,
-                message: `No question model found for category: ${categorySlug}`
+                message: `No model found for topic: ${topicId}`
             });
         }
 
-        const questions = await model.aggregate([
+        const questions = await TopicModel.aggregate([
             { $match: { isActive: true } },
             { $sample: { size: parseInt(count) || 5 } }
         ]);
@@ -323,8 +376,12 @@ router.get('/:category/random/:count', async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                category: category || { slug: categorySlug },
-                questions
+                topic: topicId,
+                questions: questions.map(q => ({
+                    ...q,
+                    category: q.visualType,
+                    taskstatement: q.question
+                }))
             }
         });
     } catch (error) {

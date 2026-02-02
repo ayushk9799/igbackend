@@ -48,7 +48,6 @@ export const handleNudge = async (socket, io, data) => {
             return;
         }
 
-        console.log(`👋 ${userName} nudged their partner`);
 
         // Emit to couple room
         const roomId = `couple_${[socket.userId, partnerId].sort().join('_')}`;

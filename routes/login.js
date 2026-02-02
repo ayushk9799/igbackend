@@ -23,13 +23,15 @@ const APPLE_BUNDLE_ID = process.env.APPLE_BUNDLE_ID || "com.thousandways.love";
 
 // Google authentication route
 router.post("/google/loginSignUp", async (req, res) => {
+    
     try {
         const { token, platform } = req.body;
-        console.log(token);
-        console.log(platform)
+        console.log("bcoubcuibcioasuc")
+
 
 
         if (!token) {
+            console.log("token")
             return res.status(400).json({ error: "Token is required" });
         }
 
@@ -44,7 +46,6 @@ router.post("/google/loginSignUp", async (req, res) => {
         });
 
         const payload = ticket.getPayload();
-        console.log(payload)
 
         // Check if user exists
         let user = await User.findOne({ email: payload.email });
@@ -62,21 +63,23 @@ router.post("/google/loginSignUp", async (req, res) => {
                 partnerCode,
             });
         }
-
+        console.log(user)
         res.json({
             success: true,
             user: {
                 id: user._id,
                 email: user.email,
                 name: user.name,
+                avatar: user.avatar,
                 partnerId: user.partnerId,
                 partnerUsername: user.partnerUsername,
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
+                nickname:user.nickname
             },
         });
     } catch (error) {
-        console.error("Error verifying Google token:", error.message);
+        console.log("Error verifying Google token:", error.message);
         res.status(401).json({
             success: false,
             error: "Invalid token",
@@ -165,6 +168,7 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 id: user._id,
                 email: user.email,
                 name: user.name,
+                avatar: user.avatar,
                 partnerId: user.partnerId,
                 partnerUsername: user.partnerUsername,
                 connectionDate: user.connectionDate,

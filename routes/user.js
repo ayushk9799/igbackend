@@ -9,7 +9,8 @@ const router = express.Router();
  */
 router.put('/profile', async (req, res) => {
     try {
-        const { userId, name, age, gender } = req.body;
+        const { userId, name, age, gender, avatar } = req.body;
+        console.log("bcidbicdbc")
 
         if (!userId) {
             return res.status(400).json({
@@ -32,6 +33,8 @@ router.put('/profile', async (req, res) => {
         if (gender !== undefined && ['male', 'female', 'other'].includes(gender)) {
             user.gender = gender;
         }
+        if (avatar !== undefined) user.avatar = avatar;
+        if (req.body.nickname !== undefined) user.nickname = req.body.nickname.trim();
 
         await user.save();
 
@@ -41,6 +44,8 @@ router.put('/profile', async (req, res) => {
                 id: user._id,
                 email: user.email,
                 name: user.name,
+                nickname: user.nickname,
+                avatar: user.avatar,
                 age: user.age,
                 gender: user.gender,
                 partnerId: user.partnerId,
@@ -81,6 +86,8 @@ router.get('/:userId', async (req, res) => {
                 id: user._id,
                 email: user.email,
                 name: user.name,
+                nickname: user.nickname,
+                avatar: user.avatar,
                 age: user.age,
                 gender: user.gender,
                 partnerId: user.partnerId,
@@ -115,7 +122,6 @@ router.post('/fcm-token', async (req, res) => {
         }
 
         await User.findByIdAndUpdate(userId, { fcmToken });
-        console.log(`📱 FCM token registered for user: ${userId}`);
 
         res.json({ success: true, message: 'FCM token registered' });
 
@@ -124,6 +130,45 @@ router.post('/fcm-token', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to register FCM token'
+        });
+    }
+});
+
+/**
+ * POST /api/user/test-notification
+ * Send a test push notification to a user
+ */
+router.post('/test-notification', async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        const { sendPushNotification } = await import('../utils/pushNotification.js');
+
+        const success = await sendPushNotification(
+            userId,
+            '🔔 Test Notification',
+            'This is a test notification from the backend to verify the setup! 🚀',
+            { type: 'test_verification' }
+        );
+
+        if (success) {
+            res.json({ success: true, message: 'Test notification sent successfully' });
+        } else {
+            res.status(500).json({ success: false, error: 'Failed to send notification (check logs for details)' });
+        }
+
+    } catch (error) {
+        console.error('Test notification error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to send test notification'
         });
     }
 });

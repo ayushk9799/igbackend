@@ -15,7 +15,6 @@ export const handleMoodUpdate = async (socket, io, data) => {
             return;
         }
 
-        console.log(`😊 Mood update from ${socket.userName}: ${emoji} ${label}`);
 
         // Save mood to database
         const updatedUser = await User.findByIdAndUpdate(
@@ -62,7 +61,6 @@ export const handleMoodUpdate = async (socket, io, data) => {
 export const handleMoodRequest = async (socket, io) => {
     try {
         const { partnerId } = socket;
-        console.log(partnerId)
 
         if (!partnerId) {
             socket.emit('mood:partnerMood', { mood: null, message: 'No partner' });
@@ -75,7 +73,6 @@ export const handleMoodRequest = async (socket, io) => {
             return;
         }
 
-        console.log(`📤 Sending partner mood for ${partner.name}:`, partner.currentMood);
 
         socket.emit('mood:partnerMood', {
             mood: partner.currentMood,
@@ -102,7 +99,6 @@ export const handleGetMyMood = async (socket, io) => {
             return;
         }
 
-        console.log(`😊 Fetched mood for ${socket.userName}:`, user.currentMood);
 
         socket.emit('mood:myMood', {
             mood: user.currentMood,

@@ -1,7 +1,11 @@
+import dotenv from 'dotenv';
+// Load environment variables FIRST before any other imports
+// This ensures AWS credentials are available when modules initialize
+dotenv.config();
+
 import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import apiRoutes from './routes/sample.js';
 import loginRoutes from './routes/login.js';
@@ -10,9 +14,13 @@ import userRoutes from './routes/user.js';
 import categoriesRoutes from './routes/categories.js';
 import questionsRoutes from './routes/questions.js';
 import dailyChallengeRoutes from './routes/dailyChallenge.js';
+import answersRoutes from './routes/answers.js';
+import uploadRoutes from './routes/upload.js';
+import puzzleRoutes from './routes/puzzle.js';
+import tictactoeRoutes from './routes/tictactoe.js';
+import wordleRoutes from './routes/wordle.js';
+import chatRoutes from './routes/chat.js';
 import initializeSocket from './socket/index.js';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
@@ -32,6 +40,17 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 
+// Simple test endpoint to verify frontend-backend connectivity
+app.get('/api/test', (req, res) => {
+    console.log('📥 [TEST] Incoming request received at:', new Date().toISOString());
+    console.log('📥 [TEST] Request headers:', req.headers);
+    res.json({
+        success: true,
+        message: 'Backend is connected!',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // API Routes
 app.use('/api/login', loginRoutes);
 app.use('/api/partner', partnerRoutes);
@@ -39,6 +58,12 @@ app.use('/api/user', userRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/questions', questionsRoutes);
 app.use('/api/daily-challenge', dailyChallengeRoutes);
+app.use('/api/answers', answersRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/puzzle', puzzleRoutes);
+app.use('/api/tictactoe', tictactoeRoutes);
+app.use('/api/wordle', wordleRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);

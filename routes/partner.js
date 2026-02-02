@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Couple from '../models/Couple.js';
 import { generatePartnerCode, generateUserId } from '../utils/partnerCode.js';
 
 const router = express.Router();
@@ -116,14 +117,26 @@ router.post('/pair', async (req, res) => {
         await user.save();
         await partner.save();
 
+        // Create a Couple document (sort IDs for consistent storage)
+        const [p1, p2] = [user._id.toString(), partner._id.toString()].sort();
+        const couple = new Couple({
+            partner1: p1,
+            partner2: p2,
+            connectionDate,
+            status: 'active'
+        });
+        await couple.save();
+
         res.json({
             success: true,
             message: 'Successfully paired!',
             partner: {
                 id: partner._id,
                 name: partner.name,
+                avatar: partner.avatar || null,
                 connectionDate
-            }
+            },
+            coupleId: couple._id
         });
 
     } catch (error) {
@@ -168,7 +181,14 @@ router.post('/unpair', async (req, res) => {
         // Get partner and unpair both
         const partner = await User.findById(user.partnerId);
 
+        // Mark the Couple document as unpaired
         if (partner) {
+            const [p1, p2] = [user._id.toString(), partner._id.toString()].sort();
+            await Couple.findOneAndUpdate(
+                { partner1: p1, partner2: p2, status: 'active' },
+                { status: 'unpaired', unpairedDate: new Date() }
+            );
+
             partner.partnerId = null;
             partner.partnerUsername = null;
             partner.connectionDate = null;
@@ -202,7 +222,7 @@ router.get('/status/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const user = await User.findById(userId).populate('partnerId', 'name email');
+        const user = await User.findById(userId).populate('partnerId', 'name email avatar');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -217,7 +237,8 @@ router.get('/status/:userId', async (req, res) => {
                 partner: {
                     id: user.partnerId._id,
                     name: user.partnerId.name,
-                    email: user.partnerId.email
+                    email: user.partnerId.email,
+                    avatar: user.partnerId.avatar || null
                 },
                 connectionDate: user.connectionDate,
                 daysTogether: Math.floor((new Date() - user.connectionDate) / (1000 * 60 * 60 * 24))

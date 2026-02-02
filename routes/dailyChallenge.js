@@ -1,5 +1,6 @@
 import express from 'express';
 import DailyChallenge from '../models/DailyChallenge.js';
+import DailyAnswers from '../models/DailyAnswers.js';
 
 const router = express.Router();
 
@@ -105,6 +106,64 @@ router.get('/date/:date', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch challenge',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/daily-challenge/date/:date/with-answers
+ * Get challenge and user's answers in one call (performance optimization)
+ * Query: ?userId=xxx
+ */
+router.get('/date/:date/with-answers', async (req, res) => {
+    try {
+        const { date } = req.params;
+        const { userId } = req.query;
+
+        // Fetch challenge
+        const challenge = await DailyChallenge.findOne({
+            date,
+            isActive: true
+        });
+
+        if (!challenge) {
+            return res.status(404).json({
+                success: false,
+                message: `No challenge found for date: ${date}`
+            });
+        }
+
+        // Fetch user's answers if userId provided
+        let answers = null;
+        if (userId) {
+            answers = await DailyAnswers.findOne({
+                challengeId: challenge._id,
+                userId
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                challenge,
+                answers,
+                progress: answers ? {
+                    completedCount: answers.completedCount,
+                    totalTasks: answers.totalTasks,
+                    isComplete: answers.isComplete
+                } : {
+                    completedCount: 0,
+                    totalTasks: challenge.tasks.length,
+                    isComplete: false
+                }
+            }
+        });
+    } catch (error) {
+        console.error('[dailyChallenge] Error fetching challenge with answers:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch challenge with answers',
             error: error.message
         });
     }

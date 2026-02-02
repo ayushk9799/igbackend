@@ -9,18 +9,11 @@ const taskItemSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['likelyto', 'neverhaveiever', 'deep',"takephoto"]
+        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto']
     },
     options: {
         type: [String],
         default: []
-    },
-    // Visual styles: drag_select, multiple_choice, slider, text_input, etc.
-    visualAspect: {
-        type: String,
-        required: true,
-        default: "none",
-        enum: ['none', 'drag_select', 'multiple_choice', 'slider', 'text_input', 'yes_no', 'scale']
     },
     // Additional styling options
 
