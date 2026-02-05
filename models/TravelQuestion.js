@@ -37,6 +37,11 @@ const travelQuestionSchema = new mongoose.Schema({
         required: true,
         default: true
     },
+    order: {
+        type: Number,
+        default: 0,
+        index: true
+    },
 }, { timestamps: true });
 
 travelQuestionSchema.index({ isActive: 1, visualType: 1 });

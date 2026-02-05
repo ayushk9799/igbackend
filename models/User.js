@@ -65,6 +65,12 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    // Track progress for each topic (map of topicId -> maxOrderSeen)
+    topicProgress: {
+        type: Map,
+        of: Number,
+        default: {},
+    },
     lastSeen: {
         type: Date,
     },

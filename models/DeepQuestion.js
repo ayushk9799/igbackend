@@ -32,6 +32,11 @@ const deepQuestionSchema = new mongoose.Schema({
         required: true,
         default: true
     },
+    order: {
+        type: Number,
+        default: 0,
+        index: true
+    },
 }, { timestamps: true });
 
 deepQuestionSchema.index({ isActive: 1, topic: 1 });

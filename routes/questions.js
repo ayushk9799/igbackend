@@ -1,5 +1,6 @@
 import express from 'express';
 import Categories from '../models/Categories.js';
+import User from '../models/User.js';
 
 // Import topic-specific models
 import FutureQuestion from '../models/FutureQuestion.js';
@@ -9,6 +10,9 @@ import PoliticalQuestion from '../models/PoliticalQuestion.js';
 import FitnessQuestion from '../models/FitnessQuestion.js';
 import TravelQuestion from '../models/TravelQuestion.js';
 import FamilyQuestion from '../models/FamilyQuestion.js';
+import DeepQuestion from '../models/DeepQuestion.js';
+import LikelyToQuestion from '../models/LikelyToQuestion.js';
+import NeverHaveIEverQuestion from '../models/NeverHaveIEverQuestion.js';
 
 const router = express.Router();
 
@@ -21,17 +25,78 @@ const TOPIC_MODELS = {
     'fitness': FitnessQuestion,
     'travel': TravelQuestion,
     'family': FamilyQuestion,
+    'deep': DeepQuestion,
+    'likelyto': LikelyToQuestion,
+    'neverhaveiever': NeverHaveIEverQuestion,
 };
 
 /**
+ * POST /api/questions/progress
+ * Update user's progress for a topic (e.g. on skip or answer)
+ * IMPORTANT: This route MUST be defined BEFORE any parameterized routes like /:topicId
+ */
+router.post('/progress', async (req, res) => {
+    try {
+        console.log('📥 [API] POST /progress received:', req.body);
+        const { userId, topicId, lastOrder } = req.body;
+
+        if (!userId || !topicId || lastOrder === undefined) {
+            console.warn('⚠️ [API] Missing required fields:', { userId, topicId, lastOrder });
+            return res.status(400).json({
+                success: false,
+                message: 'userId, topicId, and lastOrder are required'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            console.error('❌ [API] User not found:', userId);
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Initialize map if needed
+        if (!user.topicProgress) {
+            user.topicProgress = new Map();
+        }
+
+        // Only update if new order is greater than existing
+        const currentOrder = user.topicProgress.get(topicId) || 0;
+        console.log(`🔍 [API] Current order for ${topicId}: ${currentOrder}, New: ${lastOrder}`);
+
+        if (lastOrder > currentOrder) {
+            user.topicProgress.set(topicId, lastOrder);
+            await user.save();
+            console.log(`✅ [API] Updated progress for user ${userId}, topic ${topicId} -> order ${lastOrder}`);
+        } else {
+            console.log(`ℹ️ [API] Progress ignored for user ${userId}, topic ${topicId}: ${lastOrder} <= ${currentOrder}`);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Progress updated',
+            data: {
+                topicId,
+                lastSeenOrder: Math.max(lastOrder, currentOrder)
+            }
+        });
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update progress',
+            error: error.message
+        });
+    }
+});
+
+/**
  * GET /api/questions/topic/:topicId
- * Get questions for a specific topic from its dedicated model
- * Topics: future, hotspicy (more can be added)
+ * Get questions for a specific topic, continuing from user's last seen order.
  */
 router.get('/topic/:topicId', async (req, res) => {
     try {
         const { topicId } = req.params;
-        const { limit = 20, shuffle = 'true' } = req.query;
+        const { limit = 20, userId } = req.query;
 
         const TopicModel = TOPIC_MODELS[topicId];
 
@@ -42,31 +107,41 @@ router.get('/topic/:topicId', async (req, res) => {
             });
         }
 
-        // Fetch all active questions from this topic's model
-        let questions = await TopicModel.find({ isActive: true }).lean();
+        // 1. Determine the starting order
+        let lastSeenOrder = 0;
+        if (userId) {
+            const user = await User.findById(userId);
+            if (user && user.topicProgress) {
+                lastSeenOrder = user.topicProgress.get(topicId) || 0;
+            }
+        }
+
+        console.log(`📡 Fetching ${topicId} questions for user ${userId || 'anon'}, starting after order ${lastSeenOrder}`);
+
+        // 2. Fetch active questions with order > lastSeenOrder
+        let questions = await TopicModel.find({
+            isActive: true,
+            order: { $gt: lastSeenOrder }
+        })
+            .sort({ order: 1 }) // Sequential order
+            .limit(parseInt(limit))
+            .lean();
 
         // Transform questions for frontend TaskCard
         questions = questions.map(q => ({
             ...q,
-            category: q.visualType,  // TaskCard.jsx uses 'category' to pick the card component
+            category: q.visualType,
             taskstatement: q.question || q.statement || q.taskstatement
         }));
-
-        // Shuffle if requested
-        if (shuffle === 'true') {
-            questions = questions.sort(() => Math.random() - 0.5);
-        }
-
-        // Limit results
-        const limitedQuestions = questions.slice(0, parseInt(limit));
 
         res.status(200).json({
             success: true,
             data: {
                 topic: topicId,
-                questions: limitedQuestions,
-                total: questions.length,
-                returned: limitedQuestions.length
+                questions: questions,
+                total: questions.length, // approximation, real total needs count
+                returned: questions.length,
+                startingOrder: lastSeenOrder
             }
         });
     } catch (error) {

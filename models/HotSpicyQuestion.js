@@ -42,6 +42,11 @@ const hotSpicyQuestionSchema = new mongoose.Schema({
         required: true,
         default: true
     },
+    order: {
+        type: Number,
+        default: 0,
+        index: true
+    },
 }, { timestamps: true });
 
 hotSpicyQuestionSchema.index({ isActive: 1, visualType: 1, spiceLevel: 1 });

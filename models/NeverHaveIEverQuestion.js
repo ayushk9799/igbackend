@@ -36,6 +36,11 @@ const neverHaveIEverQuestionSchema = new mongoose.Schema({
         required: true,
         default: true
     },
+    order: {
+        type: Number,
+        default: 0,
+        index: true
+    },
 }, { timestamps: true });
 
 neverHaveIEverQuestionSchema.index({ isActive: 1, spiceLevel: 1 });

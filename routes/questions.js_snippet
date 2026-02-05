@@ -1,0 +1,52 @@
+/**
+ * POST /api/questions/progress
+ * Update user's progress for a topic (e.g. on skip or answer)
+ */
+router.post('/progress', async (req, res) => {
+    try {
+        const { userId, topicId, lastOrder } = req.body;
+
+        if (!userId || !topicId || lastOrder === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId, topicId, and lastOrder are required'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Initialize map if needed
+        if (!user.topicProgress) {
+            user.topicProgress = new Map();
+        }
+
+        // Only update if new order is greater than existing
+        const currentOrder = user.topicProgress.get(topicId) || 0;
+        if (lastOrder > currentOrder) {
+            user.topicProgress.set(topicId, lastOrder);
+            await user.save();
+            console.log(`✅ Updated progress for user ${userId}, topic ${topicId} -> order ${lastOrder}`);
+        } else {
+            console.log(`ℹ️ Progress ignored for user ${userId}, topic ${topicId}: ${lastOrder} <= ${currentOrder}`);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Progress updated',
+            data: {
+                topicId,
+                lastSeenOrder: Math.max(lastOrder, currentOrder)
+            }
+        });
+    } catch (error) {
+        console.error('Error updating progress:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update progress',
+            error: error.message
+        });
+    }
+});

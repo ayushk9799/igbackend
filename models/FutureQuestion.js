@@ -13,7 +13,7 @@ const futureQuestionSchema = new mongoose.Schema({
     visualType: {
         type: String,
         required: true,
-        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto'],
+        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto', 'voicerecord'],
         default: 'deep'
     },
     // Options for multiple choice questions (likelyto, neverhaveiever)
@@ -36,6 +36,11 @@ const futureQuestionSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: true
+    },
+    order: {
+        type: Number,
+        default: 0,
+        index: true
     },
 }, { timestamps: true });
 

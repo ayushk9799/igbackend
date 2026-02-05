@@ -88,7 +88,7 @@ const chatSchema = new mongoose.Schema({
         },
         answerType: {
             type: String,
-            enum: ['text', 'photo', 'video'],
+            enum: ['text', 'photo', 'video', 'voice'],
         },
         isRead: { type: Boolean, default: false },
         readAt: { type: Date },
@@ -175,7 +175,7 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
             questionText,
             questionCategory,
             lastMessageAt: new Date(),
-            lastMessagePreview: answerType === 'photo' ? '📷 Photo' : (answerType === 'video' ? '🎥 Video' : answer),
+            lastMessagePreview: answerType === 'photo' ? '📷 Photo' : answerType === 'video' ? '🎥 Video' : answerType === 'voice' ? '🎙️ Voice Message' : answer,
             messages: [{
                 senderId: userId,
                 content: answer,
@@ -197,7 +197,7 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
 
         // Update metadata
         chat.lastMessageAt = new Date();
-        chat.lastMessagePreview = answerType === 'photo' ? '📷 Photo' : (answerType === 'video' ? '🎥 Video' : answer);
+        chat.lastMessagePreview = answerType === 'photo' ? '📷 Photo' : answerType === 'video' ? '🎥 Video' : answerType === 'voice' ? '🎙️ Voice Message' : answer;
 
         // Update unread count for the other partner
         const isPartner1Now = userId.toString() === chat.partner1.toString();
