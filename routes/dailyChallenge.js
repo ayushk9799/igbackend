@@ -1,6 +1,8 @@
 import express from 'express';
 import DailyChallenge from '../models/DailyChallenge.js';
 import DailyAnswers from '../models/DailyAnswers.js';
+import User from '../models/User.js';
+import { sendPushNotification } from '../utils/pushNotification.js';
 
 const router = express.Router();
 
@@ -428,6 +430,71 @@ router.delete('/:id/hard', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to delete daily challenge',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/daily-challenge/remind
+ * Send a reminder push notification to partner to complete daily challenge
+ */
+router.post('/remind', async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId is required'
+            });
+        }
+
+        // Get user with partner info
+        const user = await User.findById(userId).populate('partnerId', 'name');
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        if (!user.partnerId) {
+            return res.status(400).json({
+                success: false,
+                message: 'User has no partner'
+            });
+        }
+
+        const senderName = user.name || 'Your partner';
+        const partnerId = user.partnerId._id;
+
+        // Send push notification to partner
+        const sent = await sendPushNotification(
+            partnerId,
+            '💕 Daily Challenge Reminder',
+            `${senderName} is waiting for you to complete today's challenge!`,
+            { type: 'daily_challenge_reminder' }
+        );
+
+        if (sent) {
+            res.status(200).json({
+                success: true,
+                message: 'Reminder sent successfully'
+            });
+        } else {
+            res.status(200).json({
+                success: true,
+                message: 'Could not send notification (partner may not have notifications enabled)'
+            });
+        }
+
+    } catch (error) {
+        console.error('Error sending reminder:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send reminder',
             error: error.message
         });
     }
