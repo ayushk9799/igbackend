@@ -173,4 +173,57 @@ router.post('/test-notification', async (req, res) => {
     }
 });
 
+/**
+ * DELETE /api/user/delete-account
+ * Permanently delete a user account and unlink partner
+ */
+router.delete('/delete-account', async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // If user has a partner, unlink them
+        if (user.partnerId) {
+            await User.findByIdAndUpdate(user.partnerId, {
+                $unset: {
+                    partnerId: 1,
+                    partnerUsername: 1,
+                    connectionDate: 1
+                }
+            });
+            console.log(`🔗 [DELETE] Unlinked partner ${user.partnerId} from deleted user ${userId}`);
+        }
+
+        // Delete the user
+        await User.findByIdAndDelete(userId);
+        console.log(`🗑️ [DELETE] User ${userId} deleted successfully`);
+
+        res.json({
+            success: true,
+            message: 'Account deleted successfully'
+        });
+
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete account'
+        });
+    }
+});
+
 export default router;
