@@ -90,32 +90,19 @@ async function seedQuestions() {
     try {
         const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
         await mongoose.connect(MONGODB_URI);
-        console.log('Connected to MongoDB\n');
 
-        console.log('Seeding Preference Questions...');
         await PreferenceQuestion.insertMany(preferenceQuestions);
-        console.log('Seeding Scale Questions...');
         await ScaleQuestion.insertMany(scaleQuestions);
-        console.log('Seeding Would You Rather Questions...');
         await WouldYouRatherQuestion.insertMany(wouldYouRatherQuestions);
-        console.log('Seeding Bucket List Questions...');
         await BucketListQuestion.insertMany(bucketListQuestions);
-        console.log('Seeding Finish Sentence Questions...');
         await FinishSentenceQuestion.insertMany(finishSentenceQuestions);
-        console.log('Seeding Gratitude Questions...');
         await GratitudeQuestion.insertMany(gratitudeQuestions);
-        console.log('Seeding Memory Questions...');
         await MemoryQuestion.insertMany(memoryQuestions);
-        console.log('Seeding Scenario Questions...');
         await ScenarioQuestion.insertMany(scenarioQuestions);
-        console.log('Seeding Opinion Questions...');
         await OpinionQuestion.insertMany(opinionQuestions);
-        console.log('Seeding Vulnerability Questions...');
         await VulnerabilityQuestion.insertMany(vulnerabilityQuestions);
-        console.log('Seeding Roleplay Questions...');
         await RoleplayQuestion.insertMany(roleplayQuestions);
 
-        console.log('\n✨ All questions seeded!');
         process.exit(0);
     } catch (error) {
         console.error('Error:', error);

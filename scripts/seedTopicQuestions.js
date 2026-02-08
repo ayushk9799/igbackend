@@ -53,30 +53,20 @@ const hotSpicyQuestions = [
 
 async function seedQuestions() {
     try {
-        console.log('🌱 Connecting to MongoDB...');
         await mongoose.connect(MONGODB_URI);
-        console.log('✅ Connected to MongoDB');
 
         // Clear existing questions
-        console.log('\n🗑️  Clearing existing questions...');
         await FutureQuestion.deleteMany({});
         await HotSpicyQuestion.deleteMany({});
 
         // Seed Future questions
-        console.log('\n🔮 Seeding Future questions...');
         const createdFuture = await FutureQuestion.insertMany(futureQuestions);
-        console.log(`   ✅ Created ${createdFuture.length} Future questions`);
 
         // Seed Hot & Spicy questions
-        console.log('\n🔥 Seeding Hot & Spicy questions...');
         const createdHotSpicy = await HotSpicyQuestion.insertMany(hotSpicyQuestions);
-        console.log(`   ✅ Created ${createdHotSpicy.length} Hot & Spicy questions`);
-
-        console.log('\n✅ Seeding complete!');
-        console.log(`   Total: ${createdFuture.length + createdHotSpicy.length} questions`);
+     
 
         await mongoose.disconnect();
-        console.log('\n👋 Disconnected from MongoDB');
         process.exit(0);
     } catch (error) {
         console.error('❌ Error seeding questions:', error);

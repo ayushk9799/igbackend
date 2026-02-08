@@ -184,7 +184,6 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
                 createdAt: new Date()
             }]
         });
-        console.log(`💬 [Chat] Created new chat with answer: "${questionText?.substring(0, 50)}..."`);
     } else {
         // Push the new answer to the embedded messages array
         chat.messages.push({
@@ -205,7 +204,6 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
         chat[unreadField] += 1;
         chat.messageCount += 1;
 
-        console.log(`💬 [Chat] Added partner's answer to message thread`);
     }
 
     await chat.save();

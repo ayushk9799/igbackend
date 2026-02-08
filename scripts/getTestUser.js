@@ -12,9 +12,7 @@ async function getUser() {
         await mongoose.connect(MONGODB_URI);
         const user = await User.findOne({});
         if (user) {
-            console.log(user._id.toString());
         } else {
-            console.log('NO_USER');
         }
         process.exit(0);
     } catch (e) {

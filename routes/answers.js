@@ -14,7 +14,6 @@ const router = express.Router();
 router.post('/submit', async (req, res) => {
     try {
         const { userId, challengeId, taskIndex, answer, answerType = 'text' } = req.body;
-        console.log("📤 [ANSWER SUBMIT] Received:", { taskIndex, answerType, answerLen: answer?.length });
 
         // Basic validation
         if (!userId || !challengeId || taskIndex === undefined || !answer) {

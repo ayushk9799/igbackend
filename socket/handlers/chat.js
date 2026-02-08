@@ -33,7 +33,6 @@ export const handleChatJoin = async (socket, io, data) => {
         // Join the chat room
         const roomId = `chat:${chatId}`;
         socket.join(roomId);
-        console.log(`🔌 [Chat] User ${userId} joined chat ${chatId}`);
 
         // Notify partner that user joined
         socket.to(roomId).emit('chat:userJoined', {
@@ -66,7 +65,6 @@ export const handleChatLeave = (socket, io, data) => {
     if (chatId) {
         const roomId = `chat:${chatId}`;
         socket.leave(roomId);
-        console.log(`🔌 [Chat] User ${userId} left chat ${chatId}`);
 
         // Notify partner
         socket.to(roomId).emit('chat:userLeft', {
@@ -166,7 +164,6 @@ export const handleChatMessage = async (socket, io, data) => {
             });
         }
 
-        console.log(`💬 [Chat] Message sent in chat ${chatId} by ${userName}`);
 
         // ---------------------------------------------------------
         // SMART NOTIFICATION LOGIC
@@ -192,7 +189,6 @@ export const handleChatMessage = async (socket, io, data) => {
         const isPartnerInRoom = roomSockets && roomSockets.size >= 2;
 
         if (!isPartnerInRoom) {
-            console.log(`📭 Partner ${partnerId} is NOT in chat room. Sending Push Notification...`);
 
             // Dynamic import to avoid circular dependency issues if any, or just standard import at top
             const { sendPushNotification } = await import('../../utils/pushNotification.js');
@@ -208,7 +204,6 @@ export const handleChatMessage = async (socket, io, data) => {
                 }
             );
         } else {
-            console.log(`👀 Partner ${partnerId} is in chat room. Skipping Push.`);
         }
 
     } catch (error) {
@@ -281,7 +276,6 @@ export const handleChatRead = async (socket, io, data) => {
                 readAt: new Date()
             });
 
-            console.log(`👁️ [Chat] User ${userId} read ${markedCount} messages in chat ${chatId}`);
         }
 
     } catch (error) {

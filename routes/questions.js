@@ -37,7 +37,6 @@ const TOPIC_MODELS = {
  */
 router.post('/progress', async (req, res) => {
     try {
-        console.log('📥 [API] POST /progress received:', req.body);
         const { userId, topicId, lastOrder } = req.body;
 
         if (!userId || !topicId || lastOrder === undefined) {
@@ -61,14 +60,11 @@ router.post('/progress', async (req, res) => {
 
         // Only update if new order is greater than existing
         const currentOrder = user.topicProgress.get(topicId) || 0;
-        console.log(`🔍 [API] Current order for ${topicId}: ${currentOrder}, New: ${lastOrder}`);
 
         if (lastOrder > currentOrder) {
             user.topicProgress.set(topicId, lastOrder);
             await user.save();
-            console.log(`✅ [API] Updated progress for user ${userId}, topic ${topicId} -> order ${lastOrder}`);
         } else {
-            console.log(`ℹ️ [API] Progress ignored for user ${userId}, topic ${topicId}: ${lastOrder} <= ${currentOrder}`);
         }
 
         res.status(200).json({
@@ -116,7 +112,6 @@ router.get('/topic/:topicId', async (req, res) => {
             }
         }
 
-        console.log(`📡 Fetching ${topicId} questions for user ${userId || 'anon'}, starting after order ${lastSeenOrder}`);
 
         // 2. Fetch active questions with order > lastSeenOrder
         let questions = await TopicModel.find({

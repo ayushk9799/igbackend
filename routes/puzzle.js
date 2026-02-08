@@ -58,7 +58,6 @@ const shufflePieces = (totalPieces) => {
         pieces[pieces.length - 1] = first;
     }
 
-    console.log('🧩 Shuffled pieces:', pieces, 'at', new Date().toISOString());
     return pieces;
 };
 

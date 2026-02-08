@@ -40,7 +40,6 @@ export const handleWordleJoin = async (socket, io, data) => {
             guessCount: game.guesses.length
         });
 
-        console.log(`🎯 User ${userId} joined Wordle game ${gameId}`);
 
     } catch (error) {
         console.error('Wordle join error:', error);
@@ -58,7 +57,6 @@ export const handleWordleLeave = (socket, io, data) => {
     if (gameId) {
         const gameRoom = `wordle_${gameId}`;
         socket.leave(gameRoom);
-        console.log(`🎯 User ${userId} left Wordle game ${gameId}`);
     }
 };
 
@@ -92,7 +90,6 @@ export const handleWordleGuess = async (socket, io, data) => {
             });
         }
 
-        console.log(`🎯 Wordle guess broadcast for game ${gameId}`);
 
     } catch (error) {
         console.error('Wordle guess broadcast error:', error);
@@ -117,7 +114,6 @@ export const handleWordleInvite = async (socket, io, data) => {
             });
         }
 
-        console.log(`🎯 Wordle invite sent for game ${gameId}`);
 
     } catch (error) {
         console.error('Wordle invite error:', error);
@@ -153,7 +149,6 @@ export const handleWordleComplete = async (socket, io, data) => {
             });
         }
 
-        console.log(`🎯 Wordle game ${gameId} completed with status ${status}`);
 
     } catch (error) {
         console.error('Wordle complete error:', error);
@@ -168,7 +163,6 @@ export const handleWordleNewGame = async (socket, io, data) => {
         const { gameId, status } = data;
         const { userId, userName, partnerId } = socket;
 
-        console.log(`🎯 New Wordle game created by ${userId}, notifying partner ${partnerId}`);
 
         if (!partnerId) {
             socket.emit('wordle:error', { message: 'No partner to notify' });
@@ -185,7 +179,6 @@ export const handleWordleNewGame = async (socket, io, data) => {
                 creatorName: userName,
                 timestamp: new Date().toISOString()
             });
-            console.log(`🎯 Sent wordle:newGame to couple room ${coupleRoom}`);
         }
 
         socket.emit('wordle:newGameSent', { success: true, gameId });

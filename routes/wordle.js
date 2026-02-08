@@ -129,7 +129,6 @@ router.post('/create', async (req, res) => {
                 `${creatorName} set a word for you to guess!`
             );
         } catch (notifError) {
-            console.log('Push notification failed:', notifError.message);
         }
 
         res.status(201).json({

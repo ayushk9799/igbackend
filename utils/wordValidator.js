@@ -22,7 +22,6 @@ try {
             .map(word => word.trim().toLowerCase())
             .filter(w => w.length === 5)
     );
-    console.log(`✅ Loaded ${validWords.size} valid 5-letter words`);
 } catch (error) {
     console.error('❌ Error loading word list:', error.message);
 }

@@ -132,12 +132,9 @@ const familyQuestions = [
 
 async function seedAllTopics() {
     try {
-        console.log('🌱 Connecting to MongoDB...');
         await mongoose.connect(MONGODB_URI);
-        console.log('✅ Connected to MongoDB');
 
         // Clear existing questions
-        console.log('\n🗑️  Clearing existing questions in new topic collections...');
         await MoneyQuestion.deleteMany({});
         await PoliticalQuestion.deleteMany({});
         await FitnessQuestion.deleteMany({});
@@ -145,38 +142,26 @@ async function seedAllTopics() {
         await FamilyQuestion.deleteMany({});
 
         // Seed Money questions
-        console.log('\n💰 Seeding Money questions...');
         const createdMoney = await MoneyQuestion.insertMany(moneyQuestions);
-        console.log(`   ✅ Created ${createdMoney.length} Money questions`);
 
         // Seed Political questions
-        console.log('\n🗳️  Seeding Political questions...');
         const createdPolitical = await PoliticalQuestion.insertMany(politicalQuestions);
-        console.log(`   ✅ Created ${createdPolitical.length} Political questions`);
 
         // Seed Fitness questions
-        console.log('\n💪 Seeding Fitness questions...');
         const createdFitness = await FitnessQuestion.insertMany(fitnessQuestions);
-        console.log(`   ✅ Created ${createdFitness.length} Fitness questions`);
 
         // Seed Travel questions
-        console.log('\n✈️  Seeding Travel questions...');
         const createdTravel = await TravelQuestion.insertMany(travelQuestions);
-        console.log(`   ✅ Created ${createdTravel.length} Travel questions`);
 
         // Seed Family questions
-        console.log('\n👨‍👩‍👧‍👦 Seeding Family questions...');
         const createdFamily = await FamilyQuestion.insertMany(familyQuestions);
-        console.log(`   ✅ Created ${createdFamily.length} Family questions`);
 
         const total = createdMoney.length + createdPolitical.length + createdFitness.length +
             createdTravel.length + createdFamily.length;
 
-        console.log('\n✅ Seeding complete!');
-        console.log(`   📊 Total: ${total} questions across 5 topics`);
+     
 
         await mongoose.disconnect();
-        console.log('\n👋 Disconnected from MongoDB');
         process.exit(0);
     } catch (error) {
         console.error('❌ Error seeding questions:', error);

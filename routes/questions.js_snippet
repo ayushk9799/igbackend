@@ -28,9 +28,7 @@ router.post('/progress', async (req, res) => {
         if (lastOrder > currentOrder) {
             user.topicProgress.set(topicId, lastOrder);
             await user.save();
-            console.log(`✅ Updated progress for user ${userId}, topic ${topicId} -> order ${lastOrder}`);
         } else {
-            console.log(`ℹ️ Progress ignored for user ${userId}, topic ${topicId}: ${lastOrder} <= ${currentOrder}`);
         }
 
         res.status(200).json({

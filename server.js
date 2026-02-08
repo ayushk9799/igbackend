@@ -30,7 +30,6 @@ const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
 
 mongoose.connect(MONGODB_URI)
-    .then(() => console.log('✅ Connected to MongoDB'))
     .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // Middleware
@@ -42,8 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Simple test endpoint to verify frontend-backend connectivity
 app.get('/api/test', (req, res) => {
-    console.log('📥 [TEST] Incoming request received at:', new Date().toISOString());
-    console.log('📥 [TEST] Request headers:', req.headers);
+   
     res.json({
         success: true,
         message: 'Backend is connected!',
@@ -76,7 +74,6 @@ app.use((err, req, res, next) => {
 
 // Use httpServer.listen instead of app.listen for Socket.io
 httpServer.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
 });
 
 export default app;

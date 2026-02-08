@@ -10,7 +10,6 @@ const router = express.Router();
 router.put('/profile', async (req, res) => {
     try {
         const { userId, name, age, gender, avatar } = req.body;
-        console.log("bcidbicdbc")
 
         if (!userId) {
             return res.status(400).json({
@@ -205,12 +204,10 @@ router.delete('/delete-account', async (req, res) => {
                     connectionDate: 1
                 }
             });
-            console.log(`🔗 [DELETE] Unlinked partner ${user.partnerId} from deleted user ${userId}`);
         }
 
         // Delete the user
         await User.findByIdAndDelete(userId);
-        console.log(`🗑️ [DELETE] User ${userId} deleted successfully`);
 
         res.json({
             success: true,

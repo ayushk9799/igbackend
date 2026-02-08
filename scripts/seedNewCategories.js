@@ -122,22 +122,17 @@ const newCategories = [
 
 async function seedCategories() {
     try {
-        console.log('Connecting to MongoDB...');
         const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
         await mongoose.connect(MONGODB_URI);
-        console.log('Connected!\n');
 
         for (const category of newCategories) {
             const existing = await Categories.findOne({ slug: category.slug });
             if (existing) {
-                console.log(`⏭️  Category "${category.slug}" already exists, skipping...`);
             } else {
                 await Categories.create(category);
-                console.log(`✅ Created category: ${category.title}`);
             }
         }
 
-        console.log('\n✨ Seeding complete!');
         process.exit(0);
     } catch (error) {
         console.error('Error seeding categories:', error);

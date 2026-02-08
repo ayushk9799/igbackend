@@ -36,13 +36,10 @@ const models = {
 async function migrate() {
     try {
         await mongoose.connect(MONGODB_URI);
-        console.log('✅ Connected to MongoDB');
 
         for (const [name, Model] of Object.entries(models)) {
-            console.log(`\nProcessing ${name}...`);
             const questions = await Model.find({}).sort({ createdAt: 1 });
 
-            console.log(`Found ${questions.length} documents.`);
 
             let updatedCount = 0;
             for (let i = 0; i < questions.length; i++) {
@@ -53,10 +50,8 @@ async function migrate() {
                 updatedCount++;
                 // }
             }
-            console.log(`Updated ${updatedCount} documents in ${name}.`);
         }
 
-        console.log('\n✅ Migration complete!');
         process.exit(0);
     } catch (error) {
         console.error('❌ Migration failed:', error);

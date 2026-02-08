@@ -16,7 +16,6 @@ const s3Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.AWS_S3_BUCKET;
-console.log(BUCKET_NAME)
 
 /**
  * POST /api/upload/presigned-url
@@ -29,18 +28,11 @@ console.log(BUCKET_NAME)
  * }
  */
 router.post('/presigned-url', async (req, res) => {
-    console.log('📤 [UPLOAD] Presigned URL request received');
-    console.log('📤 [UPLOAD] Request body:', JSON.stringify(req.body, null, 2));
-    console.log('📤 [UPLOAD] AWS Config - Region:', process.env.AWS_REGION);
-    console.log('📤 [UPLOAD] AWS Config - Bucket:', BUCKET_NAME);
-    console.log('📤 [UPLOAD] AWS Config - AccessKeyId exists:', !!process.env.AWS_ACCESS_KEY_ID);
-    console.log('📤 [UPLOAD] AWS Config - SecretAccessKey exists:', !!process.env.AWS_SECRET_ACCESS_KEY);
-
+ 
     try {
         const { fileName, fileType, folder = 'uploads' } = req.body;
 
         if (!fileName || !fileType) {
-            console.log('📤 [UPLOAD] ❌ Missing fileName or fileType');
             return res.status(400).json({
                 success: false,
                 message: 'fileName and fileType are required'
@@ -54,7 +46,6 @@ router.post('/presigned-url', async (req, res) => {
         const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
         const fileKey = `${folder}/${timestamp}-${randomString}-${sanitizedFileName}`;
 
-        console.log('📤 [UPLOAD] Generated fileKey:', fileKey);
 
         // Create the presigned URL for upload
         const command = new PutObjectCommand({
@@ -63,17 +54,14 @@ router.post('/presigned-url', async (req, res) => {
             ContentType: fileType
         });
 
-        console.log('📤 [UPLOAD] Generating presigned URL...');
         const presignedUrl = await getSignedUrl(s3Client, command, {
             expiresIn: 3600 // URL expires in 1 hour
         });
-        console.log('📤 [UPLOAD] ✅ Presigned URL generated successfully');
 
         // The public URL to access the file after upload
         const publicUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${fileKey}`;
 
-        console.log('📤 [UPLOAD] Public URL:', publicUrl);
-        console.log('📤 [UPLOAD] Sending response...');
+       
 
         res.status(200).json({
             success: true,
@@ -84,7 +72,6 @@ router.post('/presigned-url', async (req, res) => {
                 expiresIn: 3600
             }
         });
-        console.log('📤 [UPLOAD] ✅ Response sent successfully');
     } catch (error) {
         console.error('📤 [UPLOAD] ❌ Error generating presigned URL:', error);
         console.error('📤 [UPLOAD] Error stack:', error.stack);

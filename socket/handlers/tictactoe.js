@@ -49,7 +49,6 @@ export const handleTicTacToeJoin = async (socket, io, data) => {
             status: game.status
         });
 
-        console.log(`🎮 User ${userId} joined TicTacToe game ${gameId}`);
 
     } catch (error) {
         console.error('TicTacToe join error:', error);
@@ -73,7 +72,6 @@ export const handleTicTacToeLeave = (socket, io, data) => {
             timestamp: new Date().toISOString()
         });
 
-        console.log(`🎮 User ${userId} left TicTacToe game ${gameId}`);
     }
 };
 
@@ -192,7 +190,6 @@ export const handleTicTacToeNewGame = async (socket, io, data) => {
         const { gameId, board, currentTurn, status, creatorSymbol, partnerSymbol } = data;
         const { userId, userName, partnerId } = socket;
 
-        console.log(`🎮 New game created by ${userId}, notifying partner ${partnerId}`);
 
         if (!partnerId) {
             socket.emit('tictactoe:error', { message: 'No partner to notify' });
@@ -213,7 +210,6 @@ export const handleTicTacToeNewGame = async (socket, io, data) => {
                 creatorName: userName,
                 timestamp: new Date().toISOString()
             });
-            console.log(`🎮 Sent tictactoe:newGame to couple room ${coupleRoom}`);
         }
 
         socket.emit('tictactoe:newGameSent', { success: true, gameId });

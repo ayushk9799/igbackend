@@ -26,7 +26,6 @@ export const sendSilentPush = async (userId, data = {}) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
-            console.log('⚠️ No FCM token for user:', userId);
             return false;
         }
 
@@ -56,7 +55,6 @@ export const sendSilentPush = async (userId, data = {}) => {
         };
 
         const response = await admin.messaging().send(message);
-        console.log('📤 Silent push sent:', response);
         return true;
 
     } catch (error) {
@@ -75,13 +73,10 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
-            console.log('⚠️ No FCM token for user:', userId);
             return false;
         }
 
-        console.log('📱 Sending notification to user:', userId);
-        console.log('📱 FCM Token:', user.fcmToken.slice(0, 40) + '...');
-        console.log('📱 Token type:', user.fcmToken.includes(':') ? 'Android' : 'iOS (APNs)');
+     
 
         const message = {
             token: user.fcmToken,
@@ -115,7 +110,6 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
         };
 
         const response = await admin.messaging().send(message);
-        console.log('📤 Scribble push sent:', response);
         return true;
 
     } catch (error) {
@@ -133,7 +127,6 @@ export const sendPuzzleNotification = async (userId, senderName) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
-            console.log('⚠️ No FCM token for user:', userId);
             return false;
         }
 
@@ -167,7 +160,6 @@ export const sendPuzzleNotification = async (userId, senderName) => {
         };
 
         const response = await admin.messaging().send(message);
-        console.log('📤 Puzzle push sent:', response);
         return true;
 
     } catch (error) {
@@ -187,7 +179,6 @@ export const sendPushNotification = async (userId, title, body, data = {}) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
-            console.log('⚠️ No FCM token for user:', userId);
             return false;
         }
 
@@ -223,7 +214,6 @@ export const sendPushNotification = async (userId, title, body, data = {}) => {
         };
 
         const response = await admin.messaging().send(message);
-        console.log('📤 Push notification sent:', response);
         return true;
 
     } catch (error) {

@@ -9,7 +9,6 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypG
 async function addVoiceQuestion() {
     try {
         await mongoose.connect(MONGO_URI);
-        console.log('✅ Connected to MongoDB');
 
         // Get the highest order number
         const highestOrder = await FutureQuestion.findOne({ isActive: true })
@@ -28,13 +27,9 @@ async function addVoiceQuestion() {
         });
 
         await voiceQuestion.save();
-        console.log('✅ Voice question added successfully!');
-        console.log('📝 Question:', voiceQuestion.question);
-        console.log('📊 Order:', voiceQuestion.order);
-        console.log('🆔 ID:', voiceQuestion._id);
+      
 
         await mongoose.disconnect();
-        console.log('👋 Disconnected from MongoDB');
     } catch (error) {
         console.error('❌ Error:', error);
         process.exit(1);

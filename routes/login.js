@@ -26,12 +26,10 @@ router.post("/google/loginSignUp", async (req, res) => {
     
     try {
         const { token, platform } = req.body;
-        console.log("bcoubcuibcioasuc")
 
 
 
         if (!token) {
-            console.log("token")
             return res.status(400).json({ error: "Token is required" });
         }
 
@@ -63,7 +61,6 @@ router.post("/google/loginSignUp", async (req, res) => {
                 partnerCode,
             });
         }
-        console.log(user)
         res.json({
             success: true,
             user: {
@@ -79,7 +76,6 @@ router.post("/google/loginSignUp", async (req, res) => {
             },
         });
     } catch (error) {
-        console.log("Error verifying Google token:", error.message);
         res.status(401).json({
             success: false,
             error: "Invalid token",

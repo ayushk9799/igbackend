@@ -123,7 +123,6 @@ router.post('/create', async (req, res) => {
                 `${creatorName} challenged you to Tic Tac Toe!`
             );
         } catch (notifError) {
-            console.log('Push notification failed:', notifError.message);
         }
 
         res.status(201).json({
