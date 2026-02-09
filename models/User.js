@@ -74,6 +74,17 @@ const userSchema = new mongoose.Schema({
     lastSeen: {
         type: Date,
     },
+    // Premium subscription fields
+    isPremium: {
+        type: Boolean,
+        default: false,
+    },
+    premiumExpiresAt: {
+        type: Date,
+    },
+    premiumPlan: {
+        type: String,
+    },
 }, {
     timestamps: true,
 });

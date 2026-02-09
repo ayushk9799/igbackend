@@ -51,6 +51,9 @@ router.put('/profile', async (req, res) => {
                 partnerUsername: user.partnerUsername,
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
+                isPremium: user.isPremium,
+                premiumExpiresAt: user.premiumExpiresAt,
+                premiumPlan: user.premiumPlan,
             }
         });
 
@@ -59,6 +62,55 @@ router.put('/profile', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to update profile'
+        });
+    }
+});
+
+/**
+ * PUT /api/user/premium
+ * Update user premium status
+ */
+router.put('/premium', async (req, res) => {
+    try {
+        const { userId, isPremium, premiumExpiresAt, premiumPlan } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // Update premium fields
+        if (isPremium !== undefined) user.isPremium = isPremium;
+        if (premiumExpiresAt !== undefined) user.premiumExpiresAt = premiumExpiresAt;
+        if (premiumPlan !== undefined) user.premiumPlan = premiumPlan;
+
+        await user.save();
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                isPremium: user.isPremium,
+                premiumExpiresAt: user.premiumExpiresAt,
+                premiumPlan: user.premiumPlan,
+            }
+        });
+
+    } catch (error) {
+        console.error('Premium update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update premium status'
         });
     }
 });
@@ -93,6 +145,9 @@ router.get('/:userId', async (req, res) => {
                 partnerUsername: user.partnerUsername,
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
+                isPremium: user.isPremium,
+                premiumExpiresAt: user.premiumExpiresAt,
+                premiumPlan: user.premiumPlan,
             }
         });
 
