@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thousand Ways - Healthcare & Business Solutions</title>
+  <meta name="description" content="Thousand Ways delivers cutting-edge software solutions for hospitals and businesses.">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; }
+    a { text-decoration: none; color: inherit; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+    
+    /* Header */
+    header { height: 56px; display: flex; align-items: center; border-bottom: 1px solid #e5e7eb; padding: 0 1.5rem; position: sticky; top: 0; background: white; z-index: 100; }
+    .logo { display: flex; align-items: center; font-weight: bold; font-size: 1.125rem; }
+    .logo-icon { width: 24px; height: 24px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 4px; margin-right: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; }
+    nav { margin-left: auto; display: flex; gap: 1.5rem; }
+    nav a { font-size: 0.875rem; font-weight: 500; }
+    nav a:hover { text-decoration: underline; }
+    .mobile-menu { display: none; background: none; border: none; cursor: pointer; }
+    
+    /* Hero */
+    .hero { background: linear-gradient(135deg, #ecfdf5, #f0fdfa); padding: 3rem 0; text-align: center; }
+    .hero h1 { font-size: 2rem; font-weight: bold; margin-bottom: 1rem; }
+    .hero h1 span { color: #059669; }
+    .hero p { color: #6b7280; max-width: 700px; margin: 0 auto 1.5rem; }
+    .btn { display: inline-flex; align-items: center; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+    .btn-primary { background: #059669; color: white; }
+    .btn-primary:hover { background: #047857; }
+    .btn-outline { border: 1px solid #d1d5db; background: white; margin-left: 1rem; }
+    .btn-outline:hover { background: #f9fafb; }
+    
+    /* Products */
+    .section { padding: 3rem 0; }
+    .section-gray { background: #f9fafb; }
+    .section-title { text-align: center; margin-bottom: 2rem; }
+    .section-title h2 { font-size: 1.75rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .section-title p { color: #6b7280; max-width: 600px; margin: 0 auto; }
+    .grid { display: grid; gap: 1.5rem; }
+    .grid-4 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    
+    /* Cards */
+    .card { background: white; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e5e7eb; }
+    .card-title { font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .card-desc { color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem; }
+    .card-icon { width: 32px; height: 32px; background: #10b981; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; }
+    .feature-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; margin-bottom: 0.5rem; }
+    .feature-icon { color: #059669; }
+    
+    /* Features */
+    .feature-box { text-align: center; padding: 1.5rem; }
+    .feature-box .icon-circle { width: 64px; height: 64px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+    .feature-box h3 { font-size: 1.125rem; font-weight: bold; margin-bottom: 0.5rem; }
+    .feature-box p { color: #6b7280; font-size: 0.875rem; }
+    
+    /* About */
+    .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; }
+    .about-content h2 { font-size: 1.75rem; font-weight: bold; margin-bottom: 1rem; }
+    .about-content p { color: #6b7280; margin-bottom: 1rem; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem; }
+    .stat { background: #f9fafb; padding: 1rem; border-radius: 0.5rem; text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: bold; color: #059669; }
+    .stat-label { font-size: 0.875rem; color: #6b7280; }
+    .about-image { background: linear-gradient(135deg, #d1fae5, #a7f3d0); height: 300px; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; color: #059669; font-weight: bold; }
+    
+    /* Contact */
+    .contact-info { display: flex; flex-direction: column; gap: 1.5rem; }
+    .contact-item { display: flex; gap: 1rem; }
+    .contact-icon { width: 48px; height: 48px; background: #d1fae5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #059669; flex-shrink: 0; }
+    .contact-item h3 { font-weight: 600; margin-bottom: 0.25rem; }
+    .contact-item p, .contact-item a { color: #6b7280; font-size: 0.875rem; }
+    
+    /* Form */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2); }
+    
+    /* CTA */
+    .cta { background: #059669; color: white; padding: 4rem 0; text-align: center; }
+    .cta h2 { font-size: 1.75rem; font-weight: bold; margin-bottom: 1rem; }
+    .cta p { opacity: 0.9; max-width: 600px; margin: 0 auto 1.5rem; }
+    .btn-white { background: white; color: #059669; }
+    .btn-white:hover { background: #f0fdf4; }
+    .btn-ghost { background: transparent; border: 1px solid white; color: white; margin-left: 1rem; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+    
+    /* Footer */
+    footer { background: #111827; color: white; padding: 3rem 0 1.5rem; }
+    .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem; }
+    .footer-section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+    .footer-section p, .footer-section a { color: #9ca3af; font-size: 0.875rem; display: block; margin-bottom: 0.5rem; }
+    .footer-section a:hover { color: #10b981; }
+    .footer-bottom { border-top: 1px solid #374151; padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .footer-bottom p { color: #9ca3af; font-size: 0.75rem; }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { color: #9ca3af; font-size: 0.75rem; }
+    .footer-links a:hover { color: #10b981; }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav { display: none; }
+      .mobile-menu { display: block; }
+      .hero h1 { font-size: 1.5rem; }
+      .about-grid { grid-template-columns: 1fr; }
+      .btn-outline { margin-left: 0; margin-top: 0.5rem; }
+      .hero .btn { display: block; width: 100%; margin: 0.5rem 0; }
+    }
+
+    /* SVG Icons inline */
+    .icon { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <a href="#" class="logo">
+      <div class="logo-icon">TW</div>
+      Thousand Ways
+    </a>
+    <nav>
+      <a href="#products">Products</a>
+      <a href="#features">Features</a>
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <button class="mobile-menu" onclick="toggleMenu()">☰</button>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1>Transforming Healthcare & Business <span>Management</span></h1>
+      <p>Thousand Ways delivers cutting-edge software solutions for hospitals and businesses. Streamline operations, enhance patient care, and optimize billing processes with our innovative platforms.</p>
+      <div>
+        <a href="#products" class="btn btn-primary">Explore Products →</a>
+        <a href="#contact" class="btn btn-outline">Schedule Demo</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products -->
+  <section id="products" class="section">
+    <div class="container">
+      <div class="section-title">
+        <h2>Our Products</h2>
+        <p>Comprehensive solutions designed to meet the unique needs of healthcare and business sectors.</p>
+      </div>
+      <div class="grid grid-4">
+        <div class="card">
+          <div class="card-title"><div class="card-icon">🏥</div> TheHospital.in</div>
+          <p class="card-desc">Complete Hospital Management System</p>
+          <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">A comprehensive healthcare management platform designed to streamline hospital operations, patient care, and administrative processes.</p>
+          <div class="feature-item"><span class="feature-icon">✓</span> Patient Management</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Appointment Scheduling</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Electronic Health Records</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> HIPAA Compliant</div>
+          <a href="https://thehospital.in" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">Visit TheHospital.in →</a>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon">💳</div> TheBilling.in</div>
+          <p class="card-desc">Advanced Billing & Invoice Management</p>
+          <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">Powerful billing solution that automates invoicing, payment processing, and financial reporting for businesses of all sizes.</p>
+          <div class="feature-item"><span class="feature-icon">✓</span> Automated Invoicing</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Payment Processing</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Financial Reporting</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Secure & Compliant</div>
+          <a href="https://thebilling.in" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">Visit TheBilling.in →</a>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon" style="background: #22c55e;">💊</div> ThePharmacy</div>
+          <p class="card-desc">Complete Pharmacy Management System</p>
+          <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">Comprehensive pharmacy management solution for inventory control, prescription management, and regulatory compliance.</p>
+          <div class="feature-item"><span class="feature-icon">✓</span> Inventory Management</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Prescription Tracking</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Expiry Management</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Regulatory Compliance</div>
+          <button class="btn btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">Learn More →</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon" style="background: #8b5cf6;">🧪</div> TheLab</div>
+          <p class="card-desc">Advanced Laboratory Information System</p>
+          <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">Modern laboratory management system for test processing, result management, and quality control workflows.</p>
+          <div class="feature-item"><span class="feature-icon">✓</span> Test Management</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Result Processing</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Quality Control</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> NABL Compliant</div>
+          <button class="btn btn-primary" style="width: 100%; margin-top: 1rem; justify-content: center;">Learn More →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="section section-gray">
+    <div class="container">
+      <div class="section-title">
+        <h2>Why Choose Thousand Ways?</h2>
+        <p>We combine innovation, reliability, and user-centric design to deliver exceptional software solutions.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="feature-box">
+          <div class="icon-circle">⚡</div>
+          <h3>Lightning Fast</h3>
+          <p>Optimized performance ensures your operations run smoothly without delays.</p>
+        </div>
+        <div class="feature-box">
+          <div class="icon-circle">🛡️</div>
+          <h3>Secure & Compliant</h3>
+          <p>Enterprise-grade security with full compliance to industry standards.</p>
+        </div>
+        <div class="feature-box">
+          <div class="icon-circle">👥</div>
+          <h3>24/7 Support</h3>
+          <p>Round-the-clock customer support to ensure your success.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-content">
+          <h2>About Thousand Ways</h2>
+          <p>Founded with a vision to revolutionize healthcare and business management, Thousand Ways has been at the forefront of developing innovative software solutions that make a real difference.</p>
+          <p>Our team of experienced developers, healthcare professionals, and business experts work together to create platforms that not only meet current needs but anticipate future challenges.</p>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value">100+</div>
+              <div class="stat-label">Happy Clients</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">99.9%</div>
+              <div class="stat-label">Uptime</div>
+            </div>
+          </div>
+        </div>
+        <div class="about-image">Thousand Ways Team</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Book Demo -->
+  <section class="section" style="background: linear-gradient(135deg, #eff6ff, #e0e7ff);">
+    <div class="container">
+      <div class="section-title">
+        <h2>Experience Our Software <span style="color: #059669;">Live</span></h2>
+        <p>See how our solutions can transform your operations. Book a personalized demo with our experts.</p>
+      </div>
+      <div class="grid grid-2" style="max-width: 1000px; margin: 0 auto;">
+        <div>
+          <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 1rem;">What You'll Get in Your Demo</h3>
+          <div class="contact-item" style="margin-bottom: 1rem;">
+            <div class="contact-icon">👤</div>
+            <div><h3>Personalized Walkthrough</h3><p>Tailored demo to your specific industry needs.</p></div>
+          </div>
+          <div class="contact-item" style="margin-bottom: 1rem;">
+            <div class="contact-icon">⚡</div>
+            <div><h3>Live Feature Demonstration</h3><p>See real-time functionality of all features.</p></div>
+          </div>
+          <div class="contact-item" style="margin-bottom: 1rem;">
+            <div class="contact-icon">🛡️</div>
+            <div><h3>Security & Compliance Overview</h3><p>Learn about our data protection measures.</p></div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon">📞</div>
+            <div><h3>Q&A Session</h3><p>Get answers to all your questions.</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="font-size: 1.25rem; font-weight: bold; text-align: center; margin-bottom: 0.5rem;">Book Your Free Demo</h3>
+          <p style="text-align: center; color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">We'll reach out to schedule your personalized demonstration.</p>
+          <form>
+            <div class="form-group"><label>First Name *</label><input type="text" placeholder="John" required></div>
+            <div class="form-group"><label>Phone Number *</label><input type="tel" placeholder="+91 9876543210" required></div>
+            <div class="form-group"><label>Organization/Hospital Name *</label><input type="text" placeholder="Your Hospital/Company Name" required></div>
+            <div class="form-group">
+              <label>Product Interest *</label>
+              <select required>
+                <option value="">Select a product</option>
+                <option value="hospital">TheHospital.in - Hospital Management</option>
+                <option value="billing">TheBilling.in - Billing Solution</option>
+                <option value="pharmacy">ThePharmacy - Pharmacy Management</option>
+                <option value="lab">TheLab - Laboratory Management</option>
+                <option value="all">Complete Suite</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">📅 Schedule My Free Demo</button>
+            <p style="font-size: 0.75rem; color: #6b7280; text-align: center; margin-top: 0.5rem;">Demo sessions typically last 10-15 minutes.</p>
+          </form>
+        </div>
+      </div>
+      <div class="grid grid-4" style="margin-top: 2rem; text-align: center;">
+        <div><div class="stat-value">150+</div><div class="stat-label">Demos Conducted</div></div>
+        <div><div class="stat-value">95%</div><div class="stat-label">Satisfaction Rate</div></div>
+        <div><div class="stat-value">10 min</div><div class="stat-label">Average Demo Time</div></div>
+        <div><div class="stat-value">12 hrs</div><div class="stat-label">Response Time</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dealership -->
+  <section class="section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="about-content">
+          <h2>Join Our <span style="color: #059669;">Dealership Network</span></h2>
+          <p>Expand your business with Thousand Ways dealership opportunities. Partner with us to offer cutting-edge healthcare and business management solutions to your clients.</p>
+          <div class="feature-item"><span class="feature-icon">✓</span> Comprehensive training and support</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Attractive commission structure</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Marketing and sales support</div>
+          <div class="feature-item"><span class="feature-icon">✓</span> Exclusive territory rights</div>
+          <a href="#contact" class="btn btn-primary" style="margin-top: 1rem;">Apply for Dealership →</a>
+        </div>
+        <div class="about-image">Dealership Opportunities</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container">
+      <h2>Ready to Transform Your Operations?</h2>
+      <p>Join hundreds of satisfied customers who have streamlined their processes with our solutions.</p>
+      <div>
+        <a href="#contact" class="btn btn-white">Get Started Today</a>
+        <a href="#contact" class="btn btn-ghost">Contact Sales</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="section section-gray">
+    <div class="container">
+      <div class="section-title">
+        <h2>Get in Touch</h2>
+        <p>Ready to transform your operations? Contact us today to learn more about our solutions or schedule a demo.</p>
+      </div>
+      <div class="grid grid-3" style="max-width: 800px; margin: 0 auto 2rem;">
+        <div class="contact-item" style="flex-direction: column; text-align: center; align-items: center;">
+          <div class="contact-icon" style="margin-bottom: 0.5rem;">🏢</div>
+          <h3>Address</h3>
+          <p>Dariyapur, Bodh Gaya,<br>Bihar 824237, India</p>
+        </div>
+        <div class="contact-item" style="flex-direction: column; text-align: center; align-items: center;">
+          <div class="contact-icon" style="margin-bottom: 0.5rem;">📞</div>
+          <h3>Phone</h3>
+          <a href="tel:+919942000425">+91 9942000425</a>
+        </div>
+        <div class="contact-item" style="flex-direction: column; text-align: center; align-items: center;">
+          <div class="contact-icon" style="margin-bottom: 0.5rem;">✉️</div>
+          <h3>Email</h3>
+          <a href="mailto:admin@thethousandways.com">admin@thethousandways.com</a>
+        </div>
+      </div>
+      <div style="max-width: 600px; margin: 0 auto;">
+        <div class="card">
+          <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem;">Send us a Message</h3>
+          <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem;">Fill out the form and we'll get back to you soon.</p>
+          <form>
+            <div class="form-group"><label>Full Name *</label><input type="text" placeholder="Enter your full name" required></div>
+            <div class="form-group"><label>Mobile Number *</label><input type="tel" placeholder="Enter your mobile number" required></div>
+            <div class="form-group"><label>Company/Organization</label><input type="text" placeholder="Enter your company name"></div>
+            <div class="form-group">
+              <label>Subject *</label>
+              <select required>
+                <option value="">Select a subject</option>
+                <option value="general">General Inquiry</option>
+                <option value="demo">Request Demo</option>
+                <option value="hospital">TheHospital.in</option>
+                <option value="billing">TheBilling.in</option>
+                <option value="dealership">Dealership Opportunity</option>
+                <option value="support">Technical Support</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Message *</label><textarea rows="4" placeholder="Tell us about your requirements..." required></textarea></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-section">
+          <div class="logo" style="color: white; margin-bottom: 1rem;">
+            <div class="logo-icon">TW</div>
+            Thousand Ways
+          </div>
+          <p>Transforming healthcare and business management with innovative software solutions.</p>
+          <p style="font-size: 0.75rem; margin-top: 1rem;">GSIN: 10AAKCT1747Q1ZZ</p>
+          <p style="font-size: 0.75rem;">CIN: U62099BR2023PTC063443</p>
+          <p style="font-size: 0.75rem;">Registered in Bihar, India</p>
+        </div>
+        <div class="footer-section">
+          <h3>Contact Us</h3>
+          <p>Email: <a href="mailto:admin@thethousandways.com">admin@thethousandways.com</a></p>
+          <p>Phone: <a href="tel:+919942000425">+91 9942000425</a></p>
+          <p>Dariyapur, Bodh Gaya, Bihar 824237, India</p>
+        </div>
+        <div class="footer-section">
+          <h3>Our Products</h3>
+          <a href="https://thehospital.in" target="_blank">TheHospital.in</a>
+          <a href="https://thebilling.in" target="_blank">TheBilling.in</a>
+          <a href="#">ThePharmacy</a>
+          <a href="#">TheLab</a>
+        </div>
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <a href="#products">Products</a>
+          <a href="#features">Features</a>
+          <a href="#about">About</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2024 Thousand Ways. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#terms">Terms of Service</a>
+          <a href="#privacy">Privacy Policy</a>
+          <a href="#contact">Support</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMenu() {
+      const nav = document.querySelector('nav');
+      nav.style.display = nav.style.display === 'flex' ? 'none' : 'flex';
+      nav.style.position = 'absolute';
+      nav.style.top = '56px';
+      nav.style.left = '0';
+      nav.style.right = '0';
+      nav.style.flexDirection = 'column';
+      nav.style.background = 'white';
+      nav.style.padding = '1rem';
+      nav.style.borderBottom = '1px solid #e5e7eb';
+      nav.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+    }
+  </script>
+</body>
+</html>

@@ -6,6 +6,11 @@ dotenv.config();
 import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import mongoose from 'mongoose';
 import apiRoutes from './routes/sample.js';
 import loginRoutes from './routes/login.js';
@@ -39,9 +44,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 
+// Serve Thousand Ways landing page on root
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // Simple test endpoint to verify frontend-backend connectivity
 app.get('/api/test', (req, res) => {
-   
+
     res.json({
         success: true,
         message: 'Backend is connected!',
