@@ -2,6 +2,9 @@ import express from 'express';
 import User from '../models/User.js';
 import Couple from '../models/Couple.js';
 import { generatePartnerCode, generateUserId } from '../utils/partnerCode.js';
+import { isUserOnline, getSocketId } from '../socket/auth.js';
+import { getIO } from '../socket/index.js';
+import { sendPushNotification } from '../utils/pushNotification.js';
 
 const router = express.Router();
 
@@ -127,6 +130,32 @@ router.post('/pair', async (req, res) => {
         });
         await couple.save();
 
+        // Notify the partner about the new connection
+        const partnerId = partner._id.toString();
+        const pairingPayload = {
+            partnerId: user._id,
+            partnerName: user.name || 'Your Partner',
+            partnerAvatar: user.avatar || null,
+            connectionDate,
+        };
+
+        if (isUserOnline(partnerId)) {
+            // Partner is online — send socket event
+            const io = getIO();
+            const partnerSocketId = getSocketId(partnerId);
+            if (io && partnerSocketId) {
+                io.to(partnerSocketId).emit('partner:paired', pairingPayload);
+            }
+        } else {
+            // Partner is offline — send push notification
+            await sendPushNotification(
+                partnerId,
+                '💕 You\'re now connected!',
+                `${user.name || 'Someone'} just paired with you`,
+                { type: 'partner_paired' }
+            );
+        }
+
         res.json({
             success: true,
             message: 'Successfully paired!',
@@ -134,7 +163,10 @@ router.post('/pair', async (req, res) => {
                 id: partner._id,
                 name: partner.name,
                 avatar: partner.avatar || null,
-                connectionDate
+                connectionDate,
+                isPremium: partner.isPremium || false,
+                premiumExpiresAt: partner.premiumExpiresAt || null,
+                premiumPlan: partner.premiumPlan || null,
             },
             coupleId: couple._id
         });
@@ -222,7 +254,7 @@ router.get('/status/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const user = await User.findById(userId).populate('partnerId', 'name email avatar');
+        const user = await User.findById(userId).populate('partnerId', 'name email avatar isPremium premiumExpiresAt premiumPlan');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -238,7 +270,10 @@ router.get('/status/:userId', async (req, res) => {
                     id: user.partnerId._id,
                     name: user.partnerId.name,
                     email: user.partnerId.email,
-                    avatar: user.partnerId.avatar || null
+                    avatar: user.partnerId.avatar || null,
+                    isPremium: user.partnerId.isPremium || false,
+                    premiumExpiresAt: user.partnerId.premiumExpiresAt || null,
+                    premiumPlan: user.partnerId.premiumPlan || null,
                 },
                 connectionDate: user.connectionDate,
                 daysTogether: Math.floor((new Date() - user.connectionDate) / (1000 * 60 * 60 * 24))

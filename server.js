@@ -25,6 +25,7 @@ import puzzleRoutes from './routes/puzzle.js';
 import tictactoeRoutes from './routes/tictactoe.js';
 import wordleRoutes from './routes/wordle.js';
 import chatRoutes from './routes/chat.js';
+import webhookRoutes from './routes/webhook.js';
 import initializeSocket from './socket/index.js';
 
 const app = express();
@@ -72,6 +73,7 @@ app.use('/api/puzzle', puzzleRoutes);
 app.use('/api/tictactoe', tictactoeRoutes);
 app.use('/api/wordle', wordleRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);

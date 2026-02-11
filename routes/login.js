@@ -4,6 +4,7 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { generatePartnerCode, generateUserId } from "../utils/partnerCode.js";
+import { getCouplePremiumStatus } from "../utils/couplePremium.js";
 
 const router = Router();
 
@@ -23,7 +24,7 @@ const APPLE_BUNDLE_ID = process.env.APPLE_BUNDLE_ID || "com.thousandways.love";
 
 // Google authentication route
 router.post("/google/loginSignUp", async (req, res) => {
-    
+
     try {
         const { token, platform } = req.body;
 
@@ -61,6 +62,10 @@ router.post("/google/loginSignUp", async (req, res) => {
                 partnerCode,
             });
         }
+
+        // Compute couple premium status
+        const couplePremium = await getCouplePremiumStatus(user);
+
         res.json({
             success: true,
             user: {
@@ -72,7 +77,11 @@ router.post("/google/loginSignUp", async (req, res) => {
                 partnerUsername: user.partnerUsername,
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
-                nickname:user.nickname
+                nickname: user.nickname,
+                isPremium: couplePremium.isPremium,
+                premiumExpiresAt: couplePremium.premiumExpiresAt,
+                premiumPlan: couplePremium.premiumPlan,
+                premiumSource: couplePremium.premiumSource,
             },
         });
     } catch (error) {
@@ -158,6 +167,9 @@ router.post("/apple/loginSignUp", async (req, res) => {
             await user.save();
         }
 
+        // Compute couple premium status
+        const couplePremium = await getCouplePremiumStatus(user);
+
         res.json({
             success: true,
             user: {
@@ -169,6 +181,11 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 partnerUsername: user.partnerUsername,
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
+                nickname: user.nickname,
+                isPremium: couplePremium.isPremium,
+                premiumExpiresAt: couplePremium.premiumExpiresAt,
+                premiumPlan: couplePremium.premiumPlan,
+                premiumSource: couplePremium.premiumSource,
             },
         });
     } catch (error) {

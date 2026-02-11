@@ -33,6 +33,11 @@ import {
  * @param {http.Server} httpServer - HTTP server instance
  * @returns {Server} Socket.io server instance
  */
+// Module-level io reference so routes can emit events
+let ioInstance = null;
+
+export const getIO = () => ioInstance;
+
 export const initializeSocket = (httpServer) => {
     const io = new Server(httpServer, {
         cors: {
@@ -42,6 +47,8 @@ export const initializeSocket = (httpServer) => {
         pingTimeout: 60000,
         pingInterval: 25000,
     });
+
+    ioInstance = io;
 
     // Apply authentication middleware
     io.use(socketAuth);
