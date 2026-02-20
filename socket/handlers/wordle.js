@@ -80,7 +80,8 @@ export const handleWordleGuess = async (socket, io, data) => {
         });
 
         // Also notify via couple room for HomeScreen updates
-        const coupleRoomId = getCoupleRoomId(userId);
+        const { partnerId } = socket;
+        const coupleRoomId = getCoupleRoomId(userId, partnerId);
         if (coupleRoomId) {
             socket.to(coupleRoomId).emit('wordle:update', {
                 gameId,
@@ -105,7 +106,8 @@ export const handleWordleInvite = async (socket, io, data) => {
         const { userId } = socket;
 
         // Notify partner via couple room
-        const coupleRoomId = getCoupleRoomId(userId);
+        const { partnerId } = socket;
+        const coupleRoomId = getCoupleRoomId(userId, partnerId);
         if (coupleRoomId) {
             socket.to(coupleRoomId).emit('wordle:invite', {
                 gameId,
@@ -139,7 +141,8 @@ export const handleWordleComplete = async (socket, io, data) => {
         });
 
         // Also notify via couple room for HomeScreen updates
-        const coupleRoomId = getCoupleRoomId(userId);
+        const { partnerId } = socket;
+        const coupleRoomId = getCoupleRoomId(userId, partnerId);
         if (coupleRoomId) {
             socket.to(coupleRoomId).emit('wordle:update', {
                 gameId,

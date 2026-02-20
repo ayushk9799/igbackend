@@ -94,7 +94,11 @@ router.get('/user/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const chats = await Chat.getChatsForUser(userId);
+        // Get user's current partnerId to filter chats to current pairing only
+        const user = await User.findById(userId).select('partnerId').lean();
+        const partnerId = user?.partnerId?.toString() || null;
+
+        const chats = await Chat.getChatsForUser(userId, partnerId);
 
         res.status(200).json({
             success: true,
@@ -105,7 +109,6 @@ router.get('/user/:userId', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ [chat/user] Error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch chats',

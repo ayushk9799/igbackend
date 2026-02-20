@@ -166,9 +166,9 @@ export const handleTicTacToeComplete = async (socket, io, data) => {
     try {
         const { gameId, status, winnerId, winnerName } = data;
 
-        // Broadcast to game room
+        // Broadcast to game room (excluding sender - they already updated from REST response)
         const gameRoom = `tictactoe_${gameId}`;
-        io.to(gameRoom).emit('tictactoe:gameComplete', {
+        socket.to(gameRoom).emit('tictactoe:gameComplete', {
             gameId,
             status,
             winnerId,

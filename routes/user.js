@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import Couple from '../models/Couple.js';
 
 const router = express.Router();
 
@@ -250,15 +251,24 @@ router.delete('/delete-account', async (req, res) => {
             });
         }
 
-        // If user has a partner, unlink them
+        // If user has a partner, unlink them and cleanup data
         if (user.partnerId) {
+            // Unlink partner and clear their lastScribble (if it was from this user)
             await User.findByIdAndUpdate(user.partnerId, {
                 $unset: {
                     partnerId: 1,
                     partnerUsername: 1,
-                    connectionDate: 1
+                    connectionDate: 1,
+                    lastScribble: 1
                 }
             });
+
+            // Mark the Couple record as unpaired
+            const [p1, p2] = [userId, user.partnerId.toString()].sort();
+            await Couple.findOneAndUpdate(
+                { partner1: p1, partner2: p2, status: 'active' },
+                { status: 'unpaired', unpairedDate: new Date() }
+            );
         }
 
         // Delete the user

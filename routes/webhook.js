@@ -49,9 +49,11 @@ router.post('/revenuecat', async (req, res) => {
         }
 
         // 3. Handle events that revoke premium
+        //    NOTE: BILLING_ISSUE_DETECTED is intentionally NOT here.
+        //    Apple/Google give a grace period (6-16 days) during billing issues.
+        //    RevenueCat will send EXPIRATION later if billing isn't resolved.
         const revokeEvents = [
             'EXPIRATION',
-            'CANCELLATION',
             'SUBSCRIPTION_PAUSED',
         ];
 
@@ -66,12 +68,11 @@ router.post('/revenuecat', async (req, res) => {
         ];
 
         if (revokeEvents.includes(eventType)) {
-            // Premium expired or cancelled — revoke access
+            // Premium expired or paused — revoke access
             user.isPremium = false;
             user.premiumExpiresAt = null;
             user.premiumPlan = null;
             await user.save();
-
 
         } else if (grantEvents.includes(eventType)) {
             // Subscription purchased/renewed — grant access
@@ -80,13 +81,9 @@ router.post('/revenuecat', async (req, res) => {
             user.premiumPlan = productId || null;
             await user.save();
 
-
-        } else if (eventType === 'BILLING_ISSUE_DETECTED') {
-            // Billing issue — log it but don't revoke yet (grace period)
-            console.warn(`💳 [Webhook] Billing issue detected for ${user.email}`);
-
         } else {
-            // Unknown or unhandled event type — just acknowledge
+            // CANCELLATION, BILLING_ISSUE_DETECTED, TRANSFER, etc.
+            // These don't change access — just log and acknowledge
         }
 
         // Always return 200 to acknowledge receipt

@@ -50,8 +50,9 @@ const userSchema = new mongoose.Schema({
     },
     // Real-time sync fields
     currentMood: {
+        id: { type: String, default: 'blush' },
         emoji: { type: String, default: '😊' },
-        label: { type: String, default: 'Happy' },
+        label: { type: String, default: 'Blush' },
         updatedAt: { type: Date },
     },
     // Last scribble received from partner (for offline delivery)

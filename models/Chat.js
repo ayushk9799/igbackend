@@ -215,14 +215,22 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
  * @param {String} userId
  * @returns {Array} Array of chat documents
  */
-chatSchema.statics.getChatsForUser = async function (userId) {
-    const chats = await this.find({
+chatSchema.statics.getChatsForUser = async function (userId, partnerId) {
+    // Build query: if partnerId provided, filter by coupleId for current pairing only
+    let query = {
         $or: [
             { partner1: userId },
             { partner2: userId }
         ],
         status: 'active'
-    })
+    };
+
+    if (partnerId) {
+        const coupleId = this.generateCoupleId(userId, partnerId);
+        query = { coupleId, status: 'active' };
+    }
+
+    const chats = await this.find(query)
         .sort({ lastMessageAt: -1, createdAt: -1 })
         .populate('partner1', 'name nickname avatar')
         .populate('partner2', 'name nickname avatar')
@@ -230,7 +238,7 @@ chatSchema.statics.getChatsForUser = async function (userId) {
 
     // Add unread count for this user
     return chats.map(chat => {
-        const isPartner1 = chat.partner1._id.toString() === userId.toString();
+        const isPartner1 = chat.partner1?._id?.toString() === userId.toString();
         return {
             ...chat,
             unreadCount: isPartner1 ? chat.partner1Unread : chat.partner2Unread,

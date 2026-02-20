@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { socketAuth, handleConnection } from './auth.js';
+import { socketAuth, handleConnection, connectedUsers } from './auth.js';
 import { handleMoodUpdate, handleMoodRequest, handleGetMyMood } from './handlers/mood.js';
 import { handlePresenceRequest, handleNudge } from './handlers/presence.js';
 import { handleScribbleSend, handleScribbleRequest } from './handlers/scribble.js';
@@ -179,6 +179,9 @@ export const initializeSocket = (httpServer) => {
                 console.error('❌ handleConnection error:', error);
             });
     });
+
+    // Log connected users every 5 seconds
+   
 
     return io;
 };

@@ -16,7 +16,6 @@ export const handleScribbleSend = async (socket, io, data) => {
             return;
         }
 
-
         // Save scribble to partner's record (for offline delivery)
         if (partnerId) {
             await User.findByIdAndUpdate(partnerId, {

@@ -1,4 +1,5 @@
 import Chat from '../../models/Chat.js';
+import { getCoupleRoomId } from '../auth.js';
 
 /**
  * Handle user joining a chat room
@@ -155,8 +156,12 @@ export const handleChatMessage = async (socket, io, data) => {
         });
 
         // Also notify via couple room for push notifications / badge updates
-        if (chat.coupleId) {
-            socket.to(`couple:${chat.coupleId}`).emit('chat:notification', {
+        // Use getCoupleRoomId to match the room format sockets actually join
+        const isPartner1ForNotif = chat.partner1.toString() === userId.toString();
+        const otherPartnerId = isPartner1ForNotif ? chat.partner2.toString() : chat.partner1.toString();
+        const coupleRoom = getCoupleRoomId(userId, otherPartnerId);
+        if (coupleRoom) {
+            socket.to(coupleRoom).emit('chat:notification', {
                 chatId,
                 senderName: userName,
                 preview: trimmedContent.substring(0, 50),

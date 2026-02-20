@@ -1,5 +1,6 @@
 import User from '../../models/User.js';
 import { getCoupleRoomId } from '../auth.js';
+import { sendMoodNotification } from '../../utils/pushNotification.js';
 
 /**
  * Handle mood update event
@@ -7,8 +8,8 @@ import { getCoupleRoomId } from '../auth.js';
  */
 export const handleMoodUpdate = async (socket, io, data) => {
     try {
-        const { userId, partnerId } = socket;
-        const { emoji, label } = data;
+        const { userId, partnerId, userName } = socket;
+        const { id, emoji, label } = data;
 
         if (!emoji || !label) {
             socket.emit('mood:error', { message: 'Emoji and label are required' });
@@ -21,6 +22,7 @@ export const handleMoodUpdate = async (socket, io, data) => {
             userId,
             {
                 currentMood: {
+                    id: id || 'blush',
                     emoji,
                     label,
                     updatedAt: new Date(),
@@ -35,6 +37,11 @@ export const handleMoodUpdate = async (socket, io, data) => {
         //     mood: updatedUser.currentMood,
         // });
 
+        // Send push notification to partner
+        if (partnerId) {
+            sendMoodNotification(partnerId, userName, { emoji, label });
+        }
+
         // Broadcast to partner via couple room
         const roomId = getCoupleRoomId(userId, partnerId);
         if (roomId) {
@@ -42,6 +49,7 @@ export const handleMoodUpdate = async (socket, io, data) => {
                 userId,
                 userName: socket.userName,
                 mood: {
+                    id: id || 'blush',
                     emoji,
                     label,
                     updatedAt: new Date().toISOString(),

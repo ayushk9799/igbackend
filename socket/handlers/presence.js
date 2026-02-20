@@ -1,5 +1,5 @@
 import User from '../../models/User.js';
-import { isUserOnline } from '../auth.js';
+import { isUserOnline, getCoupleRoomId } from '../auth.js';
 
 /**
  * Handle request for partner's online status
@@ -50,7 +50,7 @@ export const handleNudge = async (socket, io, data) => {
 
 
         // Emit to couple room
-        const roomId = `couple_${[socket.userId, partnerId].sort().join('_')}`;
+        const roomId = getCoupleRoomId(socket.userId, partnerId);
         socket.to(roomId).emit('nudge:received', {
             from: socket.userId,
             fromName: userName,

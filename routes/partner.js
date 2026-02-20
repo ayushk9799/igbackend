@@ -2,7 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Couple from '../models/Couple.js';
 import { generatePartnerCode, generateUserId } from '../utils/partnerCode.js';
-import { isUserOnline, getSocketId } from '../socket/auth.js';
+import { isUserOnline, getSocketId, getCoupleRoomId, updateSocketPartnerStatus } from '../socket/auth.js';
 import { getIO } from '../socket/index.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 
@@ -114,24 +114,32 @@ router.post('/pair', async (req, res) => {
         partner.partnerUsername = user.name || 'Partner';
         partner.connectionDate = connectionDate;
 
-        // Clear the partner code after successful pairing (one-time use)
-        partner.partnerCode = null;
+        // Keep the partner code active (allow reuse if unpaired later)
+        // partner.partnerCode = null;
 
         await user.save();
         await partner.save();
 
-        // Create a Couple document (sort IDs for consistent storage)
-        const [p1, p2] = [user._id.toString(), partner._id.toString()].sort();
-        const couple = new Couple({
-            partner1: p1,
-            partner2: p2,
-            connectionDate,
-            status: 'active'
-        });
-        await couple.save();
+        // Sync socket partnerId for both users if they are online
+        const partnerId = partner._id.toString();
+        await updateSocketPartnerStatus(userId, partner._id);
+        await updateSocketPartnerStatus(partnerId, user._id);
+
+        // Create or update a Couple document (reuse existing if re-pairing)
+        const [p1, p2] = [user._id.toString(), partnerId].sort();
+        const couple = await Couple.findOneAndUpdate(
+            { partner1: p1, partner2: p2 },
+            {
+                partner1: p1,
+                partner2: p2,
+                connectionDate,
+                status: 'active',
+                $unset: { unpairedDate: 1 }
+            },
+            { upsert: true, new: true }
+        );
 
         // Notify the partner about the new connection
-        const partnerId = partner._id.toString();
         const pairingPayload = {
             partnerId: user._id,
             partnerName: user.name || 'Your Partner',
@@ -144,6 +152,12 @@ router.post('/pair', async (req, res) => {
             const io = getIO();
             const partnerSocketId = getSocketId(partnerId);
             if (io && partnerSocketId) {
+                // Force partner socket to join the new room
+                const partnerSocket = io.sockets.sockets.get(partnerSocketId);
+                const roomId = getCoupleRoomId(userId, partnerId);
+                if (partnerSocket && roomId) {
+                    partnerSocket.join(roomId);
+                }
                 io.to(partnerSocketId).emit('partner:paired', pairingPayload);
             }
         } else {
@@ -156,6 +170,19 @@ router.post('/pair', async (req, res) => {
             );
         }
 
+        // Also force the CURRENT user's socket to join the room
+        if (isUserOnline(userId)) {
+            const io = getIO();
+            const userSocketId = getSocketId(userId);
+            if (io && userSocketId) {
+                const userSocket = io.sockets.sockets.get(userSocketId);
+                const roomId = getCoupleRoomId(userId, partnerId);
+                if (userSocket && roomId) {
+                    userSocket.join(roomId);
+                }
+            }
+        }
+
         res.json({
             success: true,
             message: 'Successfully paired!',
@@ -164,7 +191,7 @@ router.post('/pair', async (req, res) => {
                 name: partner.name,
                 avatar: partner.avatar || null,
                 connectionDate,
-                isPremium: partner.isPremium || false,
+                isPremium: !!(partner.premiumExpiresAt && new Date(partner.premiumExpiresAt) > new Date()),
                 premiumExpiresAt: partner.premiumExpiresAt || null,
                 premiumPlan: partner.premiumPlan || null,
             },
@@ -172,7 +199,6 @@ router.post('/pair', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Pair error:', error);
         res.status(500).json({
             success: false,
             error: 'Failed to pair with partner'
@@ -232,6 +258,12 @@ router.post('/unpair', async (req, res) => {
         user.connectionDate = null;
         await user.save();
 
+        // Sync socket partnerId (set to null) for both users if they are online
+        await updateSocketPartnerStatus(userId, null);
+        if (partner) {
+            await updateSocketPartnerStatus(partner._id, null);
+        }
+
         res.json({
             success: true,
             message: 'Successfully unpaired'
@@ -254,7 +286,7 @@ router.get('/status/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const user = await User.findById(userId).populate('partnerId', 'name email avatar isPremium premiumExpiresAt premiumPlan');
+        const user = await User.findById(userId).populate('partnerId', 'name email avatar premiumExpiresAt premiumPlan');
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -271,7 +303,7 @@ router.get('/status/:userId', async (req, res) => {
                     name: user.partnerId.name,
                     email: user.partnerId.email,
                     avatar: user.partnerId.avatar || null,
-                    isPremium: user.partnerId.isPremium || false,
+                    isPremium: !!(user.partnerId.premiumExpiresAt && new Date(user.partnerId.premiumExpiresAt) > new Date()),
                     premiumExpiresAt: user.partnerId.premiumExpiresAt || null,
                     premiumPlan: user.partnerId.premiumPlan || null,
                 },

@@ -254,6 +254,15 @@ router.post('/:topicId', async (req, res) => {
             });
         }
 
+        // Auto-increment order if not provided
+        if (questionData.order === undefined || questionData.order === null) {
+            const maxOrderDoc = await TopicModel.findOne()
+                .sort({ order: -1 })
+                .select('order')
+                .lean();
+            questionData.order = (maxOrderDoc?.order || 0) + 1;
+        }
+
         const newQuestion = new TopicModel(questionData);
         await newQuestion.save();
 
@@ -275,6 +284,7 @@ router.post('/:topicId', async (req, res) => {
 /**
  * POST /api/questions/:topicId/bulk
  * Create multiple questions at once
+ * Order is auto-incremented from the current max order in the collection
  */
 router.post('/:topicId/bulk', async (req, res) => {
     try {
@@ -297,6 +307,13 @@ router.post('/:topicId/bulk', async (req, res) => {
             });
         }
 
+        // Get current max order for auto-increment
+        const maxOrderDoc = await TopicModel.findOne()
+            .sort({ order: -1 })
+            .select('order')
+            .lean();
+        let nextOrder = (maxOrderDoc?.order || 0) + 1;
+
         const results = {
             created: [],
             errors: []
@@ -304,6 +321,12 @@ router.post('/:topicId/bulk', async (req, res) => {
 
         for (const questionData of questions) {
             try {
+                // Auto-assign order if not provided
+                if (questionData.order === undefined || questionData.order === null) {
+                    questionData.order = nextOrder;
+                }
+                nextOrder = Math.max(nextOrder, questionData.order) + 1;
+
                 const newQuestion = new TopicModel(questionData);
                 await newQuestion.save();
                 results.created.push(newQuestion);

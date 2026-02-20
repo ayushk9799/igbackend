@@ -76,7 +76,7 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
             return false;
         }
 
-     
+
 
         const message = {
             token: user.fcmToken,
@@ -169,6 +169,59 @@ export const sendPuzzleNotification = async (userId, senderName) => {
 };
 
 /**
+ * Send a push notification for a mood update
+ * @param {string} userId - Target user's ID
+ * @param {string} senderName - Name of person who updated their mood
+ * @param {object} mood - Mood data {emoji, label}
+ */
+export const sendMoodNotification = async (userId, senderName, mood) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user?.fcmToken) {
+            return false;
+        }
+
+        const message = {
+            token: user.fcmToken,
+            notification: {
+                title: '✨ Partner Mood Update',
+                body: `${senderName} is feeling ${mood.emoji} ${mood.label}`,
+            },
+            data: {
+                type: 'mood_update',
+                senderName: senderName || 'Your Love',
+                emoji: mood.emoji,
+                label: mood.label,
+                timestamp: new Date().toISOString(),
+            },
+            apns: {
+                headers: {
+                    'apns-priority': '10',
+                },
+                payload: {
+                    aps: {
+                        sound: 'default',
+                    },
+                },
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default',
+                },
+            },
+        };
+
+        await admin.messaging().send(message);
+        return true;
+
+    } catch (error) {
+        console.error('❌ Push notification error:', error);
+        return false;
+    }
+};
+
+/**
  * Send a generic push notification
  * @param {string} userId - Target user's ID
  * @param {string} title - Notification title
@@ -229,4 +282,5 @@ export default {
     sendScribbleNotification,
     sendPuzzleNotification,
     sendPushNotification,
+    sendMoodNotification,
 };

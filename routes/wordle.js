@@ -380,6 +380,47 @@ router.post('/:id/guess', async (req, res) => {
 
         await game.save();
 
+        // Notify creator when guesser makes their first attempt (skip if game also ended)
+        if (game.guesses.length === 1 && !gameComplete) {
+            try {
+                const guesser = await User.findById(userId);
+                const guesserName = guesser?.name || 'Your partner';
+                await sendPushNotification(
+                    game.creatorId,
+                    '✍️ Wordle Started!',
+                    `${guesserName} just made their first guess!`
+                );
+            } catch (notifError) {
+                console.error('Wordle first guess notification error:', notifError);
+            }
+        }
+
+        // Send push notification to creator when game completes
+        if (gameComplete) {
+            try {
+                const guesser = await User.findById(userId);
+                const guesserName = guesser?.name || 'Your partner';
+
+                if (isCorrect) {
+                    // Guesser won — notify the creator
+                    await sendPushNotification(
+                        game.creatorId,
+                        '🎉 Wordle Won!',
+                        `${guesserName} guessed your word "${game.secretWord}" in ${game.guesses.length} ${game.guesses.length === 1 ? 'try' : 'tries'}!`
+                    );
+                } else {
+                    // Guesser lost — notify the creator
+                    await sendPushNotification(
+                        game.creatorId,
+                        '😅 Wordle Lost!',
+                        `${guesserName} couldn't guess your word "${game.secretWord}" in ${game.maxAttempts} tries!`
+                    );
+                }
+            } catch (notifError) {
+                console.error('Wordle completion notification error:', notifError);
+            }
+        }
+
         // Build response
         const response = {
             success: true,

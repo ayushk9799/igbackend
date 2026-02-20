@@ -1,8 +1,8 @@
 import User from '../models/User.js';
 
 // Track connected users in memory
-// Format: { odId: { socketId, partnerId, userId } }
-const connectedUsers = new Map();
+// Format: { userId: { socketId, partnerId, userId } }
+export const connectedUsers = new Map();
 
 /**
  * Socket authentication middleware
@@ -26,10 +26,11 @@ export const socketAuth = async (socket, next) => {
         socket.userId = userId;
         socket.partnerId = user.partnerId?.toString() || null;
         socket.userName = user.name;
+        // socket.avatar = user.avatar; // Optional: add if needed by components
 
         next();
     } catch (error) {
-        console.error('Socket auth error:', error);
+        console.error('❌ Socket auth error:', error);
         next(new Error('Authentication error'));
     }
 };
@@ -104,6 +105,29 @@ export const handleConnection = async (socket, io) => {
  */
 export const isUserOnline = (userId) => {
     return connectedUsers.has(userId);
+};
+
+/**
+ * Update the partner ID for an active socket connection
+ * Called when users pair or unpair via REST API
+ */
+export const updateSocketPartnerStatus = async (userId, partnerId) => {
+    const userData = connectedUsers.get(userId);
+    if (userData) {
+        // Update the tracked data in memory
+        userData.partnerId = partnerId ? partnerId.toString() : null;
+        connectedUsers.set(userId, userData);
+
+        // Find the active socket and update its property directly
+        const io = (await import('./index.js')).getIO();
+        if (io) {
+            const socketId = userData.socketId;
+            const socket = io.sockets.sockets.get(socketId);
+            if (socket) {
+                socket.partnerId = userData.partnerId;
+            }
+        }
+    }
 };
 
 /**
