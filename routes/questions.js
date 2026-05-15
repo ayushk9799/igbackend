@@ -1,6 +1,7 @@
 import express from 'express';
 import Categories from '../models/Categories.js';
 import User from '../models/User.js';
+import Counter from '../models/Counter.js';
 
 // Import topic-specific models
 import FutureQuestion from '../models/FutureQuestion.js';
@@ -10,9 +11,6 @@ import PoliticalQuestion from '../models/PoliticalQuestion.js';
 import FitnessQuestion from '../models/FitnessQuestion.js';
 import TravelQuestion from '../models/TravelQuestion.js';
 import FamilyQuestion from '../models/FamilyQuestion.js';
-import DeepQuestion from '../models/DeepQuestion.js';
-import LikelyToQuestion from '../models/LikelyToQuestion.js';
-import NeverHaveIEverQuestion from '../models/NeverHaveIEverQuestion.js';
 
 const router = express.Router();
 
@@ -25,9 +23,6 @@ const TOPIC_MODELS = {
     'fitness': FitnessQuestion,
     'travel': TravelQuestion,
     'family': FamilyQuestion,
-    'deep': DeepQuestion,
-    'likelyto': LikelyToQuestion,
-    'neverhaveiever': NeverHaveIEverQuestion,
 };
 
 /**
@@ -82,6 +77,30 @@ router.post('/progress', async (req, res) => {
             message: 'Failed to update progress',
             error: error.message
         });
+    }
+});
+
+/**
+ * GET /api/questions/stats
+ * Read the current top order sequence for all topics from the Counter collection
+ */
+router.get('/stats', async (req, res) => {
+    try {
+        const counters = await Counter.find({});
+        
+        const statsMap = {};
+        for (const c of counters) {
+            statsMap[c._id] = { latestOrder: c.sequence_value };
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Current sequence stats retrieved',
+            data: statsMap
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch stats' });
     }
 });
 
@@ -256,11 +275,12 @@ router.post('/:topicId', async (req, res) => {
 
         // Auto-increment order if not provided
         if (questionData.order === undefined || questionData.order === null) {
-            const maxOrderDoc = await TopicModel.findOne()
-                .sort({ order: -1 })
-                .select('order')
-                .lean();
-            questionData.order = (maxOrderDoc?.order || 0) + 1;
+            const counter = await Counter.findByIdAndUpdate(
+                topicId,
+                { $inc: { sequence_value: 1 } },
+                { new: true, upsert: true }
+            );
+            questionData.order = counter.sequence_value;
         }
 
         const newQuestion = new TopicModel(questionData);
@@ -307,12 +327,19 @@ router.post('/:topicId/bulk', async (req, res) => {
             });
         }
 
-        // Get current max order for auto-increment
-        const maxOrderDoc = await TopicModel.findOne()
-            .sort({ order: -1 })
-            .select('order')
-            .lean();
-        let nextOrder = (maxOrderDoc?.order || 0) + 1;
+        // Atomically reserve a block of order numbers from the Counter
+        const numNewQuestions = questions.filter(q => q.order === undefined || q.order === null).length;
+        let nextOrder = 1;
+
+        if (numNewQuestions > 0) {
+            const counter = await Counter.findByIdAndUpdate(
+                topicId,
+                { $inc: { sequence_value: numNewQuestions } },
+                { new: true, upsert: true }
+            );
+            // If the counter is now 10, and we added 3, we want them assigned as 8, 9, 10
+            nextOrder = counter.sequence_value - numNewQuestions + 1;
+        }
 
         const results = {
             created: [],
@@ -324,8 +351,8 @@ router.post('/:topicId/bulk', async (req, res) => {
                 // Auto-assign order if not provided
                 if (questionData.order === undefined || questionData.order === null) {
                     questionData.order = nextOrder;
+                    nextOrder++;
                 }
-                nextOrder = Math.max(nextOrder, questionData.order) + 1;
 
                 const newQuestion = new TopicModel(questionData);
                 await newQuestion.save();

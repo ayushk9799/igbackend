@@ -7,11 +7,8 @@ import { fileURLToPath } from 'url';
 import FutureQuestion from '../models/FutureQuestion.js';
 import MoneyQuestion from '../models/MoneyQuestion.js';
 import HotSpicyQuestion from '../models/HotSpicyQuestion.js';
-import DeepQuestion from '../models/DeepQuestion.js';
 import FamilyQuestion from '../models/FamilyQuestion.js';
 import FitnessQuestion from '../models/FitnessQuestion.js';
-import LikelyToQuestion from '../models/LikelyToQuestion.js';
-import NeverHaveIEverQuestion from '../models/NeverHaveIEverQuestion.js';
 import PoliticalQuestion from '../models/PoliticalQuestion.js';
 import TravelQuestion from '../models/TravelQuestion.js';
 
@@ -24,11 +21,8 @@ const models = {
     'FutureQuestion': FutureQuestion,
     'MoneyQuestion': MoneyQuestion,
     'HotSpicyQuestion': HotSpicyQuestion,
-    'DeepQuestion': DeepQuestion,
     'FamilyQuestion': FamilyQuestion,
     'FitnessQuestion': FitnessQuestion,
-    'LikelyToQuestion': LikelyToQuestion,
-    'NeverHaveIEverQuestion': NeverHaveIEverQuestion,
     'PoliticalQuestion': PoliticalQuestion,
     'TravelQuestion': TravelQuestion,
 };
