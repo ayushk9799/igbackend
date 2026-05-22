@@ -74,7 +74,7 @@ const shufflePieces = (totalPieces) => {
  */
 router.post('/create', async (req, res) => {
     try {
-        const { creatorId, partnerId, imageUrl, gridSize = { rows: 3, cols: 3 } } = req.body;
+        const { creatorId, partnerId, imageUrl, gridSize = { rows: 5, cols: 5 } } = req.body;
 
         if (!creatorId || !partnerId || !imageUrl) {
             return res.status(400).json({
@@ -97,7 +97,7 @@ router.post('/create', async (req, res) => {
             partnerId,
             imageUrl,
             gridSize,
-            pieces: shuffledPieces,
+            pieces: shuffledPieces.map(piece => -piece - 1),
             status: 'pending'
         });
 
@@ -198,7 +198,7 @@ router.get('/pending/:userId', async (req, res) => {
  */
 router.post('/:id/move', async (req, res) => {
     try {
-        const { fromIndex, toIndex } = req.body;
+        const { fromIndex, toIndex, pieces: clientPieces } = req.body;
         const puzzle = await JigsawPuzzle.findById(req.params.id);
 
         if (!puzzle) {
@@ -215,9 +215,16 @@ router.post('/:id/move', async (req, res) => {
             });
         }
 
-        // Swap pieces
-        const pieces = [...puzzle.pieces];
-        [pieces[fromIndex], pieces[toIndex]] = [pieces[toIndex], pieces[fromIndex]];
+        // Use client-provided pieces or perform the swap
+        let pieces;
+        if (clientPieces && Array.isArray(clientPieces)) {
+            pieces = clientPieces;
+        } else {
+            pieces = [...puzzle.pieces];
+            if (fromIndex !== undefined && toIndex !== undefined && fromIndex >= 0 && toIndex >= 0) {
+                [pieces[fromIndex], pieces[toIndex]] = [pieces[toIndex], pieces[fromIndex]];
+            }
+        }
 
         // Check if puzzle is solved
         const isSolved = pieces.every((piece, index) => piece === index);

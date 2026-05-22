@@ -20,8 +20,8 @@ const jigsawPuzzleSchema = new mongoose.Schema({
     },
     // Grid configuration
     gridSize: {
-        rows: { type: Number, default: 3 },
-        cols: { type: Number, default: 3 }
+        rows: { type: Number, default: 9 },
+        cols: { type: Number, default: 9 }
     },
     // Array of piece positions (shuffled order)
     // pieces[i] = original index at current position i

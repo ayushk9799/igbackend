@@ -22,7 +22,7 @@ export const handleMoodUpdate = async (socket, io, data) => {
             userId,
             {
                 currentMood: {
-                    id: id || 'blush',
+                    id: id || 'relaxed',
                     emoji,
                     label,
                     updatedAt: new Date(),
@@ -32,10 +32,10 @@ export const handleMoodUpdate = async (socket, io, data) => {
         );
 
         // Confirm to sender
-        // socket.emit('mood:updated', {
-        //     success: true,
-        //     mood: updatedUser.currentMood,
-        // });
+        socket.emit('mood:myMood', {
+            success: true,
+            mood: updatedUser.currentMood,
+        });
 
         // Send push notification to partner
         if (partnerId) {
@@ -49,7 +49,7 @@ export const handleMoodUpdate = async (socket, io, data) => {
                 userId,
                 userName: socket.userName,
                 mood: {
-                    id: id || 'blush',
+                    id: id || 'relaxed',
                     emoji,
                     label,
                     updatedAt: new Date().toISOString(),
@@ -82,8 +82,9 @@ export const handleMoodRequest = async (socket, io) => {
         }
 
 
+        const hasUpdated = partner.currentMood && partner.currentMood.updatedAt;
         socket.emit('mood:partnerMood', {
-            mood: partner.currentMood,
+            mood: hasUpdated ? partner.currentMood : null,
             isOnline: partner.isOnline,
             lastSeen: partner.lastSeen,
         });
@@ -107,9 +108,9 @@ export const handleGetMyMood = async (socket, io) => {
             return;
         }
 
-
+        const hasUpdated = user.currentMood && user.currentMood.updatedAt;
         socket.emit('mood:myMood', {
-            mood: user.currentMood,
+            mood: hasUpdated ? user.currentMood : null,
         });
 
     } catch (error) {
