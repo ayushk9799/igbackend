@@ -104,7 +104,7 @@ router.post('/create', async (req, res) => {
         await puzzle.save();
 
         // Send push notification to partner
-        await sendPuzzleNotification(partnerId, creatorName);
+        await sendPuzzleNotification(partnerId, creatorName, puzzle._id);
 
         res.status(201).json({
             success: true,

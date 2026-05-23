@@ -122,8 +122,9 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
  * Send a push notification for a new puzzle
  * @param {string} userId - Target user's ID
  * @param {string} senderName - Name of person who sent the puzzle
+ * @param {string|null} puzzleId - Puzzle ID for notification routing
  */
-export const sendPuzzleNotification = async (userId, senderName) => {
+export const sendPuzzleNotification = async (userId, senderName, puzzleId = null) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
@@ -138,6 +139,7 @@ export const sendPuzzleNotification = async (userId, senderName) => {
             },
             data: {
                 type: 'puzzle',
+                ...(puzzleId ? { puzzleId: String(puzzleId) } : {}),
                 senderName: senderName || 'Your Love',
                 timestamp: new Date().toISOString(),
             },

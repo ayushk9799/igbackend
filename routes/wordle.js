@@ -126,7 +126,11 @@ router.post('/create', async (req, res) => {
             await sendPushNotification(
                 partnerId,
                 '🎯 Wordle Challenge!',
-                `${creatorName} set a word for you to guess!`
+                `${creatorName} set a word for you to guess!`,
+                {
+                    type: 'wordle',
+                    gameId: game._id,
+                }
             );
         } catch (notifError) {
         }
@@ -388,7 +392,11 @@ router.post('/:id/guess', async (req, res) => {
                 await sendPushNotification(
                     game.creatorId,
                     '✍️ Wordle Started!',
-                    `${guesserName} just made their first guess!`
+                    `${guesserName} just made their first guess!`,
+                    {
+                        type: 'wordle',
+                        gameId: game._id,
+                    }
                 );
             } catch (notifError) {
                 console.error('Wordle first guess notification error:', notifError);
@@ -406,14 +414,22 @@ router.post('/:id/guess', async (req, res) => {
                     await sendPushNotification(
                         game.creatorId,
                         '🎉 Wordle Won!',
-                        `${guesserName} guessed your word "${game.secretWord}" in ${game.guesses.length} ${game.guesses.length === 1 ? 'try' : 'tries'}!`
+                        `${guesserName} guessed your word "${game.secretWord}" in ${game.guesses.length} ${game.guesses.length === 1 ? 'try' : 'tries'}!`,
+                        {
+                            type: 'wordle',
+                            gameId: game._id,
+                        }
                     );
                 } else {
                     // Guesser lost — notify the creator
                     await sendPushNotification(
                         game.creatorId,
                         '😅 Wordle Lost!',
-                        `${guesserName} couldn't guess your word "${game.secretWord}" in ${game.maxAttempts} tries!`
+                        `${guesserName} couldn't guess your word "${game.secretWord}" in ${game.maxAttempts} tries!`,
+                        {
+                            type: 'wordle',
+                            gameId: game._id,
+                        }
                     );
                 }
             } catch (notifError) {
@@ -478,7 +494,11 @@ router.post('/:id/notify', async (req, res) => {
         await sendPushNotification(
             targetId,
             '🎯 Wordle Reminder!',
-            `${senderName} is waiting for you to guess the word!`
+            `${senderName} is waiting for you to guess the word!`,
+            {
+                type: 'wordle',
+                gameId: game._id,
+            }
         );
 
         res.status(200).json({

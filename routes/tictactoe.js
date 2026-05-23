@@ -120,7 +120,11 @@ router.post('/create', async (req, res) => {
             await sendPushNotification(
                 partnerId,
                 '🎮 Game Challenge!',
-                `${creatorName} challenged you to Tic Tac Toe!`
+                `${creatorName} challenged you to Tic Tac Toe!`,
+                {
+                    type: 'tictactoe',
+                    gameId: game._id,
+                }
             );
         } catch (notifError) {
         }
@@ -447,7 +451,11 @@ router.post('/:id/notify', async (req, res) => {
         await sendPushNotification(
             targetId,
             '🎮 Your Turn!',
-            `${senderName} is waiting for your move in Tic Tac Toe!`
+            `${senderName} is waiting for your move in Tic Tac Toe!`,
+            {
+                type: 'tictactoe',
+                gameId: game._id,
+            }
         );
 
         res.status(200).json({
