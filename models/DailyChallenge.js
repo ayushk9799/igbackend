@@ -9,13 +9,26 @@ const taskItemSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto']
+        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto', 'slider', 'voicerecord']
     },
     options: {
         type: [String],
         default: []
     },
-    // Additional styling options
+    minValue: {
+        type: Number,
+    },
+    maxValue: {
+        type: Number,
+    },
+    minLabel: {
+        type: String,
+        trim: true,
+    },
+    maxLabel: {
+        type: String,
+        trim: true,
+    },
 
 }, { _id: true });
 

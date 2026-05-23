@@ -55,6 +55,8 @@ const userSchema = new mongoose.Schema({
             emoji: { type: String },
             label: { type: String },
             updatedAt: { type: Date },
+            timezone: { type: String },
+            timezoneOffsetMinutes: { type: Number },
         },
         default: null,
     },

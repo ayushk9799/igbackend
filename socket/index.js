@@ -1,6 +1,12 @@
 import { Server } from 'socket.io';
 import { socketAuth, handleConnection, connectedUsers } from './auth.js';
-import { handleMoodUpdate, handleMoodRequest, handleGetMyMood } from './handlers/mood.js';
+import {
+    handleMoodUpdate,
+    handleMoodRequest,
+    handleGetMyMood,
+    handleGetMoodHistory,
+    handleGetPartnerMoodHistory
+} from './handlers/mood.js';
 import { handlePresenceRequest, handleNudge } from './handlers/presence.js';
 import { handleScribbleSend, handleScribbleRequest } from './handlers/scribble.js';
 import {
@@ -71,6 +77,14 @@ export const initializeSocket = (httpServer) => {
 
         socket.on('mood:getMyMood', () => {
             handleGetMyMood(socket, io);
+        });
+
+        socket.on('mood:getHistory', (data) => {
+            handleGetMoodHistory(socket, io, data);
+        });
+
+        socket.on('mood:getPartnerHistory', (data) => {
+            handleGetPartnerMoodHistory(socket, io, data);
         });
 
         // ======== PRESENCE EVENTS ========

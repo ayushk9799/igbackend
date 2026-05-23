@@ -40,7 +40,7 @@ const dailyAnswersSchema = new mongoose.Schema({
         // The question type/category
         type: {
             type: String,
-            enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto', 'slider'],
+            enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto', 'slider', 'voicerecord'],
         },
         // The type of the answer value (text, photo, video, voice)
         answerType: {
