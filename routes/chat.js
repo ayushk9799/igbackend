@@ -1,8 +1,18 @@
 import express from 'express';
 import Chat from '../models/Chat.js';
 import User from '../models/User.js';
+import { getIO } from '../socket/index.js';
+import { getSocketId } from '../socket/auth.js';
+import { sendPushNotification } from '../utils/pushNotification.js';
 
 const router = express.Router();
+
+const getAnswerPreview = (answer, answerType = 'text') => {
+    if (answerType === 'photo') return '📷 Photo';
+    if (answerType === 'video') return '🎥 Video';
+    if (answerType === 'voice') return '🎙️ Voice Message';
+    return answer?.substring(0, 120) || 'Answered a question';
+};
 
 /**
  * POST /api/chat/answer
@@ -66,6 +76,35 @@ router.post('/answer', async (req, res) => {
         const answerers = new Set(chat.messages.filter(m => m.messageType === 'answer').map(m => m.senderId.toString()));
         const bothAnswered = answerers.has(userId.toString()) && answerers.has(user.partnerId.toString());
 
+        const io = getIO();
+        const partnerSocketId = getSocketId(user.partnerId.toString());
+        if (io && partnerSocketId) {
+            io.to(partnerSocketId).emit('chat:notification', {
+                chatId: chat._id,
+                senderName: user.name,
+                preview: getAnswerPreview(answer, answerType),
+                questionText: chat.questionText?.substring(0, 120),
+                isAnswer: true,
+                bothAnswered
+            });
+        }
+
+        try {
+            await sendPushNotification(
+                user.partnerId,
+                chat.questionText?.substring(0, 120) || 'New answer',
+                `${user.name}: ${getAnswerPreview(answer, answerType)}`,
+                {
+                    type: 'chat',
+                    chatId: chat._id,
+                    senderId: userId,
+                    isAnswer: true
+                }
+            );
+        } catch (notifError) {
+            console.warn('⚠️ [chat/answer] Push notification failed:', notifError.message);
+        }
+
         res.status(200).json({
             success: true,
             message: 'Answer saved and chat created/updated',
@@ -104,7 +143,8 @@ router.get('/user/:userId', async (req, res) => {
             success: true,
             data: {
                 chats,
-                count: chats.length
+                count: chats.length,
+                syncTime: new Date()
             }
         });
 
@@ -112,6 +152,64 @@ router.get('/user/:userId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch chats',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/chat/user/:userId/changes?since=<ISO timestamp>
+ * Get only chat rows changed since the client's last successful sync
+ */
+router.get('/user/:userId/changes', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { since } = req.query;
+        const syncTime = new Date();
+
+        // If the client has no cache yet, return the normal lightweight list.
+        if (!since) {
+            const user = await User.findById(userId).select('partnerId').lean();
+            const partnerId = user?.partnerId?.toString() || null;
+            const chats = await Chat.getChatsForUser(userId, partnerId);
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    changed: chats.length > 0,
+                    chats,
+                    count: chats.length,
+                    syncTime
+                }
+            });
+        }
+
+        const sinceDate = new Date(since);
+        if (Number.isNaN(sinceDate.getTime())) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid since timestamp'
+            });
+        }
+
+        const user = await User.findById(userId).select('partnerId').lean();
+        const partnerId = user?.partnerId?.toString() || null;
+        const chats = await Chat.getChatChangesForUser(userId, partnerId, sinceDate);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                changed: chats.length > 0,
+                chats,
+                count: chats.length,
+                syncTime
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch chat changes',
             error: error.message
         });
     }

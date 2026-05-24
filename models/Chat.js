@@ -176,6 +176,7 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
             questionCategory,
             lastMessageAt: new Date(),
             lastMessagePreview: answerType === 'photo' ? '📷 Photo' : answerType === 'video' ? '🎥 Video' : answerType === 'voice' ? '🎙️ Voice Message' : answer,
+            messageCount: 1,
             messages: [{
                 senderId: userId,
                 content: answer,
@@ -230,10 +231,11 @@ chatSchema.statics.getChatsForUser = async function (userId, partnerId) {
         query = { coupleId, status: 'active' };
     }
 
-    const chats = await this.find(query)
+    const chats = await this.find(query, { messages: { $slice: -1 } })
         .sort({ lastMessageAt: -1, createdAt: -1 })
         .populate('partner1', 'name nickname avatar')
         .populate('partner2', 'name nickname avatar')
+        .populate('messages.senderId', 'name nickname avatar')
         .lean();
 
     // Add unread count for this user
@@ -241,6 +243,48 @@ chatSchema.statics.getChatsForUser = async function (userId, partnerId) {
         const isPartner1 = chat.partner1?._id?.toString() === userId.toString();
         return {
             ...chat,
+            latestMessage: chat.messages?.[0] || null,
+            unreadCount: isPartner1 ? chat.partner1Unread : chat.partner2Unread,
+            partner: isPartner1 ? chat.partner2 : chat.partner1
+        };
+    });
+};
+
+/**
+ * Get chats changed since a timestamp. Used by the client to refresh an
+ * existing chat list cache without downloading the full list each time.
+ * @param {String} userId
+ * @param {String} partnerId
+ * @param {Date} since
+ * @returns {Array} Array of changed chat documents
+ */
+chatSchema.statics.getChatChangesForUser = async function (userId, partnerId, since) {
+    let query = {
+        $or: [
+            { partner1: userId },
+            { partner2: userId }
+        ],
+        status: 'active',
+        updatedAt: { $gt: since }
+    };
+
+    if (partnerId) {
+        const coupleId = this.generateCoupleId(userId, partnerId);
+        query = { coupleId, status: 'active', updatedAt: { $gt: since } };
+    }
+
+    const chats = await this.find(query, { messages: { $slice: -1 } })
+        .sort({ lastMessageAt: -1, createdAt: -1 })
+        .populate('partner1', 'name nickname avatar')
+        .populate('partner2', 'name nickname avatar')
+        .populate('messages.senderId', 'name nickname avatar')
+        .lean();
+
+    return chats.map(chat => {
+        const isPartner1 = chat.partner1?._id?.toString() === userId.toString();
+        return {
+            ...chat,
+            latestMessage: chat.messages?.[0] || null,
             unreadCount: isPartner1 ? chat.partner1Unread : chat.partner2Unread,
             partner: isPartner1 ? chat.partner2 : chat.partner1
         };

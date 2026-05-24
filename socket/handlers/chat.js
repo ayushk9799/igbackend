@@ -1,5 +1,5 @@
 import Chat from '../../models/Chat.js';
-import { getCoupleRoomId } from '../auth.js';
+import { getCoupleRoomId, getSocketId } from '../auth.js';
 
 /**
  * Handle user joining a chat room
@@ -160,13 +160,21 @@ export const handleChatMessage = async (socket, io, data) => {
         const isPartner1ForNotif = chat.partner1.toString() === userId.toString();
         const otherPartnerId = isPartner1ForNotif ? chat.partner2.toString() : chat.partner1.toString();
         const coupleRoom = getCoupleRoomId(userId, otherPartnerId);
+        const notificationData = {
+            chatId,
+            senderName: userName,
+            preview: trimmedContent.substring(0, 50),
+            questionText: chat.questionText?.substring(0, 50)
+        };
+
         if (coupleRoom) {
-            socket.to(coupleRoom).emit('chat:notification', {
-                chatId,
-                senderName: userName,
-                preview: trimmedContent.substring(0, 50),
-                questionText: chat.questionText?.substring(0, 50)
-            });
+            socket.to(coupleRoom).emit('chat:notification', notificationData);
+        }
+
+        const partnerSocketId = getSocketId(otherPartnerId);
+        const coupleRoomSockets = coupleRoom ? io.sockets.adapter.rooms.get(coupleRoom) : null;
+        if (partnerSocketId && !coupleRoomSockets?.has(partnerSocketId)) {
+            io.to(partnerSocketId).emit('chat:notification', notificationData);
         }
 
 
