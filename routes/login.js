@@ -22,11 +22,25 @@ const GOOGLE_CLIENT_ID_IOS = process.env.GOOGLE_CLIENT_ID_IOS || "971652730552-1
 // Apple Bundle ID - UPDATE THIS with your actual bundle ID
 const APPLE_BUNDLE_ID = process.env.APPLE_BUNDLE_ID || "com.thousandways.love";
 
+const VALID_PLATFORMS = new Set(["ios", "android", "web"]);
+
+const normalizePlatform = (platform) => (
+    typeof platform === "string" && VALID_PLATFORMS.has(platform) ? platform : "unknown"
+);
+
+const applyDeviceInfo = (user, { platform, timezone }) => {
+    user.platform = normalizePlatform(platform);
+    if (typeof timezone === "string" && timezone.trim()) {
+        user.timezone = timezone.trim();
+    }
+    user.deviceInfoUpdatedAt = new Date();
+};
+
 // Google authentication route
 router.post("/google/loginSignUp", async (req, res) => {
 
     try {
-        const { token, platform } = req.body;
+        const { token, platform, timezone } = req.body;
 
 
 
@@ -60,7 +74,13 @@ router.post("/google/loginSignUp", async (req, res) => {
                 email: payload.email,
                 name: payload.name,
                 partnerCode,
+                platform: normalizePlatform(platform),
+                timezone: typeof timezone === "string" && timezone.trim() ? timezone.trim() : undefined,
+                deviceInfoUpdatedAt: new Date(),
             });
+        } else {
+            applyDeviceInfo(user, { platform, timezone });
+            await user.save();
         }
 
         // Compute couple premium status
@@ -78,6 +98,8 @@ router.post("/google/loginSignUp", async (req, res) => {
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
                 nickname: user.nickname,
+                timezone: user.timezone,
+                platform: user.platform,
                 isPremium: couplePremium.isPremium,
                 premiumExpiresAt: couplePremium.premiumExpiresAt,
                 premiumPlan: couplePremium.premiumPlan,
@@ -107,7 +129,7 @@ function getAppleSigningKey(header, callback) {
 // Apple authentication route
 router.post("/apple/loginSignUp", async (req, res) => {
     try {
-        const { idToken, displayName, email: providedEmail } = req.body;
+        const { idToken, displayName, email: providedEmail, platform, timezone } = req.body;
 
         if (!idToken) {
             return res.status(400).json({ error: "Identity token is required" });
@@ -160,10 +182,16 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 name: displayName || "User",
                 appleUserId,
                 partnerCode,
+                platform: normalizePlatform(platform),
+                timezone: typeof timezone === "string" && timezone.trim() ? timezone.trim() : undefined,
+                deviceInfoUpdatedAt: new Date(),
             });
-        } else if (!user.appleUserId) {
+        } else {
             // Update existing user with Apple ID
-            user.appleUserId = appleUserId;
+            if (!user.appleUserId) {
+                user.appleUserId = appleUserId;
+            }
+            applyDeviceInfo(user, { platform, timezone });
             await user.save();
         }
 
@@ -182,6 +210,8 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
                 nickname: user.nickname,
+                timezone: user.timezone,
+                platform: user.platform,
                 isPremium: couplePremium.isPremium,
                 premiumExpiresAt: couplePremium.premiumExpiresAt,
                 premiumPlan: couplePremium.premiumPlan,

@@ -40,6 +40,17 @@ const userSchema = new mongoose.Schema({
     fcmToken: {
         type: String,
     },
+    timezone: {
+        type: String,
+    },
+    platform: {
+        type: String,
+        enum: ['ios', 'android', 'web', 'unknown'],
+        default: 'unknown',
+    },
+    deviceInfoUpdatedAt: {
+        type: Date,
+    },
     appleUserId: {
         type: String,
     },

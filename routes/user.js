@@ -4,6 +4,31 @@ import Couple from '../models/Couple.js';
 
 const router = express.Router();
 
+const VALID_PLATFORMS = new Set(['ios', 'android', 'web']);
+
+const normalizePlatform = (platform) => (
+    typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'
+);
+
+const buildUserResponse = (user) => ({
+    id: user._id,
+    email: user.email,
+    name: user.name,
+    nickname: user.nickname,
+    avatar: user.avatar,
+    age: user.age,
+    gender: user.gender,
+    partnerId: user.partnerId,
+    partnerUsername: user.partnerUsername,
+    connectionDate: user.connectionDate,
+    partnerCode: user.partnerCode,
+    timezone: user.timezone,
+    platform: user.platform,
+    isPremium: user.isPremium,
+    premiumExpiresAt: user.premiumExpiresAt,
+    premiumPlan: user.premiumPlan,
+});
+
 /**
  * PUT /api/user/profile
  * Update user profile (name, age, gender)
@@ -40,22 +65,7 @@ router.put('/profile', async (req, res) => {
 
         res.json({
             success: true,
-            user: {
-                id: user._id,
-                email: user.email,
-                name: user.name,
-                nickname: user.nickname,
-                avatar: user.avatar,
-                age: user.age,
-                gender: user.gender,
-                partnerId: user.partnerId,
-                partnerUsername: user.partnerUsername,
-                connectionDate: user.connectionDate,
-                partnerCode: user.partnerCode,
-                isPremium: user.isPremium,
-                premiumExpiresAt: user.premiumExpiresAt,
-                premiumPlan: user.premiumPlan,
-            }
+            user: buildUserResponse(user),
         });
 
     } catch (error) {
@@ -117,6 +127,89 @@ router.put('/premium', async (req, res) => {
 });
 
 /**
+ * PUT /api/user/device-info
+ * Update user device metadata (timezone and platform)
+ */
+router.put('/device-info', async (req, res) => {
+    try {
+        const { userId, timezone, platform } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        user.platform = normalizePlatform(platform);
+        if (typeof timezone === 'string' && timezone.trim()) {
+            user.timezone = timezone.trim();
+        }
+        user.deviceInfoUpdatedAt = new Date();
+
+        await user.save();
+
+        res.json({
+            success: true,
+            user: buildUserResponse(user),
+        });
+
+    } catch (error) {
+        console.error('Device info update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update device info'
+        });
+    }
+});
+
+/**
+ * POST /api/user/fcm-token
+ * Register FCM token for push notifications
+ */
+router.post('/fcm-token', async (req, res) => {
+    try {
+        const { userId, fcmToken, timezone, platform } = req.body;
+
+        if (!userId || !fcmToken) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId and fcmToken are required'
+            });
+        }
+
+        const update = { fcmToken };
+        if (platform !== undefined) {
+            update.platform = normalizePlatform(platform);
+            update.deviceInfoUpdatedAt = new Date();
+        }
+        if (typeof timezone === 'string' && timezone.trim()) {
+            update.timezone = timezone.trim();
+            update.deviceInfoUpdatedAt = new Date();
+        }
+
+        await User.findByIdAndUpdate(userId, update);
+
+        res.json({ success: true, message: 'FCM token registered' });
+
+    } catch (error) {
+        console.error('FCM token registration error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to register FCM token'
+        });
+    }
+});
+
+/**
  * GET /api/user/:userId
  * Get user profile
  */
@@ -134,22 +227,7 @@ router.get('/:userId', async (req, res) => {
 
         res.json({
             success: true,
-            user: {
-                id: user._id,
-                email: user.email,
-                name: user.name,
-                nickname: user.nickname,
-                avatar: user.avatar,
-                age: user.age,
-                gender: user.gender,
-                partnerId: user.partnerId,
-                partnerUsername: user.partnerUsername,
-                connectionDate: user.connectionDate,
-                partnerCode: user.partnerCode,
-                isPremium: user.isPremium,
-                premiumExpiresAt: user.premiumExpiresAt,
-                premiumPlan: user.premiumPlan,
-            }
+            user: buildUserResponse(user),
         });
 
     } catch (error) {
@@ -157,34 +235,6 @@ router.get('/:userId', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to get user'
-        });
-    }
-});
-
-/**
- * POST /api/user/fcm-token
- * Register FCM token for push notifications
- */
-router.post('/fcm-token', async (req, res) => {
-    try {
-        const { userId, fcmToken } = req.body;
-
-        if (!userId || !fcmToken) {
-            return res.status(400).json({
-                success: false,
-                error: 'userId and fcmToken are required'
-            });
-        }
-
-        await User.findByIdAndUpdate(userId, { fcmToken });
-
-        res.json({ success: true, message: 'FCM token registered' });
-
-    } catch (error) {
-        console.error('FCM token registration error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to register FCM token'
         });
     }
 });
