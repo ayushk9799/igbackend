@@ -105,6 +105,7 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
                 priority: 'high',
                 notification: {
                     sound: 'default',
+                    channelId: 'partner-updates',
                 },
             },
         };
@@ -157,6 +158,7 @@ export const sendPuzzleNotification = async (userId, senderName, puzzleId = null
                 priority: 'high',
                 notification: {
                     sound: 'default',
+                    channelId: 'partner-updates',
                 },
             },
         };
@@ -264,6 +266,7 @@ export const sendPushNotification = async (userId, title, body, data = {}) => {
                 priority: 'high',
                 notification: {
                     sound: 'default',
+                    channelId: 'partner-updates',
                 },
             },
         };

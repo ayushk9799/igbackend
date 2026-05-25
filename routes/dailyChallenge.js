@@ -450,8 +450,8 @@ router.post('/remind', async (req, res) => {
             });
         }
 
-        // Get user with partner info
-        const user = await User.findById(userId).populate('partnerId', 'name');
+        // Get user with partner info and token so we can report real delivery readiness
+        const user = await User.findById(userId).populate('partnerId', 'name fcmToken');
 
         if (!user) {
             return res.status(404).json({
@@ -470,12 +470,25 @@ router.post('/remind', async (req, res) => {
         const senderName = user.name || 'Your partner';
         const partnerId = user.partnerId._id;
 
+        if (!user.partnerId.fcmToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Partner has not enabled notifications on this device yet'
+            });
+        }
+
         // Send push notification to partner
         const sent = await sendPushNotification(
             partnerId,
             '💕 Daily Challenge Reminder',
             `${senderName} is waiting for you to complete today's challenge!`,
-            { type: 'daily_challenge_reminder' }
+            {
+                type: 'daily_challenge_reminder',
+                route: 'dailyChallenge',
+                tab: 'dailyChallenge',
+                senderId: user._id,
+                senderName,
+            }
         );
 
         if (sent) {
@@ -484,9 +497,9 @@ router.post('/remind', async (req, res) => {
                 message: 'Reminder sent successfully'
             });
         } else {
-            res.status(200).json({
-                success: true,
-                message: 'Could not send notification (partner may not have notifications enabled)'
+            res.status(502).json({
+                success: false,
+                message: 'Could not send notification. The partner token may be expired or invalid.'
             });
         }
 

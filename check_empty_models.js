@@ -13,7 +13,6 @@ async function checkModels() {
         const modelsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'models');
         const files = fs.readdirSync(modelsDir).filter(f => f.endsWith('.js'));
         
-        console.log('--- Model Document Counts ---');
         for (const file of files) {
             try {
                 const modelPath = path.join('file://', modelsDir, file);
@@ -24,11 +23,9 @@ async function checkModels() {
                 
                 if (Model && Model.modelName && typeof Model.countDocuments === 'function') {
                     const count = await Model.countDocuments();
-                    console.log(`[${count === 0 ? 'EMPTY' : 'DATA '}] ${Model.modelName}: ${count} documents`);
                 }
             } catch (err) {
                 // Not a mongoose model or failed to import
-                console.log(`[SKIP ] ${file} (not a standard model export)`);
             }
         }
         

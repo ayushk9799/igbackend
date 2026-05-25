@@ -30,12 +30,9 @@ const TOPIC_MODELS = {
 
 async function initCounters() {
     try {
-        console.log('Connecting to MongoDB...');
         const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
         await mongoose.connect(MONGODB_URI);
-        console.log('Connected.');
 
-        console.log('Initializing counters based on current max orders...');
         
         for (const [topicId, Model] of Object.entries(TOPIC_MODELS)) {
             // Find max order
@@ -49,10 +46,8 @@ async function initCounters() {
                 { upsert: true, new: true }
             );
             
-            console.log(`[${topicId}] Initialized counter to -> ${maxOrder}`);
         }
 
-        console.log('✅ All counters initialized successfully.');
         process.exit(0);
     } catch (error) {
         console.error('Error initializing counters:', error);
