@@ -212,6 +212,59 @@ router.get('/:topicId/all', async (req, res) => {
 });
 
 /**
+ * DELETE /api/questions/:topicId/order-range
+ * Hard delete questions in an order range
+ * Query: ?from=10&to=25
+ */
+router.delete('/:topicId/order-range', async (req, res) => {
+    try {
+        const { topicId } = req.params;
+        const from = Number.parseInt(req.query.from, 10);
+        const to = Number.parseInt(req.query.to, 10);
+
+        const TopicModel = TOPIC_MODELS[topicId];
+
+        if (!TopicModel) {
+            return res.status(404).json({
+                success: false,
+                message: `No model found for topic: ${topicId}`
+            });
+        }
+
+        if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from > to) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid from and to query params are required, and from must be <= to'
+            });
+        }
+
+        const result = await TopicModel.deleteMany(
+            {
+                order: { $gte: from, $lte: to }
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Questions from order ${from} to ${to} deleted successfully`,
+            data: {
+                topic: topicId,
+                from,
+                to,
+                deletedCount: result.deletedCount
+            }
+        });
+    } catch (error) {
+        console.error('Error deleting question range:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete question range',
+            error: error.message
+        });
+    }
+});
+
+/**
  * GET /api/questions/:topicId/:id
  * Get a single question by ID
  */

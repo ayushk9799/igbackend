@@ -6,3 +6,10 @@ logs/
 npm-debug.log*
 serviceAccountKey.json
 gitscriptall.sh
+backend-topic-questions.full.json
+tobecleaned.json
+tobecleaned.clean.json
+tobecleaned.json
+backend-topic-questions.regenerated.full.json
+check.json
+scripts/cleanSpiceLevel.js

@@ -13,7 +13,7 @@ const politicalQuestionSchema = new mongoose.Schema({
     visualType: {
         type: String,
         required: true,
-        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto'],
+        enum: ['likelyto', 'neverhaveiever', 'deep', 'takephoto', 'slider', 'voicerecord'],
         default: 'deep'
     },
     // Options for multiple choice questions (likelyto, neverhaveiever)
@@ -25,6 +25,20 @@ const politicalQuestionSchema = new mongoose.Schema({
     placeholder: {
         type: String,
         default: "Share your thoughts..."
+    },
+    minValue: {
+        type: Number
+    },
+    maxValue: {
+        type: Number
+    },
+    minLabel: {
+        type: String,
+        trim: true
+    },
+    maxLabel: {
+        type: String,
+        trim: true
     },
     // Spice level for more intimate questions
     spiceLevel: {
