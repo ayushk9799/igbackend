@@ -127,24 +127,49 @@ router.post('/pair', async (req, res) => {
 
         // Create or update a Couple document (reuse existing if re-pairing)
         const [p1, p2] = [user._id.toString(), partnerId].sort();
-        const couple = await Couple.findOneAndUpdate(
-            { partner1: p1, partner2: p2 },
-            {
+        const existingCouple = await Couple.findOne({ partner1: p1, partner2: p2 });
+        const relationshipStartDate = existingCouple?.relationshipStartDate
+            || partner.pendingRelationshipStartDate
+            || user.pendingRelationshipStartDate
+            || null;
+
+        const coupleUpdate = {
+            $set: {
                 partner1: p1,
                 partner2: p2,
                 connectionDate,
                 status: 'active',
-                $unset: { unpairedDate: 1 }
             },
+            $unset: { unpairedDate: 1 }
+        };
+        if (relationshipStartDate) {
+            coupleUpdate.$set.relationshipStartDate = relationshipStartDate;
+            coupleUpdate.$unset.relationshipStartDatePromptUserId = 1;
+        } else {
+            coupleUpdate.$set.relationshipStartDatePromptUserId = user._id;
+        }
+
+        const couple = await Couple.findOneAndUpdate(
+            { partner1: p1, partner2: p2 },
+            coupleUpdate,
             { upsert: true, new: true }
         );
+
+        if (relationshipStartDate) {
+            user.pendingRelationshipStartDate = undefined;
+            partner.pendingRelationshipStartDate = undefined;
+            await user.save();
+            await partner.save();
+        }
 
         // Notify the partner about the new connection
         const pairingPayload = {
             partnerId: user._id,
             partnerName: user.name || 'Your Partner',
             partnerAvatar: user.avatar || null,
-            connectionDate,
+                connectionDate,
+                relationshipStartDate: couple.relationshipStartDate || null,
+                shouldAskRelationshipStartDate: false,
         };
 
         if (isUserOnline(partnerId)) {
@@ -191,6 +216,8 @@ router.post('/pair', async (req, res) => {
                 name: partner.name,
                 avatar: partner.avatar || null,
                 connectionDate,
+                relationshipStartDate: couple.relationshipStartDate || null,
+                shouldAskRelationshipStartDate: !couple.relationshipStartDate,
                 isPremium: !!(partner.premiumExpiresAt && new Date(partner.premiumExpiresAt) > new Date()),
                 premiumExpiresAt: partner.premiumExpiresAt || null,
                 premiumPlan: partner.premiumPlan || null,
@@ -295,6 +322,15 @@ router.get('/status/:userId', async (req, res) => {
         }
 
         if (user.partnerId) {
+            const couple = await Couple.findByPartner(user._id);
+            const relationshipStartDate = couple?.relationshipStartDate || user.pendingRelationshipStartDate || null;
+            const shouldAskRelationshipStartDate = !!(
+                couple
+                && !couple.relationshipStartDate
+                && couple.relationshipStartDatePromptUserId?.toString() === user._id.toString()
+            );
+            const daysTogetherDate = relationshipStartDate || user.connectionDate;
+
             res.json({
                 success: true,
                 isPaired: true,
@@ -308,7 +344,9 @@ router.get('/status/:userId', async (req, res) => {
                     premiumPlan: user.partnerId.premiumPlan || null,
                 },
                 connectionDate: user.connectionDate,
-                daysTogether: Math.floor((new Date() - user.connectionDate) / (1000 * 60 * 60 * 24))
+                relationshipStartDate,
+                shouldAskRelationshipStartDate,
+                daysTogether: Math.floor((new Date() - daysTogetherDate) / (1000 * 60 * 60 * 24))
             });
         } else {
             res.json({

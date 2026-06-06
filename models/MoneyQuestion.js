@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
 
 /**
  * MoneyQuestion - Questions about finances, spending habits, and financial goals
@@ -59,6 +60,7 @@ const moneyQuestionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 moneyQuestionSchema.index({ isActive: 1, visualType: 1 });
+addActiveQuestionCountHooks(moneyQuestionSchema, 'money');
 
 const MoneyQuestion = mongoose.model("MoneyQuestion", moneyQuestionSchema);
 export default MoneyQuestion;

@@ -18,6 +18,14 @@ const coupleSchema = new mongoose.Schema({
         required: true,
         default: Date.now,
     },
+    // Date the relationship began, shared by the couple.
+    relationshipStartDate: {
+        type: Date,
+    },
+    relationshipStartDatePromptUserId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
     // Status of the relationship
     status: {
         type: String,
@@ -27,6 +35,13 @@ const coupleSchema = new mongoose.Schema({
     // Date when unpaired (if applicable)
     unpairedDate: {
         type: Date,
+    },
+    // One shared live canvas for the active couple.
+    liveScribble: {
+        paths: { type: Array, default: [] },
+        updatedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        updatedByUserName: { type: String },
+        updatedAt: { type: Date },
     },
 }, {
     timestamps: true,

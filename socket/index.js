@@ -8,7 +8,15 @@ import {
     handleGetPartnerMoodHistory
 } from './handlers/mood.js';
 import { handlePresenceRequest, handleNudge } from './handlers/presence.js';
-import { handleScribbleSend, handleScribbleRequest } from './handlers/scribble.js';
+import {
+    handleScribbleSend,
+    handleScribbleRequest,
+    handleScribbleLiveStart,
+    handleScribbleLiveEnd,
+    handleScribbleLiveStrokeEnd,
+    handleScribbleLiveClear,
+    handleScribbleLiveUndo
+} from './handlers/scribble.js';
 import {
     handleTicTacToeJoin,
     handleTicTacToeLeave,
@@ -103,6 +111,26 @@ export const initializeSocket = (httpServer) => {
 
         socket.on('scribble:getPartner', () => {
             handleScribbleRequest(socket, io);
+        });
+
+        socket.on('scribble:liveStart', () => {
+            handleScribbleLiveStart(socket, io);
+        });
+
+        socket.on('scribble:liveEnd', () => {
+            handleScribbleLiveEnd(socket, io);
+        });
+
+        socket.on('scribble:liveStrokeEnd', (data) => {
+            handleScribbleLiveStrokeEnd(socket, io, data);
+        });
+
+        socket.on('scribble:liveClear', () => {
+            handleScribbleLiveClear(socket, io);
+        });
+
+        socket.on('scribble:liveUndo', (data) => {
+            handleScribbleLiveUndo(socket, io, data);
         });
 
         // Question/Answer events

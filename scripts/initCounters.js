@@ -38,14 +38,19 @@ async function initCounters() {
             // Find max order
             const maxDoc = await Model.findOne().sort({ order: -1 }).select('order').lean();
             const maxOrder = maxDoc?.order || 0;
+            const totalActiveQuestions = await Model.countDocuments({ isActive: true });
             
             // Upsert counter
             await Counter.findByIdAndUpdate(
                 topicId,
-                { sequence_value: maxOrder },
+                {
+                    sequence_value: maxOrder,
+                    totalActiveQuestions
+                },
                 { upsert: true, new: true }
             );
-            
+
+            console.log(`${topicId}: latestOrder=${maxOrder}, totalActiveQuestions=${totalActiveQuestions}`);
         }
 
         process.exit(0);

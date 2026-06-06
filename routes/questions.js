@@ -90,7 +90,10 @@ router.get('/stats', async (req, res) => {
         
         const statsMap = {};
         for (const c of counters) {
-            statsMap[c._id] = { latestOrder: c.sequence_value };
+            statsMap[c._id] = {
+                latestOrder: c.sequence_value,
+                totalActiveQuestions: c.totalActiveQuestions || 0
+            };
         }
 
         res.status(200).json({
@@ -133,16 +136,19 @@ router.get('/topic/:topicId', async (req, res) => {
 
 
         // 2. Fetch active questions with order > lastSeenOrder
-        let questions = await TopicModel.find({
-            isActive: true,
-            order: { $gt: lastSeenOrder }
-        })
-            .sort({ order: 1 }) // Sequential order
-            .limit(parseInt(limit))
-            .lean();
+        const [totalActiveQuestions, fetchedQuestions] = await Promise.all([
+            TopicModel.getTotalActiveQuestions(),
+            TopicModel.find({
+                isActive: true,
+                order: { $gt: lastSeenOrder }
+            })
+                .sort({ order: 1 }) // Sequential order
+                .limit(parseInt(limit))
+                .lean()
+        ]);
 
         // Transform questions for frontend TaskCard
-        questions = questions.map(q => ({
+        const questions = fetchedQuestions.map(q => ({
             ...q,
             category: q.visualType,
             taskstatement: q.question || q.statement || q.taskstatement
@@ -153,7 +159,8 @@ router.get('/topic/:topicId', async (req, res) => {
             data: {
                 topic: topicId,
                 questions: questions,
-                total: questions.length, // approximation, real total needs count
+                total: totalActiveQuestions,
+                totalActiveQuestions,
                 returned: questions.length,
                 startingOrder: lastSeenOrder
             }
@@ -238,11 +245,21 @@ router.delete('/:topicId/order-range', async (req, res) => {
             });
         }
 
-        const result = await TopicModel.deleteMany(
-            {
-                order: { $gte: from, $lte: to }
-            }
-        );
+        const deleteQuery = { order: { $gte: from, $lte: to } };
+        const activeDeletedCount = await TopicModel.countDocuments({
+            ...deleteQuery,
+            isActive: true
+        });
+
+        const result = await TopicModel.deleteMany(deleteQuery);
+
+        if (activeDeletedCount > 0) {
+            await Counter.findByIdAndUpdate(
+                topicId,
+                { $inc: { totalActiveQuestions: -activeDeletedCount } },
+                { upsert: true }
+            );
+        }
 
         res.status(200).json({
             success: true,

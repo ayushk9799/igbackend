@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
 
 /**
  * FutureQuestion - Questions about future plans, dreams, and aspirations
@@ -59,6 +60,7 @@ const futureQuestionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 futureQuestionSchema.index({ isActive: 1, visualType: 1 });
+addActiveQuestionCountHooks(futureQuestionSchema, 'future');
 
 const FutureQuestion = mongoose.model("FutureQuestion", futureQuestionSchema);
 export default FutureQuestion;

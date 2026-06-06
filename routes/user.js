@@ -1,6 +1,8 @@
 import express from 'express';
 import User from '../models/User.js';
 import Couple from '../models/Couple.js';
+import { getIO } from '../socket/index.js';
+import { getCoupleRoomId } from '../socket/auth.js';
 
 const router = express.Router();
 
@@ -10,11 +12,13 @@ const normalizePlatform = (platform) => (
     typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'
 );
 
-const buildUserResponse = (user) => ({
+const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelationshipStartDate = false) => ({
     id: user._id,
     email: user.email,
     name: user.name,
     nickname: user.nickname,
+    relationshipStartDate: relationshipStartDate || user.pendingRelationshipStartDate,
+    shouldAskRelationshipStartDate,
     avatar: user.avatar,
     age: user.age,
     gender: user.gender,
@@ -35,7 +39,7 @@ const buildUserResponse = (user) => ({
  */
 router.put('/profile', async (req, res) => {
     try {
-        const { userId, name, age, gender, avatar } = req.body;
+        const { userId, name, age, gender, avatar, relationshipStartDate } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -60,12 +64,53 @@ router.put('/profile', async (req, res) => {
         }
         if (avatar !== undefined) user.avatar = avatar;
         if (req.body.nickname !== undefined) user.nickname = req.body.nickname.trim();
+        let effectiveRelationshipStartDate = user.pendingRelationshipStartDate;
+        let shouldAskRelationshipStartDate = false;
+
+        if (relationshipStartDate !== undefined) {
+            const parsedDate = new Date(relationshipStartDate);
+            if (Number.isNaN(parsedDate.getTime())) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'relationshipStartDate must be a valid date'
+                });
+            }
+            if (parsedDate > new Date()) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'relationshipStartDate cannot be in the future'
+                });
+            }
+            const activeCouple = await Couple.findByPartner(user._id);
+            if (activeCouple) {
+                if (!activeCouple.relationshipStartDate) {
+                    activeCouple.relationshipStartDate = parsedDate;
+                    activeCouple.relationshipStartDatePromptUserId = undefined;
+                    await activeCouple.save();
+                }
+                user.pendingRelationshipStartDate = undefined;
+                effectiveRelationshipStartDate = activeCouple.relationshipStartDate;
+                shouldAskRelationshipStartDate = false;
+
+                const io = getIO();
+                const roomId = user.partnerId ? getCoupleRoomId(user._id.toString(), user.partnerId.toString()) : null;
+                if (io && roomId) {
+                    io.to(roomId).emit('couple:relationshipStartDateUpdated', {
+                        relationshipStartDate: activeCouple.relationshipStartDate,
+                        shouldAskRelationshipStartDate: false,
+                    });
+                }
+            } else {
+                user.pendingRelationshipStartDate = parsedDate;
+                effectiveRelationshipStartDate = user.pendingRelationshipStartDate;
+            }
+        }
 
         await user.save();
 
         res.json({
             success: true,
-            user: buildUserResponse(user),
+            user: buildUserResponse(user, effectiveRelationshipStartDate, shouldAskRelationshipStartDate),
         });
 
     } catch (error) {
@@ -157,9 +202,16 @@ router.put('/device-info', async (req, res) => {
 
         await user.save();
 
+        const activeCouple = await Couple.findByPartner(user._id);
+        const shouldAskRelationshipStartDate = !!(
+            activeCouple
+            && !activeCouple.relationshipStartDate
+            && activeCouple.relationshipStartDatePromptUserId?.toString() === user._id.toString()
+        );
+
         res.json({
             success: true,
-            user: buildUserResponse(user),
+            user: buildUserResponse(user, activeCouple?.relationshipStartDate, shouldAskRelationshipStartDate),
         });
 
     } catch (error) {
@@ -225,9 +277,16 @@ router.get('/:userId', async (req, res) => {
             });
         }
 
+        const activeCouple = await Couple.findByPartner(user._id);
+        const shouldAskRelationshipStartDate = !!(
+            activeCouple
+            && !activeCouple.relationshipStartDate
+            && activeCouple.relationshipStartDatePromptUserId?.toString() === user._id.toString()
+        );
+
         res.json({
             success: true,
-            user: buildUserResponse(user),
+            user: buildUserResponse(user, activeCouple?.relationshipStartDate, shouldAskRelationshipStartDate),
         });
 
     } catch (error) {

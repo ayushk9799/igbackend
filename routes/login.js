@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { OAuth2Client } from "google-auth-library";
 import User from "../models/User.js";
+import Couple from "../models/Couple.js";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { generatePartnerCode, generateUserId } from "../utils/partnerCode.js";
@@ -34,6 +35,25 @@ const applyDeviceInfo = (user, { platform, timezone }) => {
         user.timezone = timezone.trim();
     }
     user.deviceInfoUpdatedAt = new Date();
+};
+
+const getRelationshipStartDateStateForUser = async (user) => {
+    if (!user?.partnerId) {
+        return {
+            relationshipStartDate: user?.pendingRelationshipStartDate || null,
+            shouldAskRelationshipStartDate: false,
+        };
+    }
+
+    const couple = await Couple.findByPartner(user._id);
+    return {
+        relationshipStartDate: couple?.relationshipStartDate || user?.pendingRelationshipStartDate || null,
+        shouldAskRelationshipStartDate: !!(
+            couple
+            && !couple.relationshipStartDate
+            && couple.relationshipStartDatePromptUserId?.toString() === user._id.toString()
+        ),
+    };
 };
 
 // Google authentication route
@@ -85,6 +105,7 @@ router.post("/google/loginSignUp", async (req, res) => {
 
         // Compute couple premium status
         const couplePremium = await getCouplePremiumStatus(user);
+        const relationshipStartDateState = await getRelationshipStartDateStateForUser(user);
 
         res.json({
             success: true,
@@ -98,6 +119,8 @@ router.post("/google/loginSignUp", async (req, res) => {
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
                 nickname: user.nickname,
+                relationshipStartDate: relationshipStartDateState.relationshipStartDate,
+                shouldAskRelationshipStartDate: relationshipStartDateState.shouldAskRelationshipStartDate,
                 timezone: user.timezone,
                 platform: user.platform,
                 isPremium: couplePremium.isPremium,
@@ -197,6 +220,7 @@ router.post("/apple/loginSignUp", async (req, res) => {
 
         // Compute couple premium status
         const couplePremium = await getCouplePremiumStatus(user);
+        const relationshipStartDateState = await getRelationshipStartDateStateForUser(user);
 
         res.json({
             success: true,
@@ -210,6 +234,8 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 connectionDate: user.connectionDate,
                 partnerCode: user.partnerCode,
                 nickname: user.nickname,
+                relationshipStartDate: relationshipStartDateState.relationshipStartDate,
+                shouldAskRelationshipStartDate: relationshipStartDateState.shouldAskRelationshipStartDate,
                 timezone: user.timezone,
                 platform: user.platform,
                 isPremium: couplePremium.isPremium,

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
 
 /**
  * FitnessQuestion - Questions about health, wellness, and fitness habits
@@ -59,6 +60,7 @@ const fitnessQuestionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 fitnessQuestionSchema.index({ isActive: 1, visualType: 1 });
+addActiveQuestionCountHooks(fitnessQuestionSchema, 'fitness');
 
 const FitnessQuestion = mongoose.model("FitnessQuestion", fitnessQuestionSchema);
 export default FitnessQuestion;

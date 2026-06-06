@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
 
 /**
  * PoliticalQuestion - Questions about political views, opinions, and debates
@@ -59,6 +60,7 @@ const politicalQuestionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 politicalQuestionSchema.index({ isActive: 1, visualType: 1 });
+addActiveQuestionCountHooks(politicalQuestionSchema, 'political');
 
 const PoliticalQuestion = mongoose.model("PoliticalQuestion", politicalQuestionSchema);
 export default PoliticalQuestion;

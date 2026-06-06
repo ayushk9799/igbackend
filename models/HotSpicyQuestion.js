@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
 
 /**
  * HotSpicyQuestion - Intimate and spicy questions for couples
@@ -64,6 +65,7 @@ const hotSpicyQuestionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 hotSpicyQuestionSchema.index({ isActive: 1, visualType: 1, spiceLevel: 1 });
+addActiveQuestionCountHooks(hotSpicyQuestionSchema, 'hotspicy');
 
 const HotSpicyQuestion = mongoose.model("HotSpicyQuestion", hotSpicyQuestionSchema);
 export default HotSpicyQuestion;
