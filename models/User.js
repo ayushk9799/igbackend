@@ -55,6 +55,15 @@ const userSchema = new mongoose.Schema({
     deviceInfoUpdatedAt: {
         type: Date,
     },
+    locationSharingEnabled: {
+        type: Boolean,
+        default: false,
+    },
+    location: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+        updatedAt: { type: Date },
+    },
     appleUserId: {
         type: String,
     },
