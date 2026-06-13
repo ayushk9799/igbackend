@@ -324,6 +324,7 @@ router.get('/status/:userId', async (req, res) => {
         if (user.partnerId) {
             const couple = await Couple.findByPartner(user._id);
             const relationshipStartDate = couple?.relationshipStartDate || user.pendingRelationshipStartDate || null;
+            const pendingRelationshipStartDate = user.pendingRelationshipStartDate || null;
             const shouldAskRelationshipStartDate = !!(
                 couple
                 && !couple.relationshipStartDate
@@ -345,6 +346,7 @@ router.get('/status/:userId', async (req, res) => {
                 },
                 connectionDate: user.connectionDate,
                 relationshipStartDate,
+                pendingRelationshipStartDate,
                 shouldAskRelationshipStartDate,
                 daysTogether: Math.floor((new Date() - daysTogetherDate) / (1000 * 60 * 60 * 24))
             });

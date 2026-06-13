@@ -50,6 +50,7 @@ const getRelationshipStartDateStateForUser = async (user) => {
     if (!user?.partnerId) {
         return {
             relationshipStartDate: user?.pendingRelationshipStartDate || null,
+            pendingRelationshipStartDate: user?.pendingRelationshipStartDate || null,
             shouldAskRelationshipStartDate: false,
         };
     }
@@ -57,6 +58,7 @@ const getRelationshipStartDateStateForUser = async (user) => {
     const couple = await Couple.findByPartner(user._id);
     return {
         relationshipStartDate: couple?.relationshipStartDate || user?.pendingRelationshipStartDate || null,
+        pendingRelationshipStartDate: user?.pendingRelationshipStartDate || null,
         shouldAskRelationshipStartDate: !!(
             couple
             && !couple.relationshipStartDate
@@ -131,6 +133,7 @@ router.post("/google/loginSignUp", async (req, res) => {
                 partnerCode: user.partnerCode,
                 nickname: user.nickname,
                 relationshipStartDate: relationshipStartDateState.relationshipStartDate,
+                pendingRelationshipStartDate: relationshipStartDateState.pendingRelationshipStartDate,
                 shouldAskRelationshipStartDate: relationshipStartDateState.shouldAskRelationshipStartDate,
                 timezone: user.timezone,
                 platform: user.platform,
@@ -248,6 +251,7 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 partnerCode: user.partnerCode,
                 nickname: user.nickname,
                 relationshipStartDate: relationshipStartDateState.relationshipStartDate,
+                pendingRelationshipStartDate: relationshipStartDateState.pendingRelationshipStartDate,
                 shouldAskRelationshipStartDate: relationshipStartDateState.shouldAskRelationshipStartDate,
                 timezone: user.timezone,
                 platform: user.platform,

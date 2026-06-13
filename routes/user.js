@@ -7,10 +7,39 @@ import { getCoupleRoomId } from '../socket/auth.js';
 const router = express.Router();
 
 const VALID_PLATFORMS = new Set(['ios', 'android', 'web']);
+const TOGETHER_DISTANCE_KM = 0.1;
 
 const normalizePlatform = (platform) => (
     typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'
 );
+
+const isValidCoordinate = (value, min, max) => (
+    typeof value === 'number'
+    && Number.isFinite(value)
+    && value >= min
+    && value <= max
+);
+
+const getInitial = (user) => {
+    const source = user?.nickname || user?.name || user?.email || '?';
+    return source.trim().charAt(0).toUpperCase() || '?';
+};
+
+const toRadians = (degrees) => degrees * (Math.PI / 180);
+
+const calculateDistanceKm = (firstLocation, secondLocation) => {
+    const earthRadiusKm = 6371;
+    const deltaLatitude = toRadians(secondLocation.latitude - firstLocation.latitude);
+    const deltaLongitude = toRadians(secondLocation.longitude - firstLocation.longitude);
+    const firstLatitude = toRadians(firstLocation.latitude);
+    const secondLatitude = toRadians(secondLocation.latitude);
+
+    const a = Math.sin(deltaLatitude / 2) ** 2
+        + Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(deltaLongitude / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadiusKm * c;
+};
 
 const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelationshipStartDate = false) => ({
     id: user._id,
@@ -18,6 +47,7 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     name: user.name,
     nickname: user.nickname,
     relationshipStartDate: relationshipStartDate || user.pendingRelationshipStartDate,
+    pendingRelationshipStartDate: user.pendingRelationshipStartDate || null,
     shouldAskRelationshipStartDate,
     avatar: user.avatar,
     age: user.age,
@@ -28,6 +58,8 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     partnerCode: user.partnerCode,
     timezone: user.timezone,
     platform: user.platform,
+    locationSharingEnabled: !!user.locationSharingEnabled,
+    locationUpdatedAt: user.location?.updatedAt || null,
     isPremium: user.isPremium,
     premiumExpiresAt: user.premiumExpiresAt,
     premiumPlan: user.premiumPlan,
@@ -267,6 +299,146 @@ router.put('/device-info', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to update device info'
+        });
+    }
+});
+
+/**
+ * PUT /api/user/location
+ * Update the user's latest shared location for the distance widget.
+ */
+router.put('/location', async (req, res) => {
+    try {
+        const { userId, latitude, longitude, sharingEnabled = true } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        if (!isValidCoordinate(latitude, -90, 90) || !isValidCoordinate(longitude, -180, 180)) {
+            return res.status(400).json({
+                success: false,
+                error: 'latitude and longitude must be valid coordinates'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        user.locationSharingEnabled = sharingEnabled !== false;
+        user.location = {
+            latitude,
+            longitude,
+            updatedAt: new Date(),
+        };
+
+        await user.save();
+
+        res.json({
+            success: true,
+            user: buildUserResponse(user),
+        });
+    } catch (error) {
+        console.error('Location update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update location'
+        });
+    }
+});
+
+/**
+ * GET /api/user/distance/:userId
+ * Return latest partner distance for the distance widget.
+ */
+router.get('/distance/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        if (!user.partnerId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Partner not connected'
+            });
+        }
+
+        const partner = await User.findById(user.partnerId);
+        if (!partner) {
+            return res.status(404).json({
+                success: false,
+                error: 'Partner not found'
+            });
+        }
+
+        const userLocation = user.location;
+        const partnerLocation = partner.location;
+        const canCalculateDistance = !!(
+            user.locationSharingEnabled
+            && partner.locationSharingEnabled
+            && userLocation?.updatedAt
+            && partnerLocation?.updatedAt
+            && isValidCoordinate(userLocation.latitude, -90, 90)
+            && isValidCoordinate(userLocation.longitude, -180, 180)
+            && isValidCoordinate(partnerLocation.latitude, -90, 90)
+            && isValidCoordinate(partnerLocation.longitude, -180, 180)
+        );
+
+        if (!canCalculateDistance) {
+            return res.json({
+                success: true,
+                data: {
+                    distanceKm: null,
+                    isTogether: false,
+                    togetherThresholdKm: TOGETHER_DISTANCE_KM,
+                    userInitial: getInitial(user),
+                    partnerInitial: getInitial(partner),
+                    userLocationUpdatedAt: userLocation?.updatedAt || null,
+                    partnerLocationUpdatedAt: partnerLocation?.updatedAt || null,
+                    sharingEnabled: !!user.locationSharingEnabled,
+                    partnerSharingEnabled: !!partner.locationSharingEnabled,
+                }
+            });
+        }
+
+        const rawDistanceKm = calculateDistanceKm(userLocation, partnerLocation);
+        const distanceKm = Math.round(rawDistanceKm * 10) / 10;
+        const isTogether = rawDistanceKm <= TOGETHER_DISTANCE_KM;
+
+        res.json({
+            success: true,
+            data: {
+                distanceKm,
+                isTogether,
+                togetherThresholdKm: TOGETHER_DISTANCE_KM,
+                userInitial: getInitial(user),
+                partnerInitial: getInitial(partner),
+                userLocationUpdatedAt: userLocation.updatedAt,
+                partnerLocationUpdatedAt: partnerLocation.updatedAt,
+                sharingEnabled: !!user.locationSharingEnabled,
+                partnerSharingEnabled: !!partner.locationSharingEnabled,
+            }
+        });
+    } catch (error) {
+        console.error('Distance fetch error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch distance'
         });
     }
 });
