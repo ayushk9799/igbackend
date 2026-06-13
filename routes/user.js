@@ -31,7 +31,46 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     isPremium: user.isPremium,
     premiumExpiresAt: user.premiumExpiresAt,
     premiumPlan: user.premiumPlan,
+    locationSharingEnabled: user.locationSharingEnabled || false,
+    locationUpdatedAt: user.locationUpdatedAt || null,
 });
+
+const getInitial = (...values) => {
+    const value = values.find((item) => typeof item === 'string' && item.trim().length > 0);
+    return value?.trim()?.charAt(0)?.toUpperCase() || '?';
+};
+
+const isValidCoordinate = (latitude, longitude) => (
+    Number.isFinite(latitude)
+    && Number.isFinite(longitude)
+    && latitude >= -90
+    && latitude <= 90
+    && longitude >= -180
+    && longitude <= 180
+);
+
+const calculateDistanceKm = (firstLocation, secondLocation) => {
+    if (!firstLocation || !secondLocation) return null;
+
+    const lat1 = Number(firstLocation.latitude);
+    const lon1 = Number(firstLocation.longitude);
+    const lat2 = Number(secondLocation.latitude);
+    const lon2 = Number(secondLocation.longitude);
+
+    if (!isValidCoordinate(lat1, lon1) || !isValidCoordinate(lat2, lon2)) {
+        return null;
+    }
+
+    const toRadians = (degrees) => degrees * (Math.PI / 180);
+    const earthRadiusKm = 6371;
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return earthRadiusKm * c;
+};
 
 /**
  * PUT /api/user/profile
@@ -177,7 +216,7 @@ router.put('/premium', async (req, res) => {
  */
 router.put('/device-info', async (req, res) => {
     try {
-        const { userId, timezone, platform } = req.body;
+        const { userId, timezone, platform, appVersion, appBuildNumber } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -197,6 +236,15 @@ router.put('/device-info', async (req, res) => {
         user.platform = normalizePlatform(platform);
         if (typeof timezone === 'string' && timezone.trim()) {
             user.timezone = timezone.trim();
+        }
+        if (typeof appVersion === 'string' && appVersion.trim()) {
+            user.appVersion = appVersion.trim();
+        }
+        if (appBuildNumber !== undefined) {
+            const parsedBuildNumber = Number.parseInt(appBuildNumber, 10);
+            if (Number.isFinite(parsedBuildNumber)) {
+                user.appBuildNumber = parsedBuildNumber;
+            }
         }
         user.deviceInfoUpdatedAt = new Date();
 
@@ -229,7 +277,7 @@ router.put('/device-info', async (req, res) => {
  */
 router.post('/fcm-token', async (req, res) => {
     try {
-        const { userId, fcmToken, timezone, platform } = req.body;
+        const { userId, fcmToken, timezone, platform, appVersion, appBuildNumber } = req.body;
 
         if (!userId || !fcmToken) {
             return res.status(400).json({
@@ -247,6 +295,17 @@ router.post('/fcm-token', async (req, res) => {
             update.timezone = timezone.trim();
             update.deviceInfoUpdatedAt = new Date();
         }
+        if (typeof appVersion === 'string' && appVersion.trim()) {
+            update.appVersion = appVersion.trim();
+            update.deviceInfoUpdatedAt = new Date();
+        }
+        if (appBuildNumber !== undefined) {
+            const parsedBuildNumber = Number.parseInt(appBuildNumber, 10);
+            if (Number.isFinite(parsedBuildNumber)) {
+                update.appBuildNumber = parsedBuildNumber;
+                update.deviceInfoUpdatedAt = new Date();
+            }
+        }
 
         await User.findByIdAndUpdate(userId, update);
 
@@ -257,6 +316,158 @@ router.post('/fcm-token', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to register FCM token'
+        });
+    }
+});
+
+/**
+ * PUT /api/user/location
+ * Update a user's location sharing data for the distance widget.
+ */
+router.put('/location', async (req, res) => {
+    try {
+        const { userId, latitude, longitude, sharingEnabled = true } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        const parsedLatitude = Number(latitude);
+        const parsedLongitude = Number(longitude);
+        const shouldShare = sharingEnabled === true;
+
+        if (shouldShare && !isValidCoordinate(parsedLatitude, parsedLongitude)) {
+            return res.status(400).json({
+                success: false,
+                error: 'latitude and longitude must be valid coordinates'
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        user.locationSharingEnabled = shouldShare;
+        if (shouldShare) {
+            user.location = {
+                latitude: parsedLatitude,
+                longitude: parsedLongitude,
+            };
+            user.locationUpdatedAt = new Date();
+        }
+
+        await user.save();
+
+        const activeCouple = await Couple.findByPartner(user._id);
+        const shouldAskRelationshipStartDate = !!(
+            activeCouple
+            && !activeCouple.relationshipStartDate
+            && activeCouple.relationshipStartDatePromptUserId?.toString() === user._id.toString()
+        );
+
+        res.json({
+            success: true,
+            user: buildUserResponse(user, activeCouple?.relationshipStartDate, shouldAskRelationshipStartDate),
+        });
+
+    } catch (error) {
+        console.error('Location update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update location'
+        });
+    }
+});
+
+/**
+ * GET /api/user/distance/:userId
+ * Get distance between a user and their active partner for the distance widget.
+ */
+router.get('/distance/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        const activeCouple = await Couple.findByPartner(user._id);
+        const partnerId = user.partnerId || (
+            activeCouple?.partner1?.toString() === user._id.toString()
+                ? activeCouple.partner2
+                : activeCouple?.partner1
+        );
+        const partner = partnerId ? await User.findById(partnerId) : null;
+
+        const userInitial = getInitial(user.nickname, user.name, user.email);
+        const partnerInitial = getInitial(partner?.nickname, partner?.name, partner?.email, user.partnerUsername);
+        const baseData = {
+            distanceKm: null,
+            isTogether: false,
+            userInitial,
+            partnerInitial,
+            userName: user.nickname || user.name || '',
+            partnerName: partner?.nickname || partner?.name || user.partnerUsername || '',
+            userLocationUpdatedAt: user.locationUpdatedAt || null,
+            partnerLocationUpdatedAt: partner?.locationUpdatedAt || null,
+        };
+
+        if (!partner) {
+            return res.json({
+                success: true,
+                data: {
+                    ...baseData,
+                    reason: 'missing_partner',
+                }
+            });
+        }
+
+        if (user.locationSharingEnabled !== true || partner.locationSharingEnabled !== true) {
+            return res.json({
+                success: true,
+                data: {
+                    ...baseData,
+                    reason: user.locationSharingEnabled === true ? 'partner_sharing_disabled' : 'sharing_disabled',
+                }
+            });
+        }
+
+        const distanceKm = calculateDistanceKm(user.location, partner.location);
+        if (distanceKm === null) {
+            return res.json({
+                success: true,
+                data: {
+                    ...baseData,
+                    reason: 'missing_location',
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                ...baseData,
+                distanceKm,
+                isTogether: distanceKm <= 0.1,
+            }
+        });
+
+    } catch (error) {
+        console.error('Distance lookup error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to get partner distance'
         });
     }
 });

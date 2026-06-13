@@ -117,6 +117,22 @@ const updateProgress = async ({ userId, topicId, setId, questionId, action, curs
     );
 };
 
+const buildSetProgressSummary = (progress, totalQuestions) => {
+    const answeredCount = progress?.answeredQuestionIds?.length || 0;
+    const completedAt = progress?.completedAt || null;
+    const percentComplete = completedAt
+        ? 100
+        : (totalQuestions > 0 ? Math.min(100, Math.round((answeredCount / totalQuestions) * 100)) : 0);
+
+    return {
+        answeredCount,
+        skippedCount: progress?.skippedQuestionIds?.length || 0,
+        seenCount: progress?.seenQuestionIds?.length || 0,
+        percentComplete,
+        completedAt,
+    };
+};
+
 const findQuestionInSet = (set, questionId) => {
     return (set.questions || []).find((question) => (
         question.questionId === questionId && question.isActive !== false
@@ -248,6 +264,7 @@ router.get('/topics', async (req, res) => {
 router.get('/topic/:topicId/sets', async (req, res) => {
     try {
         const { topicId } = req.params;
+        const { userId } = req.query;
         const TopicSetModel = getTopicModel(topicId);
 
         if (!TopicSetModel) {
@@ -255,22 +272,60 @@ router.get('/topic/:topicId/sets', async (req, res) => {
         }
 
         const sets = await TopicSetModel.find({ isActive: true })
-            .select('setId title format order premium questions')
+            .select('setId title format order premium icon iconType iconUrl iconKey questions')
             .sort({ order: 1, createdAt: 1 })
             .lean();
+
+        const progressBySetId = new Map();
+        const partnerProgressBySetId = new Map();
+        let partnerProgressUserId = null;
+        if (userId && sets.length > 0) {
+            const user = await User.findById(userId).select('partnerId').lean();
+            partnerProgressUserId = user?.partnerId?.toString() || null;
+            const progressUserIds = partnerProgressUserId ? [userId, partnerProgressUserId] : [userId];
+            const progressRows = await QuestionProgressV2.find({
+                userId: { $in: progressUserIds },
+                topicId,
+                setId: { $in: sets.map((set) => set.setId) },
+            }).lean();
+
+            for (const progress of progressRows) {
+                if (progress.userId?.toString() === partnerProgressUserId) {
+                    partnerProgressBySetId.set(progress.setId, progress);
+                } else {
+                    progressBySetId.set(progress.setId, progress);
+                }
+            }
+        }
 
         res.status(200).json({
             success: true,
             data: {
                 topicId,
-                sets: sets.map((set) => ({
-                    setId: set.setId,
-                    title: set.title,
-                    format: set.format,
-                    order: set.order,
-                    premium: set.premium,
-                    totalQuestions: (set.questions || []).filter((q) => q.isActive !== false).length,
-                })),
+                sets: sets.map((set) => {
+                    const totalQuestions = (set.questions || []).filter((q) => q.isActive !== false).length;
+                    const progress = progressBySetId.get(set.setId);
+                    const partnerProgress = partnerProgressUserId
+                        ? partnerProgressBySetId.get(set.setId)
+                        : null;
+
+                    return {
+                        setId: set.setId,
+                        title: set.title,
+                        format: set.format,
+                        order: set.order,
+                        premium: set.premium,
+                        icon: set.icon || null,
+                        iconType: set.iconType || 'auto',
+                        iconUrl: set.iconUrl || null,
+                        iconKey: set.iconKey || null,
+                        totalQuestions,
+                        progress: buildSetProgressSummary(progress, totalQuestions),
+                        partnerProgress: partnerProgressUserId
+                            ? buildSetProgressSummary(partnerProgress, totalQuestions)
+                            : null,
+                    };
+                }),
             },
         });
     } catch (error) {
@@ -328,11 +383,25 @@ router.get('/topic/:topicId/sets/:setId/report', async (req, res) => {
             partnerId: user.partnerId,
         });
 
+        const chats = await QuestionChatV2.find({
+            coupleId,
+            topicId,
+            setId,
+            status: 'active',
+        }).select('_id questionId').lean();
+        const chatIdByQuestion = new Map(
+            chats.map((chat) => [chat.questionId, chat._id])
+        );
+
         res.status(200).json({
             success: true,
             data: {
                 topicId,
                 ...report,
+                items: report.items.map((item) => ({
+                    ...item,
+                    chatId: chatIdByQuestion.get(item.questionId) || null,
+                })),
             },
         });
     } catch (error) {
@@ -379,6 +448,10 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
                     title: set.title,
                     format: set.format,
                     premium: set.premium,
+                    icon: set.icon || null,
+                    iconType: set.iconType || 'auto',
+                    iconUrl: set.iconUrl || null,
+                    iconKey: set.iconKey || null,
                 },
                 questions: pageQuestions.map((question, offset) => ({
                     questionId: question.questionId,

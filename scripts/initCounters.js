@@ -50,7 +50,6 @@ async function initCounters() {
                 { upsert: true, new: true }
             );
 
-            console.log(`${topicId}: latestOrder=${maxOrder}, totalActiveQuestions=${totalActiveQuestions}`);
         }
 
         process.exit(0);

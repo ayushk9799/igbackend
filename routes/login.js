@@ -29,10 +29,19 @@ const normalizePlatform = (platform) => (
     typeof platform === "string" && VALID_PLATFORMS.has(platform) ? platform : "unknown"
 );
 
-const applyDeviceInfo = (user, { platform, timezone }) => {
+const applyDeviceInfo = (user, { platform, timezone, appVersion, appBuildNumber }) => {
     user.platform = normalizePlatform(platform);
     if (typeof timezone === "string" && timezone.trim()) {
         user.timezone = timezone.trim();
+    }
+    if (typeof appVersion === "string" && appVersion.trim()) {
+        user.appVersion = appVersion.trim();
+    }
+    if (appBuildNumber !== undefined) {
+        const parsedBuildNumber = Number.parseInt(appBuildNumber, 10);
+        if (Number.isFinite(parsedBuildNumber)) {
+            user.appBuildNumber = parsedBuildNumber;
+        }
     }
     user.deviceInfoUpdatedAt = new Date();
 };
@@ -60,7 +69,7 @@ const getRelationshipStartDateStateForUser = async (user) => {
 router.post("/google/loginSignUp", async (req, res) => {
 
     try {
-        const { token, platform, timezone } = req.body;
+        const { token, platform, timezone, appVersion, appBuildNumber } = req.body;
 
 
 
@@ -96,10 +105,12 @@ router.post("/google/loginSignUp", async (req, res) => {
                 partnerCode,
                 platform: normalizePlatform(platform),
                 timezone: typeof timezone === "string" && timezone.trim() ? timezone.trim() : undefined,
+                appVersion: typeof appVersion === "string" && appVersion.trim() ? appVersion.trim() : undefined,
+                appBuildNumber: Number.isFinite(Number.parseInt(appBuildNumber, 10)) ? Number.parseInt(appBuildNumber, 10) : undefined,
                 deviceInfoUpdatedAt: new Date(),
             });
         } else {
-            applyDeviceInfo(user, { platform, timezone });
+            applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber });
             await user.save();
         }
 
@@ -152,7 +163,7 @@ function getAppleSigningKey(header, callback) {
 // Apple authentication route
 router.post("/apple/loginSignUp", async (req, res) => {
     try {
-        const { idToken, displayName, email: providedEmail, platform, timezone } = req.body;
+        const { idToken, displayName, email: providedEmail, platform, timezone, appVersion, appBuildNumber } = req.body;
 
         if (!idToken) {
             return res.status(400).json({ error: "Identity token is required" });
@@ -207,6 +218,8 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 partnerCode,
                 platform: normalizePlatform(platform),
                 timezone: typeof timezone === "string" && timezone.trim() ? timezone.trim() : undefined,
+                appVersion: typeof appVersion === "string" && appVersion.trim() ? appVersion.trim() : undefined,
+                appBuildNumber: Number.isFinite(Number.parseInt(appBuildNumber, 10)) ? Number.parseInt(appBuildNumber, 10) : undefined,
                 deviceInfoUpdatedAt: new Date(),
             });
         } else {
@@ -214,7 +227,7 @@ router.post("/apple/loginSignUp", async (req, res) => {
             if (!user.appleUserId) {
                 user.appleUserId = appleUserId;
             }
-            applyDeviceInfo(user, { platform, timezone });
+            applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber });
             await user.save();
         }
 

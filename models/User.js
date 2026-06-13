@@ -55,6 +55,12 @@ const userSchema = new mongoose.Schema({
     deviceInfoUpdatedAt: {
         type: Date,
     },
+    appVersion: {
+        type: String,
+    },
+    appBuildNumber: {
+        type: Number,
+    },
     appleUserId: {
         type: String,
     },
@@ -105,6 +111,17 @@ const userSchema = new mongoose.Schema({
     },
     premiumPlan: {
         type: String,
+    },
+    locationSharingEnabled: {
+        type: Boolean,
+        default: false,
+    },
+    location: {
+        latitude: { type: Number },
+        longitude: { type: Number },
+    },
+    locationUpdatedAt: {
+        type: Date,
     },
 }, {
     timestamps: true,

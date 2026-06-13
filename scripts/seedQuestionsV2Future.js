@@ -147,7 +147,7 @@ const futureSets = [
         format: 'voicerecord',
         order: 6,
         isActive: true,
-        premium: true,
+        premium: false,
         questions: [
             {
                 questionId: 'future-voice-001',
@@ -167,7 +167,7 @@ const futureSets = [
         format: 'takephoto',
         order: 7,
         isActive: true,
-        premium: true,
+        premium: false,
         questions: [
             {
                 questionId: 'future-photo-001',
@@ -177,6 +177,31 @@ const futureSets = [
             {
                 questionId: 'future-photo-002',
                 prompt: 'Share a place, object, or moment that feels like our future.',
+                isActive: true,
+            },
+        ],
+    },
+    {
+        setId: 'future-likely-to',
+        title: 'Predicting Our Future',
+        format: 'likelyto',
+        order: 8,
+        isActive: true,
+        premium: false,
+        questions: [
+            {
+                questionId: 'future-lt-001',
+                prompt: 'Who is more likely to want to relocate to a new city or country first?',
+                isActive: true,
+            },
+            {
+                questionId: 'future-lt-002',
+                prompt: 'Who is more likely to handle the household finances and budgeting?',
+                isActive: true,
+            },
+            {
+                questionId: 'future-lt-003',
+                prompt: 'Who is more likely to suggest adopting a pet or expanding our family first?',
                 isActive: true,
             },
         ],
@@ -194,7 +219,6 @@ const run = async () => {
         );
     }
 
-    console.log(`Seeded ${futureSets.length} Future V2 question sets`);
     await mongoose.disconnect();
 };
 

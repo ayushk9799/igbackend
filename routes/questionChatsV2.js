@@ -68,6 +68,61 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get('/by-question', async (req, res) => {
+    try {
+        const { userId, topicId, setId, questionId } = req.query;
+
+        if (!userId || !topicId || !setId || !questionId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId, topicId, setId, and questionId are required',
+            });
+        }
+
+        const user = await User.findById(userId).select('partnerId').lean();
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        if (!user.partnerId) {
+            return res.status(400).json({ success: false, message: 'User has no partner linked' });
+        }
+
+        const chat = await QuestionChatV2.findOne({
+            coupleId: QuestionChatV2.generateCoupleId(userId, user.partnerId),
+            topicId,
+            setId,
+            questionId,
+            status: 'active',
+        })
+            .populate('partner1', 'name nickname avatar')
+            .populate('partner2', 'name nickname avatar')
+            .lean();
+
+        if (!chat) {
+            return res.status(404).json({ success: false, message: 'V2 question chat not found' });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                chat: {
+                    ...chat,
+                    partner: getChatPartner(chat, userId),
+                    unreadCount: getUnreadCount(chat, userId),
+                },
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching V2 question chat by question:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch V2 question chat by question',
+            error: error.message,
+        });
+    }
+});
+
 router.get('/:chatId', async (req, res) => {
     try {
         const { chatId } = req.params;

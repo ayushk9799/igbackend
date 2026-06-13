@@ -74,6 +74,23 @@ export const createQuestionSetSchema = () => {
             type: Boolean,
             default: false,
         },
+        icon: {
+            type: String,
+            trim: true,
+        },
+        iconType: {
+            type: String,
+            enum: ['emoji', 'auto', 'image', 'asset'],
+            default: 'auto',
+        },
+        iconUrl: {
+            type: String,
+            trim: true,
+        },
+        iconKey: {
+            type: String,
+            trim: true,
+        },
         questions: {
             type: [questionV2Schema],
             default: [],
