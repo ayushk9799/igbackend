@@ -13,73 +13,35 @@ const normalizePlatform = (platform) => (
     typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'
 );
 
-const isValidCoordinate = (value, min, max) => (
-    typeof value === 'number'
-    && Number.isFinite(value)
-    && value >= min
-    && value <= max
-);
+const isValidCoordinate = (firstValue, secondValue, thirdValue) => {
+    if (thirdValue !== undefined) {
+        return typeof firstValue === 'number'
+            && Number.isFinite(firstValue)
+            && firstValue >= secondValue
+            && firstValue <= thirdValue;
+    }
 
-const getInitial = (user) => {
-    const source = user?.nickname || user?.name || user?.email || '?';
-    return source.trim().charAt(0).toUpperCase() || '?';
+    return Number.isFinite(firstValue)
+        && Number.isFinite(secondValue)
+        && firstValue >= -90
+        && firstValue <= 90
+        && secondValue >= -180
+        && secondValue <= 180;
 };
-
-const toRadians = (degrees) => degrees * (Math.PI / 180);
-
-const calculateDistanceKm = (firstLocation, secondLocation) => {
-    const earthRadiusKm = 6371;
-    const deltaLatitude = toRadians(secondLocation.latitude - firstLocation.latitude);
-    const deltaLongitude = toRadians(secondLocation.longitude - firstLocation.longitude);
-    const firstLatitude = toRadians(firstLocation.latitude);
-    const secondLatitude = toRadians(secondLocation.latitude);
-
-    const a = Math.sin(deltaLatitude / 2) ** 2
-        + Math.cos(firstLatitude) * Math.cos(secondLatitude) * Math.sin(deltaLongitude / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return earthRadiusKm * c;
-};
-
-const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelationshipStartDate = false) => ({
-    id: user._id,
-    email: user.email,
-    name: user.name,
-    nickname: user.nickname,
-    relationshipStartDate: relationshipStartDate || user.pendingRelationshipStartDate,
-    pendingRelationshipStartDate: user.pendingRelationshipStartDate || null,
-    shouldAskRelationshipStartDate,
-    avatar: user.avatar,
-    age: user.age,
-    gender: user.gender,
-    partnerId: user.partnerId,
-    partnerUsername: user.partnerUsername,
-    connectionDate: user.connectionDate,
-    partnerCode: user.partnerCode,
-    timezone: user.timezone,
-    platform: user.platform,
-    locationSharingEnabled: !!user.locationSharingEnabled,
-    locationUpdatedAt: user.location?.updatedAt || null,
-    isPremium: user.isPremium,
-    premiumExpiresAt: user.premiumExpiresAt,
-    premiumPlan: user.premiumPlan,
-    locationSharingEnabled: user.locationSharingEnabled || false,
-    locationUpdatedAt: user.locationUpdatedAt || null,
-});
 
 const getInitial = (...values) => {
-    const value = values.find((item) => typeof item === 'string' && item.trim().length > 0);
+    const expandedValues = values.flatMap((item) => {
+        if (item && typeof item === 'object') {
+            return [item.nickname, item.name, item.email];
+        }
+        return [item];
+    });
+
+    const value = expandedValues.find((item) => typeof item === 'string' && item.trim().length > 0);
     return value?.trim()?.charAt(0)?.toUpperCase() || '?';
 };
 
-const isValidCoordinate = (latitude, longitude) => (
-    Number.isFinite(latitude)
-    && Number.isFinite(longitude)
-    && latitude >= -90
-    && latitude <= 90
-    && longitude >= -180
-    && longitude <= 180
-);
+const toRadians = (degrees) => degrees * (Math.PI / 180);
 
 const calculateDistanceKm = (firstLocation, secondLocation) => {
     if (!firstLocation || !secondLocation) return null;
@@ -103,6 +65,30 @@ const calculateDistanceKm = (firstLocation, secondLocation) => {
 
     return earthRadiusKm * c;
 };
+
+const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelationshipStartDate = false) => ({
+    id: user._id,
+    email: user.email,
+    name: user.name,
+    nickname: user.nickname,
+    relationshipStartDate: relationshipStartDate || user.pendingRelationshipStartDate,
+    pendingRelationshipStartDate: user.pendingRelationshipStartDate || null,
+    shouldAskRelationshipStartDate,
+    avatar: user.avatar,
+    age: user.age,
+    gender: user.gender,
+    partnerId: user.partnerId,
+    partnerUsername: user.partnerUsername,
+    connectionDate: user.connectionDate,
+    partnerCode: user.partnerCode,
+    timezone: user.timezone,
+    platform: user.platform,
+    locationSharingEnabled: user.locationSharingEnabled || false,
+    locationUpdatedAt: user.locationUpdatedAt || null,
+    isPremium: user.isPremium,
+    premiumExpiresAt: user.premiumExpiresAt,
+    premiumPlan: user.premiumPlan,
+});
 
 /**
  * PUT /api/user/profile
