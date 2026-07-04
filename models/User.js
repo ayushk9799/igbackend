@@ -93,6 +93,8 @@ const userSchema = new mongoose.Schema({
     // Last scribble received from partner (for offline delivery)
     lastScribble: {
         paths: { type: Array, default: [] }, // Array of {d, color, strokeWidth}
+        canvasWidth: { type: Number, default: 350 },
+        canvasHeight: { type: Number, default: 350 },
         fromUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         fromUserName: { type: String },
         receivedAt: { type: Date },

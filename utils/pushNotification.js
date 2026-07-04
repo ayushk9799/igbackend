@@ -68,13 +68,19 @@ export const sendSilentPush = async (userId, data = {}) => {
  * @param {string} userId - Target user's ID
  * @param {string} senderName - Name of person who sent scribble
  * @param {Array} paths - Scribble path data
+ * @param {Object} dimensions - Original scribble canvas dimensions
  */
-export const sendScribbleNotification = async (userId, senderName, paths) => {
+export const sendScribbleNotification = async (userId, senderName, paths, dimensions = {}) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
             return false;
         }
+
+        const canvasWidth = Number(dimensions.canvasWidth);
+        const canvasHeight = Number(dimensions.canvasHeight);
+        const safeCanvasWidth = Number.isFinite(canvasWidth) && canvasWidth > 0 ? canvasWidth : 350;
+        const safeCanvasHeight = Number.isFinite(canvasHeight) && canvasHeight > 0 ? canvasHeight : safeCanvasWidth;
 
 
 
@@ -88,6 +94,8 @@ export const sendScribbleNotification = async (userId, senderName, paths) => {
                 type: 'scribble',
                 senderName: senderName || 'Your Love',
                 paths: JSON.stringify(paths),
+                canvasWidth: String(safeCanvasWidth),
+                canvasHeight: String(safeCanvasHeight),
                 timestamp: new Date().toISOString(),
             },
             apns: {

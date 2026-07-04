@@ -125,8 +125,8 @@ export const initializeSocket = (httpServer) => {
             handleScribbleLiveStrokeEnd(socket, io, data);
         });
 
-        socket.on('scribble:liveClear', () => {
-            handleScribbleLiveClear(socket, io);
+        socket.on('scribble:liveClear', (data) => {
+            handleScribbleLiveClear(socket, io, data);
         });
 
         socket.on('scribble:liveUndo', (data) => {

@@ -78,10 +78,10 @@ router.get('/version', (req, res) => {
         forceUpdate: updateRequired,
         storeUrl: policy.storeUrl,
         webStoreUrl: policy.webStoreUrl,
-        title: updateRequired ? 'Penguin has a new update' : 'Penguin has a new update',
+        title: updateRequired ? 'Penguin Couple has a new update' : 'Penguin Couple has a new update',
         message: updateRequired
-            ? 'Penguin has a new update. Please update it to continue.'
-            : 'Penguin has a new update available.',
+            ? 'Penguin Couple has a new update. Please update it to continue.'
+            : 'Penguin Couple has a new update available.',
     });
 });
 

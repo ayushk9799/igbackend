@@ -11,6 +11,7 @@ export const handleScribbleSend = async (socket, io, data) => {
     try {
         const { userId, partnerId, userName } = socket;
         const { paths } = data;
+        const dimensions = getScribbleDimensions(data);
         const now = new Date();
 
         if (!paths || !Array.isArray(paths) || paths.length === 0) {
@@ -20,10 +21,10 @@ export const handleScribbleSend = async (socket, io, data) => {
 
         // Save the shared scribble board for both users.
         if (partnerId) {
-            await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now);
+            await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now, dimensions);
 
             // Send push notification to partner (for widget update when app killed)
-            sendScribbleNotification(partnerId, userName, paths);
+            sendScribbleNotification(partnerId, userName, paths, dimensions);
         }
 
         // Broadcast to partner via couple room (if online)
@@ -33,6 +34,7 @@ export const handleScribbleSend = async (socket, io, data) => {
                 fromUserId: userId,
                 fromUserName: userName,
                 paths,
+                ...dimensions,
                 timestamp: now.toISOString(),
             });
 
@@ -43,6 +45,7 @@ export const handleScribbleSend = async (socket, io, data) => {
                 fromUserId: userId,
                 fromUserName: userName,
                 paths,
+                ...dimensions,
                 timestamp: now.toISOString(),
             });
         } else {
@@ -53,6 +56,7 @@ export const handleScribbleSend = async (socket, io, data) => {
                 fromUserId: userId,
                 fromUserName: userName,
                 paths,
+                ...dimensions,
                 timestamp: now.toISOString(),
             });
         }
@@ -85,6 +89,8 @@ export const handleScribbleRequest = async (socket, io) => {
         socket.emit('scribble:partnerScribble', {
             hasScribble: true,
             paths: user.lastScribble.paths,
+            canvasWidth: user.lastScribble.canvasWidth,
+            canvasHeight: user.lastScribble.canvasHeight,
             fromUserId: user.lastScribble.fromUserId,
             fromUserName: user.lastScribble.fromUserName,
             timestamp: user.lastScribble.receivedAt?.toISOString(),
@@ -116,10 +122,24 @@ const getLivePartnerSocketId = (socket) => {
     return getSocketId(socket.partnerId);
 };
 
-const saveScribbleForUsers = async (userIds, fromUserId, fromUserName, paths, receivedAt) => {
+const getScribbleDimensions = (data = {}) => {
+    const canvasWidth = Number(data.canvasWidth);
+    const canvasHeight = Number(data.canvasHeight);
+    const safeCanvasWidth = Number.isFinite(canvasWidth) && canvasWidth > 0 ? canvasWidth : 350;
+    const safeCanvasHeight = Number.isFinite(canvasHeight) && canvasHeight > 0 ? canvasHeight : safeCanvasWidth;
+
+    return {
+        canvasWidth: safeCanvasWidth,
+        canvasHeight: safeCanvasHeight,
+    };
+};
+
+const saveScribbleForUsers = async (userIds, fromUserId, fromUserName, paths, receivedAt, dimensions = {}) => {
+    const scribbleDimensions = getScribbleDimensions(dimensions);
     await User.updateMany({ _id: { $in: userIds } }, {
         lastScribble: {
             paths,
+            ...scribbleDimensions,
             fromUserId,
             fromUserName,
             receivedAt,
@@ -145,6 +165,7 @@ export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
     try {
         const { userId, partnerId, userName } = socket;
         const { stroke, paths: livePaths } = data || {};
+        const dimensions = getScribbleDimensions(data);
 
         if (!stroke || typeof stroke.d !== 'string' || !stroke.d.trim()) {
             socket.emit('scribble:error', { message: 'Invalid live scribble stroke' });
@@ -176,6 +197,8 @@ export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
                 'liveScribble.updatedByUserId': userId,
                 'liveScribble.updatedByUserName': userName,
                 'liveScribble.updatedAt': now,
+                'liveScribble.canvasWidth': dimensions.canvasWidth,
+                'liveScribble.canvasHeight': dimensions.canvasHeight,
             },
         };
 
@@ -190,12 +213,13 @@ export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
         });
 
         const paths = nextPaths || couple?.liveScribble?.paths || [savedStroke];
-        await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now);
+        await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now, dimensions);
 
         io.to(partnerSocketId).emit('scribble:liveStrokeReceived', {
             stroke: savedStroke,
             fromUserId: userId,
             fromUserName: userName,
+            ...dimensions,
             timestamp: now.toISOString(),
         });
 
@@ -205,6 +229,7 @@ export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
             fromUserId: userId,
             fromUserName: userName,
             paths,
+            ...dimensions,
             timestamp: now.toISOString(),
         });
     } catch (error) {
@@ -213,9 +238,10 @@ export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
     }
 };
 
-export const handleScribbleLiveClear = async (socket, io) => {
+export const handleScribbleLiveClear = async (socket, io, data = {}) => {
     try {
         const { userId, partnerId, userName } = socket;
+        const dimensions = getScribbleDimensions(data);
 
         const partnerSocketId = getLivePartnerSocketId(socket);
         if (!partnerId || !partnerSocketId) {
@@ -230,14 +256,17 @@ export const handleScribbleLiveClear = async (socket, io) => {
                 'liveScribble.updatedByUserId': userId,
                 'liveScribble.updatedByUserName': userName,
                 'liveScribble.updatedAt': now,
+                'liveScribble.canvasWidth': dimensions.canvasWidth,
+                'liveScribble.canvasHeight': dimensions.canvasHeight,
             },
         });
 
-        await saveScribbleForUsers([userId, partnerId], userId, userName, [], now);
+        await saveScribbleForUsers([userId, partnerId], userId, userName, [], now, dimensions);
 
         io.to(partnerSocketId).emit('scribble:liveCleared', {
             fromUserId: userId,
             fromUserName: userName,
+            ...dimensions,
             timestamp: now.toISOString(),
         });
 
@@ -246,6 +275,7 @@ export const handleScribbleLiveClear = async (socket, io) => {
             fromUserId: userId,
             fromUserName: userName,
             paths: [],
+            ...dimensions,
             timestamp: now.toISOString(),
         });
     } catch (error) {
@@ -258,6 +288,7 @@ export const handleScribbleLiveUndo = async (socket, io, data) => {
     try {
         const { userId, partnerId, userName } = socket;
         const { strokeId, paths: livePaths } = data || {};
+        const dimensions = getScribbleDimensions(data);
 
         if (!strokeId) {
             socket.emit('scribble:error', { message: 'Invalid live scribble undo' });
@@ -277,6 +308,8 @@ export const handleScribbleLiveUndo = async (socket, io, data) => {
                 'liveScribble.updatedByUserId': userId,
                 'liveScribble.updatedByUserName': userName,
                 'liveScribble.updatedAt': now,
+                'liveScribble.canvasWidth': dimensions.canvasWidth,
+                'liveScribble.canvasHeight': dimensions.canvasHeight,
             },
         };
 
@@ -296,12 +329,13 @@ export const handleScribbleLiveUndo = async (socket, io, data) => {
         });
 
         const paths = nextPaths || couple?.liveScribble?.paths || [];
-        await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now);
+        await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now, dimensions);
 
         io.to(partnerSocketId).emit('scribble:liveUndone', {
             strokeId,
             fromUserId: userId,
             fromUserName: userName,
+            ...dimensions,
             timestamp: now.toISOString(),
         });
 
@@ -311,6 +345,7 @@ export const handleScribbleLiveUndo = async (socket, io, data) => {
             fromUserId: userId,
             fromUserName: userName,
             paths,
+            ...dimensions,
             timestamp: now.toISOString(),
         });
     } catch (error) {
