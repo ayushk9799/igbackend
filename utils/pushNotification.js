@@ -185,15 +185,17 @@ export const sendMoodNotification = async (userId, senderName, mood) => {
             return false;
         }
 
+        const displayName = senderName || 'Your partner';
+        const moodLabel = mood.label ? String(mood.label).trim().toLowerCase() : 'in a new mood';
         const message = {
             token: user.fcmToken,
             notification: {
                 title: '✨ Partner Mood Update',
-                body: `${senderName} is feeling ${mood.emoji} ${mood.label}`,
+                body: `${displayName} is ${moodLabel}`,
             },
             data: {
                 type: 'mood_update',
-                senderName: senderName || 'Your Love',
+                senderName: displayName,
                 emoji: mood.emoji,
                 label: mood.label,
                 timestamp: new Date().toISOString(),

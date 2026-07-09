@@ -80,9 +80,11 @@ export const handleMoodUpdate = async (socket, io, data) => {
             mood: normalizeMoodForClient(moodLog),
         });
 
+        const moodDisplayName = updatedUser.nickname || updatedUser.name || userName || 'Your partner';
+
         // Send push notification to partner
         if (partnerId) {
-            sendMoodNotification(partnerId, userName, { emoji, label });
+            sendMoodNotification(partnerId, moodDisplayName, { emoji, label });
         }
 
         // Broadcast to partner via couple room
@@ -90,7 +92,7 @@ export const handleMoodUpdate = async (socket, io, data) => {
         if (roomId) {
             socket.to(roomId).emit('mood:changed', {
                 userId,
-                userName: socket.userName,
+                userName: moodDisplayName,
                 mood,
             });
             socket.to(roomId).emit('mood:partnerHistoryItemAdded', {

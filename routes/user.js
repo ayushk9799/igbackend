@@ -3,11 +3,13 @@ import User from '../models/User.js';
 import Couple from '../models/Couple.js';
 import { getIO } from '../socket/index.js';
 import { getCoupleRoomId } from '../socket/auth.js';
+import { sendSilentPush } from '../utils/pushNotification.js';
 
 const router = express.Router();
 
 const VALID_PLATFORMS = new Set(['ios', 'android', 'web']);
 const TOGETHER_DISTANCE_KM = 0.1;
+const WIDGET_TYPES = ['scribble', 'togetherDays', 'togetherCountdown', 'distance'];
 
 const normalizePlatform = (platform) => (
     typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'
@@ -88,7 +90,70 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     isPremium: user.isPremium,
     premiumExpiresAt: user.premiumExpiresAt,
     premiumPlan: user.premiumPlan,
+    widgetStatus: user.widgetStatus || {},
 });
+
+const normalizeWidgetPayload = (widgets = {}, platform = 'unknown', source = 'app') => {
+    const update = {};
+    const now = new Date();
+    const normalizedPlatform = normalizePlatform(platform);
+
+    for (const type of WIDGET_TYPES) {
+        const status = widgets?.[type];
+        if (!status || typeof status !== 'object') continue;
+
+        const basePath = `widgetStatus.${type}`;
+        update[`${basePath}.platform`] = normalizedPlatform;
+        update[`${basePath}.source`] = typeof source === 'string' ? source.slice(0, 40) : 'app';
+
+        if (typeof status.intentEnabled === 'boolean') {
+            update[`${basePath}.intentEnabled`] = status.intentEnabled;
+            if (status.intentEnabled) {
+                update[`${basePath}.lastIntentAt`] = now;
+            }
+        }
+
+        if (typeof status.installed === 'boolean') {
+            update[`${basePath}.installed`] = status.installed;
+            update[`${basePath}.lastSeenAt`] = now;
+        }
+
+        if (status.activeCount !== undefined) {
+            const activeCount = Math.max(0, Number.parseInt(status.activeCount, 10) || 0);
+            update[`${basePath}.activeCount`] = activeCount;
+            update[`${basePath}.installed`] = activeCount > 0;
+            update[`${basePath}.lastSeenAt`] = now;
+        }
+    }
+
+    return update;
+};
+
+const countWidgetStats = async (platform) => {
+    const normalizedPlatform = platform ? normalizePlatform(platform) : null;
+    const anyInstalledOr = WIDGET_TYPES.map((type) => {
+        const query = { [`widgetStatus.${type}.installed`]: true };
+        if (normalizedPlatform) {
+            query[`widgetStatus.${type}.platform`] = normalizedPlatform;
+        }
+        return query;
+    });
+    const result = {
+        anyWidget: await User.countDocuments({ $or: anyInstalledOr }),
+    };
+
+    for (const type of WIDGET_TYPES) {
+        const query = {
+            [`widgetStatus.${type}.installed`]: true,
+        };
+        if (normalizedPlatform) {
+            query[`widgetStatus.${type}.platform`] = normalizedPlatform;
+        }
+        result[type] = await User.countDocuments(query);
+    }
+
+    return result;
+};
 
 /**
  * PUT /api/user/profile
@@ -290,146 +355,6 @@ router.put('/device-info', async (req, res) => {
 });
 
 /**
- * PUT /api/user/location
- * Update the user's latest shared location for the distance widget.
- */
-router.put('/location', async (req, res) => {
-    try {
-        const { userId, latitude, longitude, sharingEnabled = true } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({
-                success: false,
-                error: 'userId is required'
-            });
-        }
-
-        if (!isValidCoordinate(latitude, -90, 90) || !isValidCoordinate(longitude, -180, 180)) {
-            return res.status(400).json({
-                success: false,
-                error: 'latitude and longitude must be valid coordinates'
-            });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-        user.locationSharingEnabled = sharingEnabled !== false;
-        user.location = {
-            latitude,
-            longitude,
-            updatedAt: new Date(),
-        };
-
-        await user.save();
-
-        res.json({
-            success: true,
-            user: buildUserResponse(user),
-        });
-    } catch (error) {
-        console.error('Location update error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to update location'
-        });
-    }
-});
-
-/**
- * GET /api/user/distance/:userId
- * Return latest partner distance for the distance widget.
- */
-router.get('/distance/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-        if (!user.partnerId) {
-            return res.status(400).json({
-                success: false,
-                error: 'Partner not connected'
-            });
-        }
-
-        const partner = await User.findById(user.partnerId);
-        if (!partner) {
-            return res.status(404).json({
-                success: false,
-                error: 'Partner not found'
-            });
-        }
-
-        const userLocation = user.location;
-        const partnerLocation = partner.location;
-        const canCalculateDistance = !!(
-            user.locationSharingEnabled
-            && partner.locationSharingEnabled
-            && userLocation?.updatedAt
-            && partnerLocation?.updatedAt
-            && isValidCoordinate(userLocation.latitude, -90, 90)
-            && isValidCoordinate(userLocation.longitude, -180, 180)
-            && isValidCoordinate(partnerLocation.latitude, -90, 90)
-            && isValidCoordinate(partnerLocation.longitude, -180, 180)
-        );
-
-        if (!canCalculateDistance) {
-            return res.json({
-                success: true,
-                data: {
-                    distanceKm: null,
-                    isTogether: false,
-                    togetherThresholdKm: TOGETHER_DISTANCE_KM,
-                    userInitial: getInitial(user),
-                    partnerInitial: getInitial(partner),
-                    userLocationUpdatedAt: userLocation?.updatedAt || null,
-                    partnerLocationUpdatedAt: partnerLocation?.updatedAt || null,
-                    sharingEnabled: !!user.locationSharingEnabled,
-                    partnerSharingEnabled: !!partner.locationSharingEnabled,
-                }
-            });
-        }
-
-        const rawDistanceKm = calculateDistanceKm(userLocation, partnerLocation);
-        const distanceKm = Math.round(rawDistanceKm * 10) / 10;
-        const isTogether = rawDistanceKm <= TOGETHER_DISTANCE_KM;
-
-        res.json({
-            success: true,
-            data: {
-                distanceKm,
-                isTogether,
-                togetherThresholdKm: TOGETHER_DISTANCE_KM,
-                userInitial: getInitial(user),
-                partnerInitial: getInitial(partner),
-                userLocationUpdatedAt: userLocation.updatedAt,
-                partnerLocationUpdatedAt: partnerLocation.updatedAt,
-                sharingEnabled: !!user.locationSharingEnabled,
-                partnerSharingEnabled: !!partner.locationSharingEnabled,
-            }
-        });
-    } catch (error) {
-        console.error('Distance fetch error:', error);
-        res.status(500).json({
-            success: false,
-            error: 'Failed to fetch distance'
-        });
-    }
-});
-
-/**
  * POST /api/user/fcm-token
  * Register FCM token for push notifications
  */
@@ -524,6 +449,18 @@ router.put('/location', async (req, res) => {
         await user.save();
 
         const activeCouple = await Couple.findByPartner(user._id);
+        const partnerId = user.partnerId || (
+            activeCouple?.partner1?.toString() === user._id.toString()
+                ? activeCouple.partner2
+                : activeCouple?.partner1
+        );
+        if (partnerId && shouldShare) {
+            sendSilentPush(partnerId, {
+                type: 'distance_widget_refresh',
+                senderUserId: user._id.toString(),
+                timestamp: new Date().toISOString(),
+            }).catch(() => {});
+        }
         const shouldAskRelationshipStartDate = !!(
             activeCouple
             && !activeCouple.relationshipStartDate
@@ -626,6 +563,115 @@ router.get('/distance/:userId', async (req, res) => {
         res.status(500).json({
             success: false,
             error: 'Failed to get partner distance'
+        });
+    }
+});
+
+/**
+ * PUT /api/user/widgets/status
+ * Store widget intent and native-confirmed install status for a user.
+ */
+router.put('/widgets/status', async (req, res) => {
+    try {
+        const { userId, platform = 'unknown', source = 'app', widgets } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                error: 'userId is required'
+            });
+        }
+
+        if (!widgets || typeof widgets !== 'object') {
+            return res.status(400).json({
+                success: false,
+                error: 'widgets payload is required'
+            });
+        }
+
+        const update = normalizeWidgetPayload(widgets, platform, source);
+        if (Object.keys(update).length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No valid widget status fields provided'
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $set: update },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            widgetStatus: user.widgetStatus || {},
+        });
+    } catch (error) {
+        console.error('Widget status update error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update widget status'
+        });
+    }
+});
+
+/**
+ * GET /api/user/widgets/stats
+ * Return aggregate widget adoption counts.
+ */
+router.get('/widgets/stats', async (req, res) => {
+    try {
+        const intent = {};
+        const installed = await countWidgetStats();
+        const activeCopies = {};
+
+        for (const type of WIDGET_TYPES) {
+            intent[type] = await User.countDocuments({
+                [`widgetStatus.${type}.intentEnabled`]: true,
+            });
+
+            const [copyStats] = await User.aggregate([
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: { $ifNull: [`$widgetStatus.${type}.activeCount`, 0] } },
+                    }
+                }
+            ]);
+            activeCopies[type] = copyStats?.total || 0;
+        }
+
+        const [ios, android, unknown] = await Promise.all([
+            countWidgetStats('ios'),
+            countWidgetStats('android'),
+            countWidgetStats('unknown'),
+        ]);
+
+        res.json({
+            success: true,
+            totalUsers: await User.countDocuments({}),
+            intent,
+            installed,
+            activeCopies,
+            byPlatform: {
+                ios,
+                android,
+                unknown,
+            },
+        });
+    } catch (error) {
+        console.error('Widget stats error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch widget stats'
         });
     }
 });

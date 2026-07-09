@@ -1,0 +1,4930 @@
+{
+  "relationship": [
+    {
+      "setId": "rel-deep-connection",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "rel-deep-001",
+          "prompt": "What is one small thing I do that makes you feel deeply loved?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-002",
+          "prompt": "When did you first realize you had strong feelings for me?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-003",
+          "prompt": "What's a core memory of us that always brings a smile to your face?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-004",
+          "prompt": "What is a challenge we've overcome that you feel made us stronger?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-005",
+          "prompt": "How do you think we have both grown since we started dating?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-006",
+          "prompt": "What's something you value most about our relationship dynamic?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-007",
+          "prompt": "What does a perfect day together look like in your eyes?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-008",
+          "prompt": "What is a vulnerability you've shared with me that you're glad you did?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-009",
+          "prompt": "How do you feel we best support each other's individual dreams?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-deep-010",
+          "prompt": "What's one thing you want us to do more of in our daily lives?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Little Love Signals",
+      "iconType": "emoji",
+      "icon": "💕"
+    },
+    {
+      "setId": "rel-likelyto-habits",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "rel-lt-001",
+          "prompt": "Who is more likely to say sorry first after an argument?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-002",
+          "prompt": "Who is more likely to surprise the other with a random gift?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-003",
+          "prompt": "Who is more likely to remember minor relationship milestones?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-004",
+          "prompt": "Who is more likely to plan a elaborate date night?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-005",
+          "prompt": "Who is more likely to steal the covers in the middle of the night?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-006",
+          "prompt": "Who is more likely to fall asleep during a movie we're watching?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-007",
+          "prompt": "Who is more likely to initiate a deep, late-night conversation?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-008",
+          "prompt": "Who is more likely to take longer to get ready to go out?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-009",
+          "prompt": "Who is more likely to suggest staying in instead of going to a party?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "rel-lt-010",
+          "prompt": "Who is more likely to send double texts when the other doesn't reply?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Our Soft Spots",
+      "iconType": "emoji",
+      "icon": "🤭"
+    },
+    {
+      "setId": "rel-wouldyourather-dates",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "rel-wyr-001",
+          "prompt": "Would you rather have a cozy movie night at home or dress up for a fancy dinner?",
+          "isActive": true,
+          "options": [
+            "Cozy movie night",
+            "Fancy dinner"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-002",
+          "prompt": "Would you rather go on a double date with friends or have a private night just for us?",
+          "isActive": true,
+          "options": [
+            "Double date",
+            "Just for us"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-003",
+          "prompt": "Would you rather spend a weekend camping off-grid or staying at a luxury hotel?",
+          "isActive": true,
+          "options": [
+            "Camping off-grid",
+            "Luxury hotel"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-004",
+          "prompt": "Would you rather get active with a hike/sport or relax at a couples' spa?",
+          "isActive": true,
+          "options": [
+            "Hike or sport",
+            "Couples' spa"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-005",
+          "prompt": "Would you rather Cook a new recipe together at home or order takeout from our favorite spot?",
+          "isActive": true,
+          "options": [
+            "Cook together",
+            "Order takeout"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-006",
+          "prompt": "Would you rather attend a loud concert or go to a quiet museum gallery?",
+          "isActive": true,
+          "options": [
+            "Loud concert",
+            "Quiet museum"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-007",
+          "prompt": "Would you rather spend date night learning a new skill (like pottery) or playing board games?",
+          "isActive": true,
+          "options": [
+            "Learn a new skill",
+            "Play board games"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-008",
+          "prompt": "Would you rather go on a spontaneous mystery road trip or a meticulously planned itinerary?",
+          "isActive": true,
+          "options": [
+            "Spontaneous trip",
+            "Planned itinerary"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-009",
+          "prompt": "Would you rather take a morning date (brunch/walk) or a late-night date (drinks/club)?",
+          "isActive": true,
+          "options": [
+            "Morning date",
+            "Late-night date"
+          ]
+        },
+        {
+          "questionId": "rel-wyr-010",
+          "prompt": "Would you rather receive a handwritten love letter or a small, thoughtful physical gift?",
+          "isActive": true,
+          "options": [
+            "Love letter",
+            "Thoughtful gift"
+          ]
+        }
+      ],
+      "title": "Date Night Energy"
+    },
+    {
+      "setId": "rel-thisorthat-preferences",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "rel-tot-001",
+          "prompt": "Physical touch or Words of affirmation?",
+          "isActive": true,
+          "options": [
+            "Physical touch",
+            "Words of affirmation"
+          ]
+        },
+        {
+          "questionId": "rel-tot-002",
+          "prompt": "Big group hangouts or One-on-one time?",
+          "isActive": true,
+          "options": [
+            "Big group hangouts",
+            "One-on-one time"
+          ]
+        },
+        {
+          "questionId": "rel-tot-003",
+          "prompt": "Holding hands in public or private affection?",
+          "isActive": true,
+          "options": [
+            "Holding hands",
+            "Private affection"
+          ]
+        },
+        {
+          "questionId": "rel-tot-004",
+          "prompt": "Texting throughout the day or catch up at night?",
+          "isActive": true,
+          "options": [
+            "Texting all day",
+            "Catch up at night"
+          ]
+        },
+        {
+          "questionId": "rel-tot-005",
+          "prompt": "Matching outfits or completely different styles?",
+          "isActive": true,
+          "options": [
+            "Matching outfits",
+            "Different styles"
+          ]
+        },
+        {
+          "questionId": "rel-tot-006",
+          "prompt": "Spontaneous plans or scheduled calendar dates?",
+          "isActive": true,
+          "options": [
+            "Spontaneous",
+            "Scheduled dates"
+          ]
+        },
+        {
+          "questionId": "rel-tot-007",
+          "prompt": "Big romantic gestures or small daily acts of service?",
+          "isActive": true,
+          "options": [
+            "Big gestures",
+            "Small daily acts"
+          ]
+        },
+        {
+          "questionId": "rel-tot-008",
+          "prompt": "Sharing food plates or ordering your own dish?",
+          "isActive": true,
+          "options": [
+            "Sharing plates",
+            "Ordering own"
+          ]
+        },
+        {
+          "questionId": "rel-tot-009",
+          "prompt": "Early bird dates or night owl dates?",
+          "isActive": true,
+          "options": [
+            "Early bird",
+            "Night owl"
+          ]
+        },
+        {
+          "questionId": "rel-tot-010",
+          "prompt": "Talking about problems immediately or taking time to cool off?",
+          "isActive": true,
+          "options": [
+            "Talk immediately",
+            "Time to cool off"
+          ]
+        }
+      ],
+      "title": "Love Languages Live"
+    },
+    {
+      "setId": "rel-slider-connection",
+      "format": "slider",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "rel-sl-001",
+          "prompt": "How well do you feel I understand your emotional needs?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not well",
+          "maxLabel": "Perfectly"
+        },
+        {
+          "questionId": "rel-sl-002",
+          "prompt": "How comfortable do you feel sharing your insecurities with me?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Hesitant",
+          "maxLabel": "Fully safe"
+        },
+        {
+          "questionId": "rel-sl-003",
+          "prompt": "How aligned do you feel we are on our core values?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Clashing",
+          "maxLabel": "Completely aligned"
+        },
+        {
+          "questionId": "rel-sl-004",
+          "prompt": "How happy are you with the amount of quality time we spend together?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Need more",
+          "maxLabel": "Very satisfied"
+        },
+        {
+          "questionId": "rel-sl-005",
+          "prompt": "How would you rate our overall communication during disagreements?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Tense/Unresolved",
+          "maxLabel": "Healthy/Calm"
+        },
+        {
+          "questionId": "rel-sl-006",
+          "prompt": "How much do you feel we inspire each other to be better individuals?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not much",
+          "maxLabel": "A huge amount"
+        },
+        {
+          "questionId": "rel-sl-007",
+          "prompt": "How romantic do you think our relationship is right now?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Needs spark",
+          "maxLabel": "Super romantic"
+        },
+        {
+          "questionId": "rel-sl-008",
+          "prompt": "How well do you think we balance independence with togetherness?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Out of balance",
+          "maxLabel": "Perfect balance"
+        },
+        {
+          "questionId": "rel-sl-009",
+          "prompt": "How secure and stable do you feel in this relationship?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Anxious",
+          "maxLabel": "Extremely secure"
+        },
+        {
+          "questionId": "rel-sl-010",
+          "prompt": "How excited are you about our relationship's current direction?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Unsure",
+          "maxLabel": "Very excited"
+        }
+      ],
+      "title": "Connection Check"
+    }
+  ],
+  "sexlove": [
+    {
+      "setId": "sex-deep-intimacy",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "sex-deep-001",
+          "prompt": "What does 'intimacy' mean to you in our relationship?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-002",
+          "prompt": "What is a way I show love that makes you feel most desired?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-003",
+          "prompt": "How do you feel our physical connection has evolved over time?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-004",
+          "prompt": "What's an aspect of our romantic life you'd love us to explore more?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-005",
+          "prompt": "How can I make you feel more comfortable expressing your desires?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-006",
+          "prompt": "What is your favorite time of day or setting for romance?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-007",
+          "prompt": "What makes you feel closest to me after we are intimate?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-008",
+          "prompt": "What's a sensory detail (light, music, touch) that heightens your mood?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-009",
+          "prompt": "How do you feel when we talk openly about our sex life?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-deep-010",
+          "prompt": "What is one emotional barrier you sometimes face when trying to connect?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Close Enough To Tell"
+    },
+    {
+      "setId": "sex-nhie-spicy",
+      "format": "neverhaveiever",
+      "isActive": true,
+      "order": 2,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "sex-nhie-001",
+          "prompt": "Never have I ever had a fantasy about a roleplay scenario.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-002",
+          "prompt": "Never have I ever sent a flirty photo to my partner.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-003",
+          "prompt": "Never have I ever read or watched romance novels/movies for inspiration.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-004",
+          "prompt": "Never have I ever wanted to try being intimate in a semi-public place.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-005",
+          "prompt": "Never have I ever bought something specific just to surprise my partner in bed.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-006",
+          "prompt": "Never have I ever had a dream about my partner that I was too shy to share.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-007",
+          "prompt": "Never have I ever initiated intimacy when I felt a bit nervous.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-008",
+          "prompt": "Never have I ever wanted to use blindfolds or light restraints.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-009",
+          "prompt": "Never have I ever thought about our intimate moments while at work.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-nhie-010",
+          "prompt": "Never have I ever wanted to take a video or photo of us being intimate.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "After Dark Fantasies"
+    },
+    {
+      "setId": "sex-slider-desire",
+      "format": "slider",
+      "isActive": true,
+      "order": 3,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "sex-sl-001",
+          "prompt": "How satisfied are you with our current frequency of physical intimacy?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Want more",
+          "maxLabel": "Very content"
+        },
+        {
+          "questionId": "sex-sl-002",
+          "prompt": "How adventurous do you consider your sexual fantasies to be?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Traditional",
+          "maxLabel": "Very wild"
+        },
+        {
+          "questionId": "sex-sl-003",
+          "prompt": "How comfortable are you talking about sexual preferences with me?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Shy",
+          "maxLabel": "Completely open"
+        },
+        {
+          "questionId": "sex-sl-004",
+          "prompt": "How important is romantic build-up (foreplay, mood) to you?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not crucial",
+          "maxLabel": "Essential"
+        },
+        {
+          "questionId": "sex-sl-005",
+          "prompt": "How would you rate our sexual chemistry right now?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Needs spark",
+          "maxLabel": "Off the charts"
+        },
+        {
+          "questionId": "sex-sl-006",
+          "prompt": "How responsive are you to spontaneous intimate prompts?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Need prep",
+          "maxLabel": "Always ready"
+        },
+        {
+          "questionId": "sex-sl-007",
+          "prompt": "How much does physical touch outside of sex contribute to your desire?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "A little",
+          "maxLabel": "A massive amount"
+        },
+        {
+          "questionId": "sex-sl-008",
+          "prompt": "How open are you to introducing toys or new accessories?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not open",
+          "maxLabel": "Very eager"
+        },
+        {
+          "questionId": "sex-sl-009",
+          "prompt": "How loved do you feel immediately following our intimate times?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Disconnected",
+          "maxLabel": "Extremely loved"
+        },
+        {
+          "questionId": "sex-sl-010",
+          "prompt": "How confident do you feel in your ability to satisfy me?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Unsure",
+          "maxLabel": "Unwavering"
+        }
+      ],
+      "title": "Desire Temperature"
+    },
+    {
+      "setId": "sex-voice-secrets",
+      "format": "voicerecord",
+      "isActive": true,
+      "order": 4,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "sex-voice-001",
+          "prompt": "Whisper one secret physical spot you love being touched.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-002",
+          "prompt": "Record a flirty message for me to play when I miss you.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-003",
+          "prompt": "Describe the most memorable intimate experience we've shared.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-004",
+          "prompt": "Share a fantasy you want us to fulfill in the near future.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-005",
+          "prompt": "Tell me what you find most physically attractive about me right now.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-006",
+          "prompt": "Record what you would do to me if we were together right this second.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-007",
+          "prompt": "Describe what a perfect passionate kiss feels like to you.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-008",
+          "prompt": "Share what outfit of mine makes you feel the most turned on.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-009",
+          "prompt": "Tell me a word or phrase that instantly gets you in the mood.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-voice-010",
+          "prompt": "Record your reaction to a surprise romantic gesture from me.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Whisper Mode"
+    },
+    {
+      "setId": "sex-photo-flirt",
+      "format": "takephoto",
+      "isActive": true,
+      "order": 5,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "sex-photo-001",
+          "prompt": "Take a photo of a piece of clothing you think looks best on me.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-002",
+          "prompt": "Capture a photo of your lips in a playful pout or smile.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-003",
+          "prompt": "Take a photo of the bed or room setup where you want us to relax.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-004",
+          "prompt": "Snap a picture of something that reminds you of romance.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-005",
+          "prompt": "Share a selfie showing your flirty face.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-006",
+          "prompt": "Take a photo of a candle or light setup that creates the perfect mood.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-007",
+          "prompt": "Capture a photo of your favorite feature of yours that I love.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-008",
+          "prompt": "Take a picture of what you are wearing right now.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-009",
+          "prompt": "Snap a photo of the cozy spot you want to cuddle in later.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "sex-photo-010",
+          "prompt": "Take a photo of a shadow or outline that feels mysterious and artistic.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Flirt In Frame"
+    }
+  ],
+  "coupletherapy": [
+    {
+      "setId": "ct-deep-reflection",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ct-deep-001",
+          "prompt": "What is one topic we struggle to talk about without getting defensive?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-002",
+          "prompt": "How do you feel I handle it when you express sadness or anger?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-003",
+          "prompt": "What's an emotional trigger of yours that you want me to understand better?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-004",
+          "prompt": "When we argue, what do you need most from me in that exact moment?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-005",
+          "prompt": "In what areas of our relationship do you feel most appreciated?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-006",
+          "prompt": "How can we improve the way we reconnect after a conflict?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-007",
+          "prompt": "What is a boundary you would like to set or clarify for us?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-008",
+          "prompt": "What's one thing you're holding onto that you need to let go of?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-009",
+          "prompt": "How do you feel about the balance of emotional labor between us?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-deep-010",
+          "prompt": "What is a practice we can start doing weekly to check in on our relationship health?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "The Hard Stuff"
+    },
+    {
+      "setId": "ct-slider-trust",
+      "format": "slider",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ct-sl-001",
+          "prompt": "How safe do you feel expressing opinions that might disagree with mine?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Anxious",
+          "maxLabel": "Entirely safe"
+        },
+        {
+          "questionId": "ct-sl-002",
+          "prompt": "How well do you feel we repair our relationship after a fight?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "We linger",
+          "maxLabel": "Quick repair"
+        },
+        {
+          "questionId": "ct-sl-003",
+          "prompt": "How much do you trust me to keep your deepest secrets safe?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Somewhat",
+          "maxLabel": "Implicitly"
+        },
+        {
+          "questionId": "ct-sl-004",
+          "prompt": "How consistent do you feel I am in my commitments to you?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Inconsistent",
+          "maxLabel": "Very reliable"
+        },
+        {
+          "questionId": "ct-sl-005",
+          "prompt": "How validated do you feel when voicing your fears about the relationship?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Dismissed",
+          "maxLabel": "Fully heard"
+        },
+        {
+          "questionId": "ct-sl-006",
+          "prompt": "How secure do you feel about our long-term commitment?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Anxious",
+          "maxLabel": "Extremely secure"
+        },
+        {
+          "questionId": "ct-sl-007",
+          "prompt": "How well do we support each other during external life crises?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Drift apart",
+          "maxLabel": "Team up"
+        },
+        {
+          "questionId": "ct-sl-008",
+          "prompt": "How comfortable are you with the amount of space/privacy we allow each other?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Suffocating/Distant",
+          "maxLabel": "Perfect balance"
+        },
+        {
+          "questionId": "ct-sl-009",
+          "prompt": "How much do you feel I prioritize our relationship over work or friends?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Low priority",
+          "maxLabel": "High priority"
+        },
+        {
+          "questionId": "ct-sl-010",
+          "prompt": "How would you rate the level of respect we show each other during hard talks?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Needs work",
+          "maxLabel": "Very respectful"
+        }
+      ],
+      "title": "Safe To Say"
+    },
+    {
+      "setId": "ct-thisorthat-communication",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ct-tot-001",
+          "prompt": "Talk it out immediately or Sleep on it first?",
+          "isActive": true,
+          "options": [
+            "Talk immediately",
+            "Sleep on it"
+          ]
+        },
+        {
+          "questionId": "ct-tot-002",
+          "prompt": "Written expression (text/letter) or Verbal talk?",
+          "isActive": true,
+          "options": [
+            "Written expression",
+            "Verbal talk"
+          ]
+        },
+        {
+          "questionId": "ct-tot-003",
+          "prompt": "Direct problem solving or Empathetic listening first?",
+          "isActive": true,
+          "options": [
+            "Direct solving",
+            "Empathetic listening"
+          ]
+        },
+        {
+          "questionId": "ct-tot-004",
+          "prompt": "Eye-to-eye serious talk or Side-by-side casual talk?",
+          "isActive": true,
+          "options": [
+            "Eye-to-eye",
+            "Side-by-side"
+          ]
+        },
+        {
+          "questionId": "ct-tot-005",
+          "prompt": "Logical dissection or Emotional validation?",
+          "isActive": true,
+          "options": [
+            "Logical dissection",
+            "Emotional validation"
+          ]
+        },
+        {
+          "questionId": "ct-tot-006",
+          "prompt": "Private reflection before speaking or Thinking out loud?",
+          "isActive": true,
+          "options": [
+            "Private reflection",
+            "Thinking out loud"
+          ]
+        },
+        {
+          "questionId": "ct-tot-007",
+          "prompt": "Gentle approach or Blunt honesty?",
+          "isActive": true,
+          "options": [
+            "Gentle approach",
+            "Blunt honesty"
+          ]
+        },
+        {
+          "questionId": "ct-tot-008",
+          "prompt": "Face-to-face chat or Phone call check-in?",
+          "isActive": true,
+          "options": [
+            "Face-to-face",
+            "Phone call"
+          ]
+        },
+        {
+          "questionId": "ct-tot-009",
+          "prompt": "Humor to diffuse tension or serious tone throughout?",
+          "isActive": true,
+          "options": [
+            "Humor diffusion",
+            "Serious tone"
+          ]
+        },
+        {
+          "questionId": "ct-tot-010",
+          "prompt": "Focus on root causes or focus on immediate resolutions?",
+          "isActive": true,
+          "options": [
+            "Root causes",
+            "Immediate solutions"
+          ]
+        }
+      ],
+      "title": "Fight Or Flight"
+    },
+    {
+      "setId": "ct-wouldyourather-scenarios",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ct-wyr-001",
+          "prompt": "Would you rather have a partner who is overly quiet during arguments or one who gets loud?",
+          "isActive": true,
+          "options": [
+            "Overly quiet",
+            "Loud"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-002",
+          "prompt": "Would you rather spend an hour in formal couples' therapy or read a relationship advice book together?",
+          "isActive": true,
+          "options": [
+            "Couples' therapy",
+            "Read a book"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-003",
+          "prompt": "Would you rather admit you were wrong immediately or take a day to realize it?",
+          "isActive": true,
+          "options": [
+            "Admit immediately",
+            "Take a day"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-004",
+          "prompt": "Would you rather deal with a disagreement about money or a disagreement about chores?",
+          "isActive": true,
+          "options": [
+            "Money dispute",
+            "Chores dispute"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-005",
+          "prompt": "Would you rather have your partner give you advice when stressed or just hold you in silence?",
+          "isActive": true,
+          "options": [
+            "Give advice",
+            "Hold in silence"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-006",
+          "prompt": "Would you rather discuss a boundary privately or bring it up naturally as things happen?",
+          "isActive": true,
+          "options": [
+            "Discuss privately",
+            "Bring up naturally"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-007",
+          "prompt": "Would you rather have too much emotional intensity or a bit of emotional distance?",
+          "isActive": true,
+          "options": [
+            "Too much intensity",
+            "Emotional distance"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-008",
+          "prompt": "Would you rather plan weekly relationship check-ins or only talk when a problem arises?",
+          "isActive": true,
+          "options": [
+            "Weekly check-ins",
+            "Only when needed"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-009",
+          "prompt": "Would you rather your partner call you out in front of family or stay quiet and talk later?",
+          "isActive": true,
+          "options": [
+            "Call out",
+            "Talk later"
+          ]
+        },
+        {
+          "questionId": "ct-wyr-010",
+          "prompt": "Would you rather be hyper-independent or slightly codependent on each other?",
+          "isActive": true,
+          "options": [
+            "Hyper-independent",
+            "Slightly codependent"
+          ]
+        }
+      ],
+      "title": "Repair Scenarios"
+    },
+    {
+      "setId": "ct-likelyto-habits",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ct-lt-001",
+          "prompt": "Who is more likely to notice when the other is upset first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-002",
+          "prompt": "Who is more likely to bring up relationship issues for discussion?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-003",
+          "prompt": "Who is more likely to overthink a minor disagreement?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-004",
+          "prompt": "Who is more likely to seek outside advice or books for help?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-005",
+          "prompt": "Who is more likely to use logic rather than emotion during arguments?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-006",
+          "prompt": "Who is more likely to shut down or withdraw when overwhelmed?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-007",
+          "prompt": "Who is more likely to initiate a cuddle session after a fight?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-008",
+          "prompt": "Who is more likely to say 'I love you' first after a quiet spell?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-009",
+          "prompt": "Who is more likely to get distracted by their phone when the other is talking?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ct-lt-010",
+          "prompt": "Who is more likely to hold onto a grudge longer?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Emotional Radar"
+    }
+  ],
+  "longdistance": [
+    {
+      "setId": "ldr-deep-connection",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ldr-deep-001",
+          "prompt": "What part of being apart do you find hardest to deal with?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-002",
+          "prompt": "How do you feel our communication has adapted to long distance?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-003",
+          "prompt": "What is a habit we've built that keeps you feeling connected?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-004",
+          "prompt": "What are you most looking forward to when we see each other next?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-005",
+          "prompt": "How do you deal with feelings of jealousy or insecurity from afar?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-006",
+          "prompt": "What's something you do when you miss me that makes you feel better?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-007",
+          "prompt": "How can I support you better when you are having a rough day?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-008",
+          "prompt": "What is our biggest strength as a long-distance couple?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-009",
+          "prompt": "How do you feel when we say goodbye after a visit?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-deep-010",
+          "prompt": "What's a long-term goal of ours that keeps you motivated through the distance?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Missing You Honestly"
+    },
+    {
+      "setId": "ldr-voice-notes",
+      "format": "voicerecord",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ldr-voice-001",
+          "prompt": "Record a message telling me what you did today as if I were there.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-002",
+          "prompt": "Record a 15-second sound of your current environment (street, cafe, room).",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-003",
+          "prompt": "Whisper a sweet reminder of why you love us.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-004",
+          "prompt": "Sing or hum a line from a song that reminds you of me.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-005",
+          "prompt": "Describe what you would do if you could walk through my door right now.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-006",
+          "prompt": "Say a goofy joke to make me laugh today.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-007",
+          "prompt": "Say goodnight or good morning to me with extra warmth.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-008",
+          "prompt": "Record your raw reaction to a sweet text I sent you recently.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-009",
+          "prompt": "Describe a dream you had about us recently.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-voice-010",
+          "prompt": "Leave a comforting voice note for a day when I feel lonely.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Miles Apart Diary"
+    },
+    {
+      "setId": "ldr-photo-sharing",
+      "format": "takephoto",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ldr-photo-001",
+          "prompt": "Take a photo of your view right now.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-002",
+          "prompt": "Snap a photo of the outfit you wore today.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-003",
+          "prompt": "Take a photo of a meal or drink you're enjoying.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-004",
+          "prompt": "Take a picture of something that reminded you of me today.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-005",
+          "prompt": "Take a selfie showing your current mood.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-006",
+          "prompt": "Snap a picture of the book, show, or game you're currently into.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-007",
+          "prompt": "Take a photo of your workspace or cozy corner.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-008",
+          "prompt": "Take a photo of a cool sky or weather detail outside.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-009",
+          "prompt": "Snap a photo of the countdown calendar or app you use for us.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-photo-010",
+          "prompt": "Take a photo of your hand making a heart sign.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Send Me Your World"
+    },
+    {
+      "setId": "ldr-nhie-distance",
+      "format": "neverhaveiever",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ldr-nhie-001",
+          "prompt": "Never have I ever fallen asleep on a video call with my partner.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-002",
+          "prompt": "Never have I ever bought flight/train tickets spontaneously.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-003",
+          "prompt": "Never have I ever sent a physical letter or postcard in the mail.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-004",
+          "prompt": "Never have I ever worn my partner's clothes that they left behind.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-005",
+          "prompt": "Never have I ever cried at the airport during a goodbye.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-006",
+          "prompt": "Never have I ever simulated a date night over a video call.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-007",
+          "prompt": "Never have I ever sent a surprise food delivery to my partner's address.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-008",
+          "prompt": "Never have I ever watched a movie 'together' by syncing our screens.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-009",
+          "prompt": "Never have I ever planned out a dream house design on Pinterest.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "ldr-nhie-010",
+          "prompt": "Never have I ever kept an object under my pillow because it smells like them.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Distance Confessions"
+    },
+    {
+      "setId": "ldr-wouldyourather-visits",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "ldr-wyr-001",
+          "prompt": "Would you rather have a 1-hour call every day or a 4-hour call once a week?",
+          "isActive": true,
+          "options": [
+            "Daily short call",
+            "Weekly long call"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-002",
+          "prompt": "Would you rather meet up in a completely new tourist city or at one of our homes?",
+          "isActive": true,
+          "options": [
+            "New tourist city",
+            "One of our homes"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-003",
+          "prompt": "Would you rather receive daily voice texts or daily photo snaps?",
+          "isActive": true,
+          "options": [
+            "Voice texts",
+            "Photo snaps"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-004",
+          "prompt": "Would you rather visit for 3 days every month or 2 weeks every six months?",
+          "isActive": true,
+          "options": [
+            "3 days monthly",
+            "2 weeks bi-annually"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-005",
+          "prompt": "Would you rather always have a countdown calendar set or figure out visits spontaneously?",
+          "isActive": true,
+          "options": [
+            "Set countdowns",
+            "Spontaneous visits"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-006",
+          "prompt": "Would you rather have matching physical touch bracelets or send letters by mail?",
+          "isActive": true,
+          "options": [
+            "Touch bracelets",
+            "Post letters"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-007",
+          "prompt": "Would you rather stay up late to talk due to time zones or wake up early?",
+          "isActive": true,
+          "options": [
+            "Stay up late",
+            "Wake up early"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-008",
+          "prompt": "Would you rather have your partner send a package of local snacks or a worn hoodie?",
+          "isActive": true,
+          "options": [
+            "Local snacks",
+            "Worn hoodie"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-009",
+          "prompt": "Would you rather play online games together or read the same book and discuss it?",
+          "isActive": true,
+          "options": [
+            "Play online games",
+            "Read same book"
+          ]
+        },
+        {
+          "questionId": "ldr-wyr-010",
+          "prompt": "Would you rather have video dates or audio-only phone calls?",
+          "isActive": true,
+          "options": [
+            "Video dates",
+            "Audio phone calls"
+          ]
+        }
+      ],
+      "title": "Visit Day Choices"
+    }
+  ],
+  "naughty": [
+    {
+      "setId": "naughty-nhie-spicy",
+      "format": "neverhaveiever",
+      "isActive": true,
+      "order": 1,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "nau-nhie-001",
+          "prompt": "Never have I ever flirted with my eyes across a crowded room.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-002",
+          "prompt": "Never have I ever skinny dipped at night.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-003",
+          "prompt": "Never have I ever whispered something inappropriate in public.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-004",
+          "prompt": "Never have I ever kissed someone in an elevator.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-005",
+          "prompt": "Never have I ever worn something suggestive underneath regular work clothes.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-006",
+          "prompt": "Never have I ever gotten caught kissing or making out.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-007",
+          "prompt": "Never have I ever roleplayed as completely different people.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-008",
+          "prompt": "Never have I ever sent a tease message to my partner just to make them wait.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-009",
+          "prompt": "Never have I ever taken a bath together with candles and wine.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-nhie-010",
+          "prompt": "Never have I ever had a crush on a fictional character that I told my partner about.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Crossed Lines"
+    },
+    {
+      "setId": "naughty-wyr-choices",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 2,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "nau-wyr-001",
+          "prompt": "Would you rather be intimate in a room with a giant mirror or with dim colored lighting?",
+          "isActive": true,
+          "options": [
+            "Giant mirror",
+            "Colored lighting"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-002",
+          "prompt": "Would you rather receive a flirty text message in the middle of a meeting or a voicemail?",
+          "isActive": true,
+          "options": [
+            "Flirty text",
+            "Flirty voicemail"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-003",
+          "prompt": "Would you rather have a morning quickie or an all-night passionate session?",
+          "isActive": true,
+          "options": [
+            "Morning quickie",
+            "All-night session"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-004",
+          "prompt": "Would you rather have your partner drive you crazy with light touches or bold kisses?",
+          "isActive": true,
+          "options": [
+            "Light touches",
+            "Bold kisses"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-005",
+          "prompt": "Would you rather watch your partner change or have them watch you?",
+          "isActive": true,
+          "options": [
+            "Watch partner",
+            "Be watched"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-006",
+          "prompt": "Would you rather use chocolate syrup/whipped cream or massage oils?",
+          "isActive": true,
+          "options": [
+            "Whipped cream/food",
+            "Massage oils"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-007",
+          "prompt": "Would you rather have a completely silent intimate session or a vocal, passionate one?",
+          "isActive": true,
+          "options": [
+            "Silent session",
+            "Vocal session"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-008",
+          "prompt": "Would you rather do it outdoors in nature or in a luxury hotel room?",
+          "isActive": true,
+          "options": [
+            "Outdoors in nature",
+            "Luxury hotel room"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-009",
+          "prompt": "Would you rather have your partner pick out your underwear or pick out theirs?",
+          "isActive": true,
+          "options": [
+            "Partner picks mine",
+            "I pick theirs"
+          ]
+        },
+        {
+          "questionId": "nau-wyr-010",
+          "prompt": "Would you rather have a surprise kiss on the neck from behind or a slow massage?",
+          "isActive": true,
+          "options": [
+            "Kiss on neck",
+            "Slow massage"
+          ]
+        }
+      ],
+      "title": "Lights Low Choices"
+    },
+    {
+      "setId": "naughty-likelyto-spicy",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 3,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "nau-lt-001",
+          "prompt": "Who is more likely to initiate intimacy in a public space?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-002",
+          "prompt": "Who is more likely to suggest buying spicy accessories?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-003",
+          "prompt": "Who is more likely to send a flirty text out of nowhere?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-004",
+          "prompt": "Who is more likely to want the lights fully on during sex?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-005",
+          "prompt": "Who is more likely to have a wilder dream life?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-006",
+          "prompt": "Who is more likely to suggest a quickie before leaving the house?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-007",
+          "prompt": "Who is more likely to get easily distracted by their partner's physical presence?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-008",
+          "prompt": "Who is more likely to suggest a shower or bath together?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-009",
+          "prompt": "Who is more likely to tease the other without following through immediately?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-lt-010",
+          "prompt": "Who is more likely to have a secret stash of adult toys or books?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Bold Move Forecast"
+    },
+    {
+      "setId": "naughty-thisorthat-vibe",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 4,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "nau-tot-001",
+          "prompt": "Soft lights or Complete darkness?",
+          "isActive": true,
+          "options": [
+            "Soft lights",
+            "Complete darkness"
+          ]
+        },
+        {
+          "questionId": "nau-tot-002",
+          "prompt": "Rough or Gentle?",
+          "isActive": true,
+          "options": [
+            "Rough",
+            "Gentle"
+          ]
+        },
+        {
+          "questionId": "nau-tot-003",
+          "prompt": "Quickie or Long session?",
+          "isActive": true,
+          "options": [
+            "Quickie",
+            "Long session"
+          ]
+        },
+        {
+          "questionId": "nau-tot-004",
+          "prompt": "Silk sheets or Cotton sheets?",
+          "isActive": true,
+          "options": [
+            "Silk sheets",
+            "Cotton sheets"
+          ]
+        },
+        {
+          "questionId": "nau-tot-005",
+          "prompt": "Teasing first or straight to the point?",
+          "isActive": true,
+          "options": [
+            "Teasing first",
+            "Straight to point"
+          ]
+        },
+        {
+          "questionId": "nau-tot-006",
+          "prompt": "Music playing or quiet breathing?",
+          "isActive": true,
+          "options": [
+            "Music playing",
+            "Quiet breathing"
+          ]
+        },
+        {
+          "questionId": "nau-tot-007",
+          "prompt": "Lingerie or naked?",
+          "isActive": true,
+          "options": [
+            "Lingerie",
+            "Naked"
+          ]
+        },
+        {
+          "questionId": "nau-tot-008",
+          "prompt": "Morning sex or Night sex?",
+          "isActive": true,
+          "options": [
+            "Morning sex",
+            "Night sex"
+          ]
+        },
+        {
+          "questionId": "nau-tot-009",
+          "prompt": "Giving or Receiving?",
+          "isActive": true,
+          "options": [
+            "Giving",
+            "Receiving"
+          ]
+        },
+        {
+          "questionId": "nau-tot-010",
+          "prompt": "Blindfold or handcuffs?",
+          "isActive": true,
+          "options": [
+            "Blindfold",
+            "Handcuffs"
+          ]
+        }
+      ],
+      "title": "Bedroom Atmosphere"
+    },
+    {
+      "setId": "naughty-deep-desires",
+      "format": "deep",
+      "isActive": true,
+      "order": 5,
+      "premium": true,
+      "questions": [
+        {
+          "questionId": "nau-deep-001",
+          "prompt": "What is a fantasy you have never spoken out loud?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-002",
+          "prompt": "How do you feel when I tease you in front of others?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-003",
+          "prompt": "What is one thing that gets your heart racing instantly?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-004",
+          "prompt": "What is a roleplay scenario you've thought about trying?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-005",
+          "prompt": "How can we make our intimate times feel even more connected?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-006",
+          "prompt": "What is your favorite way to be woken up in the morning?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-007",
+          "prompt": "What is one word you'd use to describe our bedroom chemistry?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-008",
+          "prompt": "How do you feel about playing games with cards or dice during sex?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-009",
+          "prompt": "What is your favorite outfit or look of mine that screams 'naughty'?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "nau-deep-010",
+          "prompt": "If you could design a private room just for our intimacy, what would be in it?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Say The Fantasy"
+    }
+  ],
+  "gossip": [
+    {
+      "setId": "gos-likelyto-tea",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gos-lt-001",
+          "prompt": "Who is more likely to listen in on a nearby conversation at a restaurant?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-002",
+          "prompt": "Who is more likely to notice drama brewing in a friend group first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-003",
+          "prompt": "Who is more likely to spend an hour reading celebrity drama online?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-004",
+          "prompt": "Who is more likely to share a secret they promised to keep (only with you)?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-005",
+          "prompt": "Who is more likely to get overly invested in a reality TV show?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-006",
+          "prompt": "Who is more likely to confront someone directly about a rumor?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-007",
+          "prompt": "Who is more likely to stalk an ex's social media out of curiosity?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-008",
+          "prompt": "Who is more likely to get caught talking about someone behind their back?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-009",
+          "prompt": "Who is more likely to know all the gossip about our neighbors?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-lt-010",
+          "prompt": "Who is more likely to pretend they don't care about drama but actually loves it?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Restaurant Tea"
+    },
+    {
+      "setId": "gos-thisorthat-takes",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gos-tot-001",
+          "prompt": "Social media stalking or asking directly?",
+          "isActive": true,
+          "options": [
+            "Social media stalk",
+            "Ask directly"
+          ]
+        },
+        {
+          "questionId": "gos-tot-002",
+          "prompt": "Reality TV drama or true crime stories?",
+          "isActive": true,
+          "options": [
+            "Reality TV",
+            "True crime"
+          ]
+        },
+        {
+          "questionId": "gos-tot-003",
+          "prompt": "Celebrity gossip or friend group drama?",
+          "isActive": true,
+          "options": [
+            "Celebrity gossip",
+            "Friend drama"
+          ]
+        },
+        {
+          "questionId": "gos-tot-004",
+          "prompt": "Spilling the tea immediately or holding onto it?",
+          "isActive": true,
+          "options": [
+            "Spill immediately",
+            "Hold onto it"
+          ]
+        },
+        {
+          "questionId": "gos-tot-005",
+          "prompt": "Quietly observing or actively meddling?",
+          "isActive": true,
+          "options": [
+            "Quietly observe",
+            "Active meddle"
+          ]
+        },
+        {
+          "questionId": "gos-tot-006",
+          "prompt": "Keeping old photos of exes or deleting everything?",
+          "isActive": true,
+          "options": [
+            "Keep old photos",
+            "Delete everything"
+          ]
+        },
+        {
+          "questionId": "gos-tot-007",
+          "prompt": "Knowing too much about coworkers or knowing nothing?",
+          "isActive": true,
+          "options": [
+            "Know too much",
+            "Know nothing"
+          ]
+        },
+        {
+          "questionId": "gos-tot-008",
+          "prompt": "Public drama in restaurants or silent treatment in public?",
+          "isActive": true,
+          "options": [
+            "Public argument",
+            "Silent treatment"
+          ]
+        },
+        {
+          "questionId": "gos-tot-009",
+          "prompt": "Being the therapist friend or the instigator friend?",
+          "isActive": true,
+          "options": [
+            "Therapist friend",
+            "Instigator friend"
+          ]
+        },
+        {
+          "questionId": "gos-tot-010",
+          "prompt": "Confronting rumors or ignoring them completely?",
+          "isActive": true,
+          "options": [
+            "Confront rumors",
+            "Ignore them"
+          ]
+        }
+      ],
+      "title": "Receipts Or Rumors"
+    },
+    {
+      "setId": "gos-nhie-secrets",
+      "format": "neverhaveiever",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gos-nhie-001",
+          "prompt": "Never have I ever searched a partner's name on Google before a date.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-002",
+          "prompt": "Never have I ever eavesdropped on a stranger's phone call.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-003",
+          "prompt": "Never have I ever lied about being busy to avoid hanging out with someone.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-004",
+          "prompt": "Never have I ever pretended to be on my phone to avoid someone.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-005",
+          "prompt": "Never have I ever stalked a coworker's LinkedIn or Instagram.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-006",
+          "prompt": "Never have I ever been in a secret relationship or kept a date hidden.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-007",
+          "prompt": "Never have I ever read someone else's messages or diary.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-008",
+          "prompt": "Never have I ever started a rumor that I regretted.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-009",
+          "prompt": "Never have I ever uninvited someone from a party secretly.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-nhie-010",
+          "prompt": "Never have I ever screenshotted a text to send to a friend to complain.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Search History Secrets"
+    },
+    {
+      "setId": "gos-deep-perspectives",
+      "format": "deep",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gos-deep-001",
+          "prompt": "How do you define the difference between gossip and venting?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-002",
+          "prompt": "What is a secret about yourself that you rarely tell anyone?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-003",
+          "prompt": "How do you feel when people discuss our relationship behind our backs?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-004",
+          "prompt": "What is the biggest misunderstanding someone has had about you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-005",
+          "prompt": "How do you react when a friend group is splitting due to drama?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-006",
+          "prompt": "What is your stance on remaining friends with exes?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-007",
+          "prompt": "What's a piece of gossip that turned out to be completely false?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-008",
+          "prompt": "Why do you think people are so fascinated by celebrity lives?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-009",
+          "prompt": "How do you handle it when a friend shares someone else's secrets with you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gos-deep-010",
+          "prompt": "What's one thing about your past that you feel might shock people?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Vent Or Gossip"
+    },
+    {
+      "setId": "gos-wouldyourather-dilemmas",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gos-wyr-001",
+          "prompt": "Would you rather know all the secrets of your friends or have them know none of yours?",
+          "isActive": true,
+          "options": [
+            "Know friend secrets",
+            "They know none"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-002",
+          "prompt": "Would you rather get caught gossiping about your boss or your partner's family?",
+          "isActive": true,
+          "options": [
+            "Gossip about boss",
+            "Gossip about family"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-003",
+          "prompt": "Would you rather be the center of a harmless rumor or be completely ignored?",
+          "isActive": true,
+          "options": [
+            "Center of rumor",
+            "Completely ignored"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-004",
+          "prompt": "Would you rather accidentally spill a major secret on group chat or in person?",
+          "isActive": true,
+          "options": [
+            "On group chat",
+            "In person"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-005",
+          "prompt": "Would you rather have access to your partner's search history or their private group chats?",
+          "isActive": true,
+          "options": [
+            "Search history",
+            "Private chats"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-006",
+          "prompt": "Would you rather date someone who talks too much about their ex or someone who never mentions them?",
+          "isActive": true,
+          "options": [
+            "Talks about ex",
+            "Never mentions ex"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-007",
+          "prompt": "Would you rather tell a white lie to keep the peace or tell a harsh truth?",
+          "isActive": true,
+          "options": [
+            "White lie",
+            "Harsh truth"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-008",
+          "prompt": "Would you rather find out a friend lied to you about something small or kept a big secret?",
+          "isActive": true,
+          "options": [
+            "Small lie",
+            "Big secret"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-009",
+          "prompt": "Would you rather watch a documentary about someone else's drama or be involved in your own?",
+          "isActive": true,
+          "options": [
+            "Watch doc",
+            "Be involved"
+          ]
+        },
+        {
+          "questionId": "gos-wyr-010",
+          "prompt": "Would you rather be told bad news immediately or let the other person find the right time?",
+          "isActive": true,
+          "options": [
+            "Immediate news",
+            "Right time"
+          ]
+        }
+      ],
+      "title": "Secret Keeper"
+    }
+  ],
+  "money": [
+    {
+      "setId": "mon-slider-alignment",
+      "format": "slider",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "mon-sl-001",
+          "prompt": "How important is budget tracking to you?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not at all",
+          "maxLabel": "Very crucial"
+        },
+        {
+          "questionId": "mon-sl-002",
+          "prompt": "How comfortable are you with carrying credit card debt?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Anxious",
+          "maxLabel": "Fine with it"
+        },
+        {
+          "questionId": "mon-sl-003",
+          "prompt": "How aligned do you feel we are on savings goals?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Clashing",
+          "maxLabel": "Perfectly aligned"
+        },
+        {
+          "questionId": "mon-sl-004",
+          "prompt": "How likely are you to make an impulse purchase over $100?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Never",
+          "maxLabel": "Very likely"
+        },
+        {
+          "questionId": "mon-sl-005",
+          "prompt": "How important is owning a house compared to renting for you?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Renting is fine",
+          "maxLabel": "Must buy house"
+        },
+        {
+          "questionId": "mon-sl-006",
+          "prompt": "How much do you stress about our daily expenses?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Chill",
+          "maxLabel": "Highly stressed"
+        },
+        {
+          "questionId": "mon-sl-007",
+          "prompt": "How important is it for us to have separate bank accounts?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Combine all",
+          "maxLabel": "Keep separate"
+        },
+        {
+          "questionId": "mon-sl-008",
+          "prompt": "How comfortable are you investing in high-risk assets (crypto/stocks)?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Low risk only",
+          "maxLabel": "High risk is fun"
+        },
+        {
+          "questionId": "mon-sl-009",
+          "prompt": "How well do you feel we communicate about financial decisions?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Tense/Vague",
+          "maxLabel": "Transparent/Calm"
+        },
+        {
+          "questionId": "mon-sl-010",
+          "prompt": "How important is saving for early retirement to you?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Enjoy now",
+          "maxLabel": "Retire ASAP"
+        }
+      ],
+      "title": "Money Temperature"
+    },
+    {
+      "setId": "mon-likelyto-habits",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "mon-lt-001",
+          "prompt": "Who is more likely to check bank accounts daily?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-002",
+          "prompt": "Who is more likely to splurge on premium travel/hotels?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-003",
+          "prompt": "Who is more likely to forget to cancel unused subscriptions?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-004",
+          "prompt": "Who is more likely to search for discount codes before buying?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-005",
+          "prompt": "Who is more likely to buy gifts for others that are over budget?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-006",
+          "prompt": "Who is more likely to suggest eating out instead of cooking to save money?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-007",
+          "prompt": "Who is more likely to handle the taxes and monthly billing files?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-008",
+          "prompt": "Who is more likely to win an argument about spending?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-009",
+          "prompt": "Who is more likely to suggest investing in a random business idea?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-lt-010",
+          "prompt": "Who is more likely to save a large portion of their paycheck?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Wallet Watchers"
+    },
+    {
+      "setId": "mon-deep-wealth",
+      "format": "deep",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "mon-deep-001",
+          "prompt": "What is your biggest financial fear for our future?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-002",
+          "prompt": "How did your parents talk about money when you were growing up?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-003",
+          "prompt": "What does 'financial freedom' mean to you specifically?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-004",
+          "prompt": "If we had a sudden windfall of $50,000, what would you want to do with it?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-005",
+          "prompt": "How do you feel about prenuptial agreements or keeping assets separate?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-006",
+          "prompt": "What's one thing you want to buy in the next 3 years that feels like a luxury?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-007",
+          "prompt": "How do you feel about supporting family members financially if they need it?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-008",
+          "prompt": "In what ways do you think money affects our relationship happiness?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-009",
+          "prompt": "What is one financial mistake you've made in the past that you learned from?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "mon-deep-010",
+          "prompt": "How should we decide when a purchase is large enough to require joint approval?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Future Security"
+    },
+    {
+      "setId": "mon-wouldyourather-finance",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "mon-wyr-001",
+          "prompt": "Would you rather earn a high income in a stressful job or a moderate income in a relaxed job?",
+          "isActive": true,
+          "options": [
+            "High income/stress",
+            "Moderate income/chill"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-002",
+          "prompt": "Would you rather buy a smaller house in a perfect location or a larger house further away?",
+          "isActive": true,
+          "options": [
+            "Smaller house/perfect spot",
+            "Larger house/further away"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-003",
+          "prompt": "Would you rather split all expenses 50/50 or proportional to our incomes?",
+          "isActive": true,
+          "options": [
+            "50/50 split",
+            "Proportional split"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-004",
+          "prompt": "Would you rather spend money on experiences (travel) or physical assets (furniture/car)?",
+          "isActive": true,
+          "options": [
+            "Experiences",
+            "Physical assets"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-005",
+          "prompt": "Would you rather keep our savings together in a joint account or in separate accounts?",
+          "isActive": true,
+          "options": [
+            "Joint account",
+            "Separate accounts"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-006",
+          "prompt": "Would you rather buy a new car with a loan or a reliable used car with cash?",
+          "isActive": true,
+          "options": [
+            "New car loan",
+            "Used car cash"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-007",
+          "prompt": "Would you rather retire early with a very modest lifestyle or work longer to live luxuriously?",
+          "isActive": true,
+          "options": [
+            "Retire early/modest",
+            "Work longer/luxurious"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-008",
+          "prompt": "Would you rather receive money tips from a professional advisor or figure it out ourselves?",
+          "isActive": true,
+          "options": [
+            "Professional advisor",
+            "Figure it out ourselves"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-009",
+          "prompt": "Would you rather invest in safe government bonds or speculative stock markets?",
+          "isActive": true,
+          "options": [
+            "Safe bonds",
+            "Speculative stocks"
+          ]
+        },
+        {
+          "questionId": "mon-wyr-010",
+          "prompt": "Would you rather have a partner who is extremely frugal or one who spends freely?",
+          "isActive": true,
+          "options": [
+            "Extremely frugal",
+            "Spends freely"
+          ]
+        }
+      ],
+      "title": "Stress Or Freedom"
+    },
+    {
+      "setId": "mon-thisorthat-spending",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "mon-tot-001",
+          "prompt": "Save for a rainy day or live for today?",
+          "isActive": true,
+          "options": [
+            "Save for rainy day",
+            "Live for today"
+          ]
+        },
+        {
+          "questionId": "mon-tot-002",
+          "prompt": "Credit card rewards or debit card security?",
+          "isActive": true,
+          "options": [
+            "Credit card rewards",
+            "Debit card"
+          ]
+        },
+        {
+          "questionId": "mon-tot-003",
+          "prompt": "Splurge on food or splurge on clothes?",
+          "isActive": true,
+          "options": [
+            "Splurge on food",
+            "Splurge on clothes"
+          ]
+        },
+        {
+          "questionId": "mon-tot-004",
+          "prompt": "Renting files or buying assets?",
+          "isActive": true,
+          "options": [
+            "Renting",
+            "Buying"
+          ]
+        },
+        {
+          "questionId": "mon-tot-005",
+          "prompt": "Invest in stocks or invest in real estate?",
+          "isActive": true,
+          "options": [
+            "Stocks",
+            "Real estate"
+          ]
+        },
+        {
+          "questionId": "mon-tot-006",
+          "prompt": "Quality over quantity or looking for bargains?",
+          "isActive": true,
+          "options": [
+            "Quality first",
+            "Bargains/quantity"
+          ]
+        },
+        {
+          "questionId": "mon-tot-007",
+          "prompt": "Autopay bills or manual monthly check?",
+          "isActive": true,
+          "options": [
+            "Autopay",
+            "Manual check"
+          ]
+        },
+        {
+          "questionId": "mon-tot-008",
+          "prompt": "Discussing every purchase or only purchases over a set limit?",
+          "isActive": true,
+          "options": [
+            "Discuss everything",
+            "Set limit limit"
+          ]
+        },
+        {
+          "questionId": "mon-tot-009",
+          "prompt": "Physical cash or digital wallets?",
+          "isActive": true,
+          "options": [
+            "Physical cash",
+            "Digital wallets"
+          ]
+        },
+        {
+          "questionId": "mon-tot-010",
+          "prompt": "Frugal daily habits or high savings rate with loose daily spending?",
+          "isActive": true,
+          "options": [
+            "Frugal daily",
+            "Loose daily/save bulk"
+          ]
+        }
+      ],
+      "title": "Save Or Splurge"
+    }
+  ],
+  "gettoknow": [
+    {
+      "setId": "gtk-deep-stories",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gtk-deep-001",
+          "prompt": "What was your favorite childhood toy or game and why?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-002",
+          "prompt": "What is a quirky habit of yours that most people don't know about?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-003",
+          "prompt": "Who was your role model growing up and how did they influence you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-004",
+          "prompt": "What is the most embarrassing fashion phase you went through?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-005",
+          "prompt": "What was your dream job when you were ten years old?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-006",
+          "prompt": "What is a memory from school that still makes you laugh?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-007",
+          "prompt": "What is a food you absolutely hated as a kid but love now?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-008",
+          "prompt": "What is the best piece of advice you received in your youth?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-009",
+          "prompt": "What was your favorite family holiday or trip growing up?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-deep-010",
+          "prompt": "What is a pet peeve of yours that has stuck with you forever?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Childhood Lore"
+    },
+    {
+      "setId": "gtk-thisorthat-quirks",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gtk-tot-001",
+          "prompt": "Introvert energy or Extrovert energy?",
+          "isActive": true,
+          "options": [
+            "Introvert",
+            "Extrovert"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-002",
+          "prompt": "Sweet tooth or Savory snacks?",
+          "isActive": true,
+          "options": [
+            "Sweet tooth",
+            "Savory snacks"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-003",
+          "prompt": "Books or Video games?",
+          "isActive": true,
+          "options": [
+            "Books",
+            "Video games"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-004",
+          "prompt": "Morning shower or Night shower?",
+          "isActive": true,
+          "options": [
+            "Morning shower",
+            "Night shower"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-005",
+          "prompt": "Dogs or Cats?",
+          "isActive": true,
+          "options": [
+            "Dogs",
+            "Cats"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-006",
+          "prompt": "Messy desk or neat workspace?",
+          "isActive": true,
+          "options": [
+            "Messy desk",
+            "Neat workspace"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-007",
+          "prompt": "Spicy food or mild flavors?",
+          "isActive": true,
+          "options": [
+            "Spicy food",
+            "Mild flavors"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-008",
+          "prompt": "Coffee or Tea?",
+          "isActive": true,
+          "options": [
+            "Coffee",
+            "Tea"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-009",
+          "prompt": "Winter weather or Summer heat?",
+          "isActive": true,
+          "options": [
+            "Winter weather",
+            "Summer heat"
+          ]
+        },
+        {
+          "questionId": "gtk-tot-010",
+          "prompt": "Planning everything or winging it?",
+          "isActive": true,
+          "options": [
+            "Planning",
+            "Winging it"
+          ]
+        }
+      ],
+      "title": "Social Battery"
+    },
+    {
+      "setId": "gtk-nhie-facts",
+      "format": "neverhaveiever",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gtk-nhie-001",
+          "prompt": "Never have I ever broken a bone.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-002",
+          "prompt": "Never have I ever gotten a tattoo I regretted.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-003",
+          "prompt": "Never have I ever sung karaoke in public.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-004",
+          "prompt": "Never have I ever cut my own hair.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-005",
+          "prompt": "Never have I ever met someone famous.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-006",
+          "prompt": "Never have I ever cried during a cartoon movie.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-007",
+          "prompt": "Never have I ever eaten a whole pizza by myself.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-008",
+          "prompt": "Never have I ever gotten lost in my own hometown.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-009",
+          "prompt": "Never have I ever stayed up all night playing a video game.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-nhie-010",
+          "prompt": "Never have I ever tried a weird food combination (like fries in ice cream).",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Life Plot Twists"
+    },
+    {
+      "setId": "gtk-likelyto-quirks",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gtk-lt-001",
+          "prompt": "Who is more likely to lose their keys in their own bag?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-002",
+          "prompt": "Who is more likely to trip on a flat surface?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-003",
+          "prompt": "Who is more likely to laugh at a joke they didn't understand?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-004",
+          "prompt": "Who is more likely to talk to animals as if they are humans?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-005",
+          "prompt": "Who is more likely to forget why they walked into a room?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-006",
+          "prompt": "Who is more likely to have a song stuck in their head all day?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-007",
+          "prompt": "Who is more likely to hoard random items just in case?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-008",
+          "prompt": "Who is more likely to tell a story that goes completely off track?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-009",
+          "prompt": "Who is more likely to get scared by a spider or bug first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "gtk-lt-010",
+          "prompt": "Who is more likely to stay up late reading random trivia?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Daily Chaos"
+    },
+    {
+      "setId": "gtk-slider-personality",
+      "format": "slider",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "gtk-sl-001",
+          "prompt": "How competitive are you when playing board games?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Just for fun",
+          "maxLabel": "Must win at all costs"
+        },
+        {
+          "questionId": "gtk-sl-002",
+          "prompt": "How sensitive are you to sad movies or stories?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Stone-cold",
+          "maxLabel": "Cry instantly"
+        },
+        {
+          "questionId": "gtk-sl-003",
+          "prompt": "How much do you value order and cleanliness in your room?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Messy is fine",
+          "maxLabel": "Neat freak"
+        },
+        {
+          "questionId": "gtk-sl-004",
+          "prompt": "How adventurous are you when trying new cuisines?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Strictly comfort food",
+          "maxLabel": "Will eat anything once"
+        },
+        {
+          "questionId": "gtk-sl-005",
+          "prompt": "How easily do you get stressed in heavy traffic or crowds?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Cool as cucumber",
+          "maxLabel": "Instant anxiety"
+        },
+        {
+          "questionId": "gtk-sl-006",
+          "prompt": "How talkative are you when meeting new people?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Quiet observer",
+          "maxLabel": "Social butterfly"
+        },
+        {
+          "questionId": "gtk-sl-007",
+          "prompt": "How patient are you when waiting in a long line?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Impatient",
+          "maxLabel": "Extremely calm"
+        },
+        {
+          "questionId": "gtk-sl-008",
+          "prompt": "How much of a morning person do you consider yourself?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Night owl",
+          "maxLabel": "Early bird"
+        },
+        {
+          "questionId": "gtk-sl-009",
+          "prompt": "How likely are you to double check that doors are locked?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Trusting",
+          "maxLabel": "Double check daily"
+        },
+        {
+          "questionId": "gtk-sl-010",
+          "prompt": "How spontaneous are you in making weekend plans?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Need calendar schedules",
+          "maxLabel": "Completely free-flowing"
+        }
+      ],
+      "title": "Personality Meter"
+    }
+  ],
+  "travel": [
+    {
+      "setId": "trv-photo-spots",
+      "format": "takephoto",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "trv-photo-001",
+          "prompt": "Take a photo of an object that represents a place you want us to visit.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-002",
+          "prompt": "Snap a photo of your essential travel item (passport, sunglasses, etc.).",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-003",
+          "prompt": "Take a photo of a backpack or bag you'd take on a trip.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-004",
+          "prompt": "Take a picture of the shoes you wear for exploring a new city.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-005",
+          "prompt": "Take a selfie showing your 'spontaneous adventure' face.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-006",
+          "prompt": "Snap a photo of a map, globe, or travel app on your phone.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-007",
+          "prompt": "Take a photo of a souvenir you own from a past trip.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-008",
+          "prompt": "Take a picture of something that feels like a beach vacation.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-009",
+          "prompt": "Take a photo of a postcard or travel brochure.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-photo-010",
+          "prompt": "Snap a picture of the cozy travel snacks you always pack.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Passport Moodboard"
+    },
+    {
+      "setId": "trv-wyr-decisions",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "trv-wyr-001",
+          "prompt": "Would you rather travel to a new destination every year or return to your favorite spot?",
+          "isActive": true,
+          "options": [
+            "New spot every year",
+            "Return to favorite"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-002",
+          "prompt": "Would you rather travel by plane to a distant land or do a classic cross-country road trip?",
+          "isActive": true,
+          "options": [
+            "Plane flight",
+            "Road trip"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-003",
+          "prompt": "Would you rather stay in a bustling city apartment or a remote cabin in the woods?",
+          "isActive": true,
+          "options": [
+            "City apartment",
+            "Remote cabin"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-004",
+          "prompt": "Would you rather have a packed sightseeing itinerary or a completely unplanned relaxing trip?",
+          "isActive": true,
+          "options": [
+            "Sightseeing itinerary",
+            "Relaxing and unplanned"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-005",
+          "prompt": "Would you rather visit a tropical beach destination or a snowy ski resort?",
+          "isActive": true,
+          "options": [
+            "Tropical beach",
+            "Snowy ski resort"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-006",
+          "prompt": "Would you rather travel with a small suitcase or overpack a giant roller bag just in case?",
+          "isActive": true,
+          "options": [
+            "Light suitcase",
+            "Overpack giant bag"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-007",
+          "prompt": "Would you rather eat street food from local stalls or dine at fine-dining establishments?",
+          "isActive": true,
+          "options": [
+            "Local street food",
+            "Fine dining"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-008",
+          "prompt": "Would you rather go on a trip with a group of friends or have a romantic trip just for us?",
+          "isActive": true,
+          "options": [
+            "Group of friends",
+            "Just for us"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-009",
+          "prompt": "Would you rather spend the day hiking a scenic trail or relaxing poolside with a drink?",
+          "isActive": true,
+          "options": [
+            "Hiking trail",
+            "Relaxing poolside"
+          ]
+        },
+        {
+          "questionId": "trv-wyr-010",
+          "prompt": "Would you rather lose your luggage or lose your phone while traveling?",
+          "isActive": true,
+          "options": [
+            "Lose luggage",
+            "Lose phone"
+          ]
+        }
+      ],
+      "title": "Favorite Place Forever"
+    },
+    {
+      "setId": "trv-likelyto-habits",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "trv-lt-001",
+          "prompt": "Who is more likely to lose their passport or travel tickets?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-002",
+          "prompt": "Who is more likely to pack their bags a week before the trip?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-003",
+          "prompt": "Who is more likely to strike up a conversation with local strangers?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-004",
+          "prompt": "Who is more likely to try an exotic, unusual dish?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-005",
+          "prompt": "Who is more likely to handle navigating public transport in a new city?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-006",
+          "prompt": "Who is more likely to take 100+ photos a day on their phone?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-007",
+          "prompt": "Who is more likely to get homesick after a week away?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-008",
+          "prompt": "Who is more likely to splurge on premium seats or hotel upgrades?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-009",
+          "prompt": "Who is more likely to fall asleep on the plane before takeoff?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-lt-010",
+          "prompt": "Who is more likely to suggest doing something spontaneous and slightly risky?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Travel Troublemaker"
+    },
+    {
+      "setId": "trv-thisorthat-style",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "trv-tot-001",
+          "prompt": "Window seat or Aisle seat?",
+          "isActive": true,
+          "options": [
+            "Window seat",
+            "Aisle seat"
+          ]
+        },
+        {
+          "questionId": "trv-tot-002",
+          "prompt": "Hotel stay or Airbnb rental?",
+          "isActive": true,
+          "options": [
+            "Hotel stay",
+            "Airbnb rental"
+          ]
+        },
+        {
+          "questionId": "trv-tot-003",
+          "prompt": "Backpack exploring or Roller suitcase convenience?",
+          "isActive": true,
+          "options": [
+            "Backpack exploring",
+            "Roller suitcase"
+          ]
+        },
+        {
+          "questionId": "trv-tot-004",
+          "prompt": "Museum tour or Street market stroll?",
+          "isActive": true,
+          "options": [
+            "Museum tour",
+            "Street market"
+          ]
+        },
+        {
+          "questionId": "trv-tot-005",
+          "prompt": "Guided group tours or self-guided exploring?",
+          "isActive": true,
+          "options": [
+            "Guided tours",
+            "Self-guided"
+          ]
+        },
+        {
+          "questionId": "trv-tot-006",
+          "prompt": "Beach relaxation or City sightseeing?",
+          "isActive": true,
+          "options": [
+            "Beach relax",
+            "City sightseeing"
+          ]
+        },
+        {
+          "questionId": "trv-tot-007",
+          "prompt": "Summer vacation or winter wonderland trip?",
+          "isActive": true,
+          "options": [
+            "Summer vacation",
+            "Winter trip"
+          ]
+        },
+        {
+          "questionId": "trv-tot-008",
+          "prompt": "Splurge on food or splurge on luxury stays?",
+          "isActive": true,
+          "options": [
+            "Splurge on food",
+            "Splurge on stays"
+          ]
+        },
+        {
+          "questionId": "trv-tot-009",
+          "prompt": "Early morning flight or late-night red-eye?",
+          "isActive": true,
+          "options": [
+            "Early morning",
+            "Late-night red-eye"
+          ]
+        },
+        {
+          "questionId": "trv-tot-010",
+          "prompt": "Physical map reading or Google Maps navigation?",
+          "isActive": true,
+          "options": [
+            "Physical map",
+            "Google Maps"
+          ]
+        }
+      ],
+      "title": "Seatmate Style"
+    },
+    {
+      "setId": "trv-deep-aspirations",
+      "format": "deep",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "trv-deep-001",
+          "prompt": "If we could move and live in any country for a year, where would you choose and why?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-002",
+          "prompt": "What is the most memorable travel experience you've ever had in your life?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-003",
+          "prompt": "How do you feel travel changes a person's perspective on life?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-004",
+          "prompt": "What's a destination that you are slightly intimidated to visit but still want to?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-005",
+          "prompt": "How do you think we handle travel stress or delays as a couple?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-006",
+          "prompt": "What is on your absolute travel bucket list that we must do together?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-007",
+          "prompt": "What does a perfect vacation morning look like to you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-008",
+          "prompt": "Would you ever consider going off-grid (no internet) for a whole week during a trip?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-009",
+          "prompt": "What is a lesson you learned about another culture that stuck with you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "trv-deep-010",
+          "prompt": "How does traveling together affect your feelings of closeness to me?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Runaway Dreams"
+    }
+  ],
+  "family": [
+    {
+      "setId": "fam-deep-parenting",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fam-deep-001",
+          "prompt": "What parenting value is most important to you and why?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-002",
+          "prompt": "How do you want to handle holiday traditions between our two families?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-003",
+          "prompt": "What is one thing your parents did that you want to do differently with our kids?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-004",
+          "prompt": "What family tradition from your childhood do you absolutely want to preserve?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-005",
+          "prompt": "How many kids do you realistically see in our future?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-006",
+          "prompt": "How do you feel about the balance of child-rearing duties?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-007",
+          "prompt": "What is your biggest worry about becoming a parent?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-008",
+          "prompt": "How do you think having children will affect our relationship dynamic?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-009",
+          "prompt": "How do you want to handle schooling/education decisions?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-deep-010",
+          "prompt": "What is a lesson you hope our future kids learn from us?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "The Parent We Become"
+    },
+    {
+      "setId": "fam-likelyto-roles",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fam-lt-001",
+          "prompt": "Who is more likely to be the strict parent?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-002",
+          "prompt": "Who is more likely to spoil the kids with treats and toys?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-003",
+          "prompt": "Who is more likely to cry at the kids' first day of school?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-004",
+          "prompt": "Who is more likely to handle homework help and school projects?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-005",
+          "prompt": "Who is more likely to coordinate family calendar events and birthday parties?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-006",
+          "prompt": "Who is more likely to suggest adopting a family pet first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-007",
+          "prompt": "Who is more likely to handle the middle-of-the-night baby cries?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-008",
+          "prompt": "Who is more likely to take the kids on wild, spontaneous weekend outings?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-009",
+          "prompt": "Who is more likely to be the 'fun' parent when resolving rules?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fam-lt-010",
+          "prompt": "Who is more likely to insist on regular family dinners around the table?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Future Home Roles"
+    },
+    {
+      "setId": "fam-thisorthat-routines",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fam-tot-001",
+          "prompt": "Strict sleep schedules or flexible bedtimes?",
+          "isActive": true,
+          "options": [
+            "Strict sleep schedules",
+            "Flexible bedtimes"
+          ]
+        },
+        {
+          "questionId": "fam-tot-002",
+          "prompt": "Public school or Private/homeschool?",
+          "isActive": true,
+          "options": [
+            "Public school",
+            "Private/homeschool"
+          ]
+        },
+        {
+          "questionId": "fam-tot-003",
+          "prompt": "City living with kids or Suburban yard life?",
+          "isActive": true,
+          "options": [
+            "City living",
+            "Suburban life"
+          ]
+        },
+        {
+          "questionId": "fam-tot-004",
+          "prompt": "Allowed screen time or limited screen time?",
+          "isActive": true,
+          "options": [
+            "Allowed screen time",
+            "Limited screen time"
+          ]
+        },
+        {
+          "questionId": "fam-tot-005",
+          "prompt": "Weekly allowance for chores or no allowance?",
+          "isActive": true,
+          "options": [
+            "Weekly allowance",
+            "No allowance"
+          ]
+        },
+        {
+          "questionId": "fam-tot-006",
+          "prompt": "Focus on sports/activities or focus on arts/hobbies?",
+          "isActive": true,
+          "options": [
+            "Sports/activities",
+            "Arts/hobbies"
+          ]
+        },
+        {
+          "questionId": "fam-tot-007",
+          "prompt": "Spending holidays with family or traveling alone as a couple?",
+          "isActive": true,
+          "options": [
+            "Spend with family",
+            "Travel alone"
+          ]
+        },
+        {
+          "questionId": "fam-tot-008",
+          "prompt": "Grandparents baby-sitting regularly or hiring external sitters?",
+          "isActive": true,
+          "options": [
+            "Grandparents",
+            "External sitters"
+          ]
+        },
+        {
+          "questionId": "fam-tot-009",
+          "prompt": "Allowing kids to choose their own style or setting guidelines?",
+          "isActive": true,
+          "options": [
+            "Choose own style",
+            "Set guidelines"
+          ]
+        },
+        {
+          "questionId": "fam-tot-010",
+          "prompt": "Discussing issues in front of kids or keeping serious talks private?",
+          "isActive": true,
+          "options": [
+            "Discuss in front",
+            "Keep talks private"
+          ]
+        }
+      ],
+      "title": "House Rules"
+    },
+    {
+      "setId": "fam-slider-readiness",
+      "format": "slider",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fam-sl-001",
+          "prompt": "How ready do you feel to take on the responsibility of children?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not ready",
+          "maxLabel": "Very ready"
+        },
+        {
+          "questionId": "fam-sl-002",
+          "prompt": "How important is financial security before we have kids?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "We'll manage",
+          "maxLabel": "Crucial requirement"
+        },
+        {
+          "questionId": "fam-sl-003",
+          "prompt": "How much do you value having grandparents live close to us?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Distance is fine",
+          "maxLabel": "Extremely valuable"
+        },
+        {
+          "questionId": "fam-sl-004",
+          "prompt": "How comfortable are you setting strict rules and punishments?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Very lenient",
+          "maxLabel": "Authoritarian"
+        },
+        {
+          "questionId": "fam-sl-005",
+          "prompt": "How aligned do you feel we are on our parenting philosophies?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Opposite views",
+          "maxLabel": "Identical views"
+        },
+        {
+          "questionId": "fam-sl-006",
+          "prompt": "How much do you want to keep our independent social life active after children?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Family-centric only",
+          "maxLabel": "Keep social active"
+        },
+        {
+          "questionId": "fam-sl-007",
+          "prompt": "How important is it that our children learn a second language?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not important",
+          "maxLabel": "Extremely important"
+        },
+        {
+          "questionId": "fam-sl-008",
+          "prompt": "How stressed are you about the concept of pregnancy and childbirth?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Calm/unconcerned",
+          "maxLabel": "Very anxious"
+        },
+        {
+          "questionId": "fam-sl-009",
+          "prompt": "How important is family background/heritage in raising our kids?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not important",
+          "maxLabel": "Very important"
+        },
+        {
+          "questionId": "fam-sl-010",
+          "prompt": "How ready do you feel to buy a larger family car or home?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not ready",
+          "maxLabel": "Ready now"
+        }
+      ],
+      "title": "Ready For Little Us"
+    },
+    {
+      "setId": "fam-wouldyourather-parenting",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fam-wyr-001",
+          "prompt": "Would you rather have a child who is extremely quiet or one who is extremely hyperactive?",
+          "isActive": true,
+          "options": [
+            "Extremely quiet",
+            "Hyperactive"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-002",
+          "prompt": "Would you rather live close to my family or close to your family?",
+          "isActive": true,
+          "options": [
+            "Close to your family",
+            "Close to my family"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-003",
+          "prompt": "Would you rather deal with a toddler's temper tantrum in a quiet store or on a busy flight?",
+          "isActive": true,
+          "options": [
+            "Quiet store",
+            "Busy flight"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-004",
+          "prompt": "Would you rather have your kids participate in competitive athletics or intensive academics?",
+          "isActive": true,
+          "options": [
+            "Competitive athletics",
+            "Intensive academics"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-005",
+          "prompt": "Would you rather have the grandparents stay at our house for a month or hire a full-time nanny?",
+          "isActive": true,
+          "options": [
+            "Grandparents stay",
+            "Full-time nanny"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-006",
+          "prompt": "Would you rather have a child who gets bad grades but is popular, or one who gets straight A's but is isolated?",
+          "isActive": true,
+          "options": [
+            "Popular/bad grades",
+            "Straight A's/isolated"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-007",
+          "prompt": "Would you rather split chores by specific schedules or do them naturally as things pile up?",
+          "isActive": true,
+          "options": [
+            "Specific schedules",
+            "Do them naturally"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-008",
+          "prompt": "Would you rather save all our extra funds for the kids' college or spend some on family trips now?",
+          "isActive": true,
+          "options": [
+            "Save for college",
+            "Spend on trips now"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-009",
+          "prompt": "Would you rather have your child look exactly like you or have your partner's personality?",
+          "isActive": true,
+          "options": [
+            "Look like you",
+            "Partner's personality"
+          ]
+        },
+        {
+          "questionId": "fam-wyr-010",
+          "prompt": "Would you rather raise kids in a warm, sunny climate or a seasonal colder climate?",
+          "isActive": true,
+          "options": [
+            "Sunny climate",
+            "Colder climate"
+          ]
+        }
+      ],
+      "title": "Tiny Human Choices"
+    }
+  ],
+  "future": [
+    {
+      "setId": "future-never-have-i-ever",
+      "format": "neverhaveiever",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-nhie-001",
+          "prompt": "Never have I ever imagined what our home together would look like.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-nhie-002",
+          "prompt": "Never have I ever thought about what kind of parents we would be.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-nhie-003",
+          "prompt": "Never have I ever pictured us growing old together.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Home In Our Heads"
+    },
+    {
+      "setId": "fut-deep-dreams",
+      "format": "deep",
+      "isActive": true,
+      "order": 1,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fut-deep-001",
+          "prompt": "What part of our life five years from now feels most exciting to you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-002",
+          "prompt": "What is one future decision you want us to be more aligned on?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-003",
+          "prompt": "What would make you feel proud of us as a couple five years from now?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-004",
+          "prompt": "What is one thing we are doing now that you hope we are still doing in 10 years?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-005",
+          "prompt": "Where do you see us living when we retire?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-006",
+          "prompt": "What is a major career milestone you want to reach with my support?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-007",
+          "prompt": "How do you think our relationship will change as we grow older?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-008",
+          "prompt": "What is a joint hobby or project you want us to start next year?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-009",
+          "prompt": "What legacy or impact do you want us to create together?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-deep-010",
+          "prompt": "What is a promise you want to make to me about our shared future?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Our Next Chapter"
+    },
+    {
+      "setId": "future-would-you-rather",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-wyr-001",
+          "prompt": "Would you rather live in one dream city forever or move somewhere new every few years?",
+          "isActive": true,
+          "options": [
+            "One dream city",
+            "Move every few years"
+          ]
+        },
+        {
+          "questionId": "future-wyr-002",
+          "prompt": "Would you rather build a calm simple life or chase a big ambitious dream together?",
+          "isActive": true,
+          "options": [
+            "Calm simple life",
+            "Big ambitious dream"
+          ]
+        },
+        {
+          "questionId": "future-wyr-003",
+          "prompt": "Would you rather buy a home early or travel more before settling down?",
+          "isActive": true,
+          "options": [
+            "Buy a home early",
+            "Travel more first"
+          ]
+        }
+      ],
+      "title": "Roots Or Wings"
+    },
+    {
+      "setId": "fut-wouldyourather-choices",
+      "format": "wouldyourather",
+      "isActive": true,
+      "order": 2,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fut-wyr-001",
+          "prompt": "Would you rather live in one dream city forever or move somewhere new every few years?",
+          "isActive": true,
+          "options": [
+            "One dream city",
+            "Move every few years"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-002",
+          "prompt": "Would you rather build a calm simple life or chase a big ambitious dream together?",
+          "isActive": true,
+          "options": [
+            "Calm simple life",
+            "Big ambitious dream"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-003",
+          "prompt": "Would you rather buy a home early or travel more before settling down?",
+          "isActive": true,
+          "options": [
+            "Buy a home early",
+            "Travel more first"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-004",
+          "prompt": "Would you rather retire early and live modestly or work longer to live luxuriously in the future?",
+          "isActive": true,
+          "options": [
+            "Retire early/modest",
+            "Work longer/luxurious"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-005",
+          "prompt": "Would you rather have a small, intimate wedding or a large celebration with all friends/family?",
+          "isActive": true,
+          "options": [
+            "Intimate wedding",
+            "Large celebration"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-006",
+          "prompt": "Would you rather raise children in a big city or in a quiet rural setting?",
+          "isActive": true,
+          "options": [
+            "Big city",
+            "Quiet rural setting"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-007",
+          "prompt": "Would you rather have a career that requires frequent travel or a stable office desk job?",
+          "isActive": true,
+          "options": [
+            "Frequent travel",
+            "Stable desk job"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-008",
+          "prompt": "Would you rather focus on building a family business together or having separate career tracks?",
+          "isActive": true,
+          "options": [
+            "Family business",
+            "Separate career tracks"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-009",
+          "prompt": "Would you rather save for future children's college or save for our own dream retirement home?",
+          "isActive": true,
+          "options": [
+            "Children's college",
+            "Retirement home"
+          ]
+        },
+        {
+          "questionId": "fut-wyr-010",
+          "prompt": "Would you rather make all future plans together step-by-step or figure it out as we go?",
+          "isActive": true,
+          "options": [
+            "Step-by-step plan",
+            "Figure it out as we go"
+          ]
+        }
+      ],
+      "title": "Roots Or Wings"
+    },
+    {
+      "setId": "future-this-or-that",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-tot-001",
+          "prompt": "A quiet life together or an adventurous life together?",
+          "isActive": true,
+          "options": [
+            "Quiet life",
+            "Adventurous life"
+          ]
+        },
+        {
+          "questionId": "future-tot-002",
+          "prompt": "City apartment or house with a yard?",
+          "isActive": true,
+          "options": [
+            "City apartment",
+            "House with a yard"
+          ]
+        },
+        {
+          "questionId": "future-tot-003",
+          "prompt": "Plan everything or figure it out as we go?",
+          "isActive": true,
+          "options": [
+            "Plan everything",
+            "Figure it out"
+          ]
+        }
+      ],
+      "title": "Quiet Or Wild"
+    },
+    {
+      "setId": "fut-thisorthat-direction",
+      "format": "thisorthat",
+      "isActive": true,
+      "order": 3,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fut-tot-001",
+          "prompt": "A quiet life together or an adventurous life together?",
+          "isActive": true,
+          "options": [
+            "Quiet life",
+            "Adventurous life"
+          ]
+        },
+        {
+          "questionId": "fut-tot-002",
+          "prompt": "City apartment or house with a yard?",
+          "isActive": true,
+          "options": [
+            "City apartment",
+            "House with a yard"
+          ]
+        },
+        {
+          "questionId": "fut-tot-003",
+          "prompt": "Plan everything or figure it out as we go?",
+          "isActive": true,
+          "options": [
+            "Plan everything",
+            "Figure it out"
+          ]
+        },
+        {
+          "questionId": "fut-tot-004",
+          "prompt": "Focus on early savings or focus on spending on memories now?",
+          "isActive": true,
+          "options": [
+            "Early savings",
+            "Memories now"
+          ]
+        },
+        {
+          "questionId": "fut-tot-005",
+          "prompt": "Suburban neighborhood or high-rise penthouse?",
+          "isActive": true,
+          "options": [
+            "Suburbs",
+            "Penthouse"
+          ]
+        },
+        {
+          "questionId": "fut-tot-006",
+          "prompt": "Buying assets (homes/land) or investing in index funds?",
+          "isActive": true,
+          "options": [
+            "Buying assets",
+            "Index funds"
+          ]
+        },
+        {
+          "questionId": "fut-tot-007",
+          "prompt": "Expanding our family soon or waiting a few years?",
+          "isActive": true,
+          "options": [
+            "Expanding soon",
+            "Waiting a few years"
+          ]
+        },
+        {
+          "questionId": "fut-tot-008",
+          "prompt": "Staying near our current friends or moving to start fresh?",
+          "isActive": true,
+          "options": [
+            "Near friends",
+            "Start fresh"
+          ]
+        },
+        {
+          "questionId": "fut-tot-009",
+          "prompt": "Continuing similar career paths or trying a major change?",
+          "isActive": true,
+          "options": [
+            "Similar career",
+            "Major change"
+          ]
+        },
+        {
+          "questionId": "fut-tot-010",
+          "prompt": "Retiring in our hometown or retiring abroad?",
+          "isActive": true,
+          "options": [
+            "Hometown",
+            "Retire abroad"
+          ]
+        }
+      ],
+      "title": "Quiet Or Wild"
+    },
+    {
+      "setId": "future-in-5-years",
+      "format": "deep",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-deep-001",
+          "prompt": "What part of our life five years from now feels most exciting to you?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-deep-002",
+          "prompt": "What is one future decision you want us to be more aligned on?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-deep-003",
+          "prompt": "What would make you feel proud of us as a couple five years from now?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Our Next Chapter"
+    },
+    {
+      "setId": "fut-slider-goals",
+      "format": "slider",
+      "isActive": true,
+      "order": 4,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fut-sl-001",
+          "prompt": "How important is financial stability before making big life moves together?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not urgent",
+          "maxLabel": "Very important"
+        },
+        {
+          "questionId": "fut-sl-002",
+          "prompt": "How ready do you feel for bigger long-term commitments with us?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not ready",
+          "maxLabel": "Very ready"
+        },
+        {
+          "questionId": "fut-sl-003",
+          "prompt": "How likely are we to pack up and move to a completely new city in the next 5 years?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "No way",
+          "maxLabel": "Start packing"
+        },
+        {
+          "questionId": "fut-sl-004",
+          "prompt": "How eager are you to buy a suburban house vs a city apartment?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "City Penthouse",
+          "maxLabel": "Suburban Fence"
+        },
+        {
+          "questionId": "fut-sl-005",
+          "prompt": "How many countries do you want us to visit together before we turn 80?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 50,
+          "minLabel": "Homebodies",
+          "maxLabel": "World Travelers"
+        },
+        {
+          "questionId": "fut-sl-006",
+          "prompt": "How much of a 'grumpy old person' do you think you will become?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Sweet as pie",
+          "maxLabel": "Get off my lawn!"
+        },
+        {
+          "questionId": "fut-sl-007",
+          "prompt": "Rate our chances of surviving a zombie apocalypse together.",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Eaten day one",
+          "maxLabel": "Zombie slayers"
+        },
+        {
+          "questionId": "fut-sl-008",
+          "prompt": "At what age do you realistically want us to completely retire from working?",
+          "isActive": true,
+          "options": [],
+          "minValue": 30,
+          "maxValue": 80,
+          "minLabel": "Young & Free",
+          "maxLabel": "Work till I drop"
+        },
+        {
+          "questionId": "fut-sl-009",
+          "prompt": "How stressed do you feel about our current financial trajectory for the future?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Totally chill",
+          "maxLabel": "Panicking daily"
+        },
+        {
+          "questionId": "fut-sl-010",
+          "prompt": "How excited are you about our long-term plan as a couple?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Unsure",
+          "maxLabel": "Extremely excited"
+        }
+      ],
+      "title": "Big Move Readiness"
+    },
+    {
+      "setId": "future-goals",
+      "format": "slider",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-slider-001",
+          "prompt": "How important is financial stability before making big life moves together?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not urgent",
+          "maxLabel": "Very important"
+        },
+        {
+          "questionId": "future-slider-002",
+          "prompt": "How ready do you feel for bigger long-term commitments with us?",
+          "isActive": true,
+          "options": [],
+          "minValue": 1,
+          "maxValue": 10,
+          "minLabel": "Not ready",
+          "maxLabel": "Very ready"
+        }
+      ],
+      "title": "Big Move Readiness"
+    },
+    {
+      "setId": "fut-likelyto-predict",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 5,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "fut-lt-001",
+          "prompt": "Who is more likely to want to relocate to a new city or country first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-002",
+          "prompt": "Who is more likely to handle the household finances and budgeting?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-003",
+          "prompt": "Who is more likely to suggest adopting a pet or expanding our family first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-004",
+          "prompt": "Who is more likely to become the stereotypical grumpy old neighbor?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-005",
+          "prompt": "Who is more likely to have a ridiculous mid-life crisis and buy something completely impulsive?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-006",
+          "prompt": "Who is more likely to accidentally adopt 5 stray animals when we are older?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-007",
+          "prompt": "Who is more likely to become a tech-illiterate grandparent asking how to open a PDF?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-008",
+          "prompt": "Who is more likely to blow our future savings on a terrible investment pitch?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-009",
+          "prompt": "Who is more likely to sneak junk food into the nursing home?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "fut-lt-010",
+          "prompt": "Who is more likely to insist on living in an RV during retirement?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Future Forecast"
+    },
+    {
+      "setId": "future-voice-note",
+      "format": "voicerecord",
+      "isActive": true,
+      "order": 6,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-voice-001",
+          "prompt": "Record what you hope our future feels like.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-voice-002",
+          "prompt": "Record one promise you want to keep for our future.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "A Promise To Us"
+    },
+    {
+      "setId": "future-photo-memory",
+      "format": "takephoto",
+      "isActive": true,
+      "order": 7,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-photo-001",
+          "prompt": "Share a photo that represents a future you want with us.",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-photo-002",
+          "prompt": "Share a place, object, or moment that feels like our future.",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Future In A Photo"
+    },
+    {
+      "setId": "future-likely-to",
+      "format": "likelyto",
+      "isActive": true,
+      "order": 8,
+      "premium": false,
+      "questions": [
+        {
+          "questionId": "future-lt-001",
+          "prompt": "Who is more likely to want to relocate to a new city or country first?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-lt-002",
+          "prompt": "Who is more likely to handle the household finances and budgeting?",
+          "isActive": true,
+          "options": []
+        },
+        {
+          "questionId": "future-lt-003",
+          "prompt": "Who is more likely to suggest adopting a pet or expanding our family first?",
+          "isActive": true,
+          "options": []
+        }
+      ],
+      "title": "Future Forecast"
+    }
+  ]
+}

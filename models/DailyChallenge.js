@@ -60,7 +60,6 @@ const dailyChallengeSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-dailyChallengeSchema.index({ date: 1 });
 dailyChallengeSchema.index({ isActive: 1 });
 
 const DailyChallenge = mongoose.model("DailyChallenge", dailyChallengeSchema);

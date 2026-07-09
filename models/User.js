@@ -55,15 +55,6 @@ const userSchema = new mongoose.Schema({
     deviceInfoUpdatedAt: {
         type: Date,
     },
-    locationSharingEnabled: {
-        type: Boolean,
-        default: false,
-    },
-    location: {
-        latitude: { type: Number },
-        longitude: { type: Number },
-        updatedAt: { type: Date },
-    },
     appVersion: {
         type: String,
     },
@@ -131,6 +122,44 @@ const userSchema = new mongoose.Schema({
     },
     locationUpdatedAt: {
         type: Date,
+    },
+    widgetStatus: {
+        scribble: {
+            intentEnabled: { type: Boolean, default: false },
+            installed: { type: Boolean, default: false },
+            activeCount: { type: Number, default: 0 },
+            platform: { type: String, enum: ['ios', 'android', 'web', 'unknown'], default: 'unknown' },
+            lastIntentAt: { type: Date },
+            lastSeenAt: { type: Date },
+            source: { type: String },
+        },
+        togetherDays: {
+            intentEnabled: { type: Boolean, default: false },
+            installed: { type: Boolean, default: false },
+            activeCount: { type: Number, default: 0 },
+            platform: { type: String, enum: ['ios', 'android', 'web', 'unknown'], default: 'unknown' },
+            lastIntentAt: { type: Date },
+            lastSeenAt: { type: Date },
+            source: { type: String },
+        },
+        togetherCountdown: {
+            intentEnabled: { type: Boolean, default: false },
+            installed: { type: Boolean, default: false },
+            activeCount: { type: Number, default: 0 },
+            platform: { type: String, enum: ['ios', 'android', 'web', 'unknown'], default: 'unknown' },
+            lastIntentAt: { type: Date },
+            lastSeenAt: { type: Date },
+            source: { type: String },
+        },
+        distance: {
+            intentEnabled: { type: Boolean, default: false },
+            installed: { type: Boolean, default: false },
+            activeCount: { type: Number, default: 0 },
+            platform: { type: String, enum: ['ios', 'android', 'web', 'unknown'], default: 'unknown' },
+            lastIntentAt: { type: Date },
+            lastSeenAt: { type: Date },
+            source: { type: String },
+        },
     },
 }, {
     timestamps: true,

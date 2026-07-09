@@ -9,7 +9,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:y
 const futureSets = [
     {
         setId: 'future-never-have-i-ever',
-        title: 'Dreaming About Us',
+        title: 'Home In Our Heads',
         format: 'neverhaveiever',
         order: 1,
         isActive: true,
@@ -34,7 +34,7 @@ const futureSets = [
     },
     {
         setId: 'future-would-you-rather',
-        title: 'Life Choices',
+        title: 'Roots Or Wings',
         format: 'wouldyourather',
         order: 2,
         isActive: true,
@@ -62,7 +62,7 @@ const futureSets = [
     },
     {
         setId: 'future-this-or-that',
-        title: 'Our Direction',
+        title: 'Quiet Or Wild',
         format: 'thisorthat',
         order: 3,
         isActive: true,
@@ -90,7 +90,7 @@ const futureSets = [
     },
     {
         setId: 'future-in-5-years',
-        title: 'Five Years From Now',
+        title: 'Our Next Chapter',
         format: 'deep',
         order: 4,
         isActive: true,
@@ -115,7 +115,7 @@ const futureSets = [
     },
     {
         setId: 'future-goals',
-        title: 'Commitment Check',
+        title: 'Big Move Readiness',
         format: 'slider',
         order: 5,
         isActive: true,
@@ -143,7 +143,7 @@ const futureSets = [
     },
     {
         setId: 'future-voice-note',
-        title: 'Promise Out Loud',
+        title: 'A Promise To Us',
         format: 'voicerecord',
         order: 6,
         isActive: true,
@@ -163,7 +163,7 @@ const futureSets = [
     },
     {
         setId: 'future-photo-memory',
-        title: 'Picture Our Future',
+        title: 'Future In A Photo',
         format: 'takephoto',
         order: 7,
         isActive: true,
@@ -183,7 +183,7 @@ const futureSets = [
     },
     {
         setId: 'future-likely-to',
-        title: 'Predicting Our Future',
+        title: 'Future Forecast',
         format: 'likelyto',
         order: 8,
         isActive: true,
