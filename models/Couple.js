@@ -39,6 +39,8 @@ const coupleSchema = new mongoose.Schema({
     // One shared live canvas for the active couple.
     liveScribble: {
         paths: { type: Array, default: [] },
+        canvasWidth: { type: Number, default: 350 },
+        canvasHeight: { type: Number, default: 350 },
         updatedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         updatedByUserName: { type: String },
         updatedAt: { type: Date },
