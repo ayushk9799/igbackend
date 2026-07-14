@@ -236,6 +236,72 @@ export const sendMoodNotification = async (userId, senderName, mood) => {
 };
 
 /**
+ * Send a push notification for a new timeline memory or special date.
+ * @param {string} userId - Target user's ID
+ * @param {string} senderName - Name of person who added the entry
+ * @param {object} memory - Memory/timeline entry data
+ */
+export const sendMemoryNotification = async (userId, senderName, memory = {}) => {
+    try {
+        const user = await User.findById(userId);
+        if (!user?.fcmToken) {
+            return false;
+        }
+
+        const displayName = senderName || 'Your partner';
+        const capturedDate = memory?.capturedAt ? new Date(memory.capturedAt) : null;
+        const displayDate = capturedDate && !Number.isNaN(capturedDate.getTime())
+            ? capturedDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: 'UTC',
+            })
+            : 'this date';
+        const message = {
+            token: user.fcmToken,
+            notification: {
+                title: `💕 ${displayName} added a memory`,
+                body: `Look what happened on ${displayDate} 💕`,
+            },
+            data: {
+                type: 'memory',
+                tab: 'memories',
+                memoryId: memory?._id ? String(memory._id) : '',
+                entryType: memory?.entryType ? String(memory.entryType) : 'memory',
+                capturedAt: memory?.capturedAt ? new Date(memory.capturedAt).toISOString() : '',
+                senderName: displayName,
+                timestamp: new Date().toISOString(),
+            },
+            apns: {
+                headers: {
+                    'apns-priority': '10',
+                },
+                payload: {
+                    aps: {
+                        sound: 'default',
+                    },
+                },
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default',
+                    channelId: 'partner-updates',
+                },
+            },
+        };
+
+        await admin.messaging().send(message);
+        return true;
+
+    } catch (error) {
+        console.error('❌ Push notification error:', error);
+        return false;
+    }
+};
+
+/**
  * Send a generic push notification
  * @param {string} userId - Target user's ID
  * @param {string} title - Notification title
@@ -298,4 +364,5 @@ export default {
     sendPuzzleNotification,
     sendPushNotification,
     sendMoodNotification,
+    sendMemoryNotification,
 };

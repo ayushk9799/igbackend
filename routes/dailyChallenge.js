@@ -3,6 +3,7 @@ import DailyChallenge from '../models/DailyChallenge.js';
 import DailyAnswers from '../models/DailyAnswers.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import { getCoupleTodayPayload } from '../utils/dailyRitual.js';
 
 const router = express.Router();
 
@@ -74,6 +75,34 @@ router.get('/today', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch today\'s challenge',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/daily-challenge/couple-today
+ * Get the shared active daily ritual for a couple.
+ * Query: ?userId=xxx
+ */
+router.get('/couple-today', async (req, res) => {
+    try {
+        const { userId } = req.query;
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'userId query param required'
+            });
+        }
+
+        const result = await getCoupleTodayPayload({ userId });
+        return res.status(result.statusCode).json(result.body);
+    } catch (error) {
+        console.error('[dailyChallenge] Error fetching shared couple ritual:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch shared daily ritual',
             error: error.message
         });
     }
@@ -480,8 +509,8 @@ router.post('/remind', async (req, res) => {
         // Send push notification to partner
         const sent = await sendPushNotification(
             partnerId,
-            '💕 Daily Challenge Reminder',
-            `${senderName} is waiting for you to complete today's challenge!`,
+            'Daily Ritual Reminder',
+            `${senderName} is waiting for you to complete the shared ritual.`,
             {
                 type: 'daily_challenge_reminder',
                 route: 'dailyChallenge',

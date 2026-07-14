@@ -2,6 +2,8 @@ import express from 'express';
 import DailyAnswers from '../models/DailyAnswers.js';
 import DailyChallenge from '../models/DailyChallenge.js';
 import User from '../models/User.js';
+import { sendPushNotification } from '../utils/pushNotification.js';
+import { updateRitualStatusForCompletion } from '../utils/dailyRitual.js';
 
 const router = express.Router();
 
@@ -109,8 +111,7 @@ router.post('/submit', async (req, res) => {
             });
         }
 
-        // Check if this task was already answered
-        const wasAlreadyAnswered = dailyAnswers.answers[taskIndex]?.value !== null;
+        const wasCompleteBefore = dailyAnswers.isComplete === true;
 
         // Update the answer at the specified index (preserving type)
         const taskType = challenge.tasks[taskIndex].category;
@@ -127,10 +128,80 @@ router.post('/submit', async (req, res) => {
         // Check if all tasks are complete
         if (dailyAnswers.completedCount >= dailyAnswers.totalTasks) {
             dailyAnswers.isComplete = true;
-            dailyAnswers.completedAt = new Date();
+            if (!wasCompleteBefore) {
+                dailyAnswers.completedAt = new Date();
+            }
         }
 
         await dailyAnswers.save();
+
+        let ritualResponse = null;
+
+        if (!wasCompleteBefore && dailyAnswers.isComplete) {
+            try {
+                const ritualUpdate = await updateRitualStatusForCompletion({ userId, challenge });
+                if (ritualUpdate?.status && ritualUpdate?.streak) {
+                    const userIsA = ritualUpdate.status.userA.toString() === userId.toString();
+                    ritualResponse = {
+                        heartState: ritualUpdate.status.heartState,
+                        currentStreak: ritualUpdate.streak.currentStreak || 0,
+                        longestStreak: ritualUpdate.streak.longestStreak || 0,
+                        youComplete: userIsA ? ritualUpdate.status.userAComplete : ritualUpdate.status.userBComplete,
+                        partnerComplete: userIsA ? ritualUpdate.status.userBComplete : ritualUpdate.status.userAComplete,
+                        lastFullHeartDate: ritualUpdate.streak.lastFullHeartDate,
+                    };
+                }
+                const senderName = user.name || 'Your partner';
+
+                if (ritualUpdate?.heartChanged && ritualUpdate.status?.heartState === 'half') {
+                    const targetId = user.partnerId?.toString();
+                    if (targetId) {
+                        await sendPushNotification(
+                            targetId,
+                            '◐ Daily Ritual half done',
+                            `${senderName} finished. Complete yours to keep the streak alive.`,
+                            {
+                                type: 'daily_ritual_half',
+                                route: 'dailyChallenge',
+                                tab: 'dailyChallenge',
+                                ritualDate: ritualUpdate.status.ritualDate,
+                                senderId: user._id,
+                                senderName,
+                            }
+                        );
+                    }
+                }
+
+                if (ritualUpdate?.heartChanged && ritualUpdate.status?.heartState === 'full') {
+                    await Promise.all([
+                        sendPushNotification(
+                            ritualUpdate.status.userA,
+                            '♥ Daily Ritual complete',
+                            'Full heart today. Your streak is safe.',
+                            {
+                                type: 'daily_ritual_full',
+                                route: 'dailyChallenge',
+                                tab: 'dailyChallenge',
+                                ritualDate: ritualUpdate.status.ritualDate,
+                            }
+                        ),
+                        sendPushNotification(
+                            ritualUpdate.status.userB,
+                            '♥ Daily Ritual complete',
+                            'Full heart today. Your streak is safe.',
+                            {
+                                type: 'daily_ritual_full',
+                                route: 'dailyChallenge',
+                                tab: 'dailyChallenge',
+                                ritualDate: ritualUpdate.status.ritualDate,
+                            }
+                        ),
+                    ]);
+                }
+            } catch (ritualError) {
+                console.error('[answers.submit] Failed to update ritual streak:', ritualError);
+            }
+        }
 
         res.status(200).json({
             success: true,
@@ -140,6 +211,7 @@ router.post('/submit', async (req, res) => {
                 completedCount: dailyAnswers.completedCount,
                 totalTasks: dailyAnswers.totalTasks,
                 isComplete: dailyAnswers.isComplete,
+                ritual: ritualResponse,
             }
         });
     } catch (error) {

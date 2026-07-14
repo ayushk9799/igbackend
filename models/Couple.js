@@ -26,6 +26,17 @@ const coupleSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
+    ritualTimezone: {
+        type: String,
+        default: null,
+        trim: true,
+    },
+    ritualResetHour: {
+        type: Number,
+        min: 0,
+        max: 23,
+        default: 5,
+    },
     // Status of the relationship
     status: {
         type: String,
