@@ -125,8 +125,8 @@ router.post('/submit', async (req, res) => {
         // Recalculate completed count
         dailyAnswers.completedCount = dailyAnswers.answers.filter(a => a.value !== null).length;
 
-        // Check if all tasks are complete
-        if (dailyAnswers.completedCount >= dailyAnswers.totalTasks) {
+        // Check if at least one task is complete
+        if (dailyAnswers.completedCount >= 1) {
             dailyAnswers.isComplete = true;
             if (!wasCompleteBefore) {
                 dailyAnswers.completedAt = new Date();
