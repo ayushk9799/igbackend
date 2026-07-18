@@ -156,16 +156,13 @@ router.post('/', async (req, res) => {
 
         const partnerId = getPartnerIdFromCouple(couple, userId);
         if (partnerId) {
-            User.findById(userId)
-                .select('name nickname')
-                .lean()
-                .then((creator) => {
-                    const senderName = creator?.nickname || creator?.name || 'Your partner';
-                    return sendMemoryNotification(partnerId, senderName, memory);
-                })
-                .catch((notificationError) => {
-                    console.error('📷 [MEMORIES] ❌ Notification error:', notificationError);
-                });
+            const creator = await User.findById(userId).select('name nickname').lean();
+            const senderName = creator?.nickname || creator?.name || 'Your partner';
+            const notificationSent = await sendMemoryNotification(partnerId, senderName, memory);
+
+            if (!notificationSent) {
+                console.warn('📷 [MEMORIES] Timeline saved, but partner notification was not delivered');
+            }
         }
 
         res.status(201).json({

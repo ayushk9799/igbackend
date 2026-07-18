@@ -1,5 +1,15 @@
 import mongoose from 'mongoose';
 
+const currentPhotoSchema = new mongoose.Schema({
+    fileKey: { type: String, trim: true },
+    imageUrl: { type: String, trim: true },
+    width: { type: Number, min: 1 },
+    height: { type: Number, min: 1 },
+    mimeType: { type: String, default: 'image/jpeg', trim: true },
+    revision: { type: Number, min: 0 },
+    updatedAt: { type: Date },
+}, { _id: false });
+
 const coupleSchema = new mongoose.Schema({
     // Both partners (sorted by ID for consistent lookups)
     partner1: {
@@ -55,6 +65,16 @@ const coupleSchema = new mongoose.Schema({
         updatedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         updatedByUserName: { type: String },
         updatedAt: { type: Date },
+    },
+    // Each partner owns exactly one outgoing photo. Sending again replaces
+    // only that partner's slot; this is intentionally not a photo history.
+    partner1CurrentPhoto: {
+        type: currentPhotoSchema,
+        default: undefined,
+    },
+    partner2CurrentPhoto: {
+        type: currentPhotoSchema,
+        default: undefined,
     },
 }, {
     timestamps: true,

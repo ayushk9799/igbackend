@@ -4,6 +4,10 @@
  */
 import admin from 'firebase-admin';
 import User from '../models/User.js';
+import {
+    getLegacyScribbleData,
+    isFcmMessageTooLargeError,
+} from './scribbleNotificationCompatibility.js';
 
 // Import service account key using ESM JSON import
 import serviceAccount from '../serviceAccountKey.json' with { type: 'json' };
@@ -64,26 +68,38 @@ export const sendSilentPush = async (userId, data = {}) => {
 };
 
 /**
- * Send a visible push notification with scribble data
+ * Send a visible push notification with a signed current-canvas URL.
  * @param {string} userId - Target user's ID
  * @param {string} senderName - Name of person who sent scribble
- * @param {Array} paths - Scribble path data
- * @param {Object} dimensions - Original scribble canvas dimensions
+ * @param {Object} scribble - Current-canvas access metadata
  */
-export const sendScribbleNotification = async (userId, senderName, paths, dimensions = {}) => {
+export const sendScribbleNotification = async (userId, senderName, scribble = {}) => {
     try {
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
             return false;
         }
 
-        const canvasWidth = Number(dimensions.canvasWidth);
-        const canvasHeight = Number(dimensions.canvasHeight);
-        const safeCanvasWidth = Number.isFinite(canvasWidth) && canvasWidth > 0 ? canvasWidth : 350;
-        const safeCanvasHeight = Number.isFinite(canvasHeight) && canvasHeight > 0 ? canvasHeight : safeCanvasWidth;
+        let scribbleUrl = null;
+        if (
+            scribble.apiBaseUrl
+            && scribble.coupleId
+            && scribble.recipientId
+            && scribble.signature
+        ) {
+            const url = new URL(
+                `/api/scribbles/current/${encodeURIComponent(scribble.coupleId)}/widget`,
+                `${scribble.apiBaseUrl.replace(/\/$/, '')}/`
+            );
+            url.searchParams.set('recipient', scribble.recipientId);
+            url.searchParams.set('signature', scribble.signature);
+            scribbleUrl = url.toString();
+        }
 
-
-
+        const timestamp = scribble.timestamp instanceof Date
+            ? scribble.timestamp
+            : new Date(scribble.timestamp || Date.now());
+        const legacyData = getLegacyScribbleData(user, scribble);
         const message = {
             token: user.fcmToken,
             notification: {
@@ -93,10 +109,11 @@ export const sendScribbleNotification = async (userId, senderName, paths, dimens
             data: {
                 type: 'scribble',
                 senderName: senderName || 'Your Love',
-                paths: JSON.stringify(paths),
-                canvasWidth: String(safeCanvasWidth),
-                canvasHeight: String(safeCanvasHeight),
-                timestamp: new Date().toISOString(),
+                timestamp: timestamp.toISOString(),
+                ...(scribbleUrl ? { scribbleUrl } : {}),
+                ...(scribble.coupleId ? { coupleId: String(scribble.coupleId) } : {}),
+                ...(scribble.canvasRevision ? { canvasRevision: String(scribble.canvasRevision) } : {}),
+                ...(legacyData || {}),
             },
             apns: {
                 headers: {
@@ -118,7 +135,21 @@ export const sendScribbleNotification = async (userId, senderName, paths, dimens
             },
         };
 
-        const response = await admin.messaging().send(message);
+        try {
+            await admin.messaging().send(message);
+        } catch (error) {
+            if (!legacyData || !isFcmMessageTooLargeError(error)) {
+                throw error;
+            }
+
+            // The conservative check should normally prevent this. If Firebase
+            // still rejects the complete message, retry once without legacy
+            // paths so the visible notification and new extension still work.
+            delete message.data.paths;
+            delete message.data.canvasWidth;
+            delete message.data.canvasHeight;
+            await admin.messaging().send(message);
+        }
         return true;
 
     } catch (error) {
@@ -258,11 +289,15 @@ export const sendMemoryNotification = async (userId, senderName, memory = {}) =>
                 timeZone: 'UTC',
             })
             : 'this date';
+        const entryTitle = String(memory?.title || '').trim();
+        const entryLabel = memory?.entryType === 'special_date' ? 'special date' : 'memory';
         const message = {
             token: user.fcmToken,
             notification: {
-                title: `💕 ${displayName} added a memory`,
-                body: `Look what happened on ${displayDate} 💕`,
+                title: `💕 ${displayName} added to your timeline`,
+                body: entryTitle
+                    ? `${entryTitle} • ${displayDate}`
+                    : `A new ${entryLabel} was added for ${displayDate}`,
             },
             data: {
                 type: 'memory',
@@ -315,6 +350,8 @@ export const sendPushNotification = async (userId, title, body, data = {}) => {
             return false;
         }
 
+        const updatesNativeWidget = data.type === 'couple_photo';
+
         const message = {
             token: user.fcmToken,
             notification: {
@@ -334,6 +371,10 @@ export const sendPushNotification = async (userId, title, body, data = {}) => {
                 },
                 payload: {
                     aps: {
+                        ...(updatesNativeWidget ? {
+                            'mutable-content': 1,
+                            'content-available': 1,
+                        } : {}),
                         sound: 'default',
                     },
                 },

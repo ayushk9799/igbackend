@@ -2,6 +2,7 @@ node_modules/
 .env
 .DS_Store
 logs/
+reports/
 *.log
 npm-debug.log*
 serviceAccountKey.json

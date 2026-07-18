@@ -1,11 +1,30 @@
-import User from '../../models/User.js';
 import Couple from '../../models/Couple.js';
 import { getCoupleRoomId, getSocketId } from '../auth.js';
 import { sendScribbleNotification } from '../../utils/pushNotification.js';
+import { createCurrentScribbleSignature } from '../../utils/scribbleWidgetAccess.js';
+
+const getNotificationApiBaseUrl = (socket) => {
+    const configuredBaseUrl = process.env.PUBLIC_API_BASE_URL?.trim();
+    if (configuredBaseUrl) {
+        return configuredBaseUrl.replace(/\/$/, '');
+    }
+
+    const forwardedHost = socket.handshake.headers['x-forwarded-host'];
+    const host = String(forwardedHost || socket.handshake.headers.host || '').split(',')[0].trim();
+    if (!host) return null;
+
+    const forwardedProtocol = socket.handshake.headers['x-forwarded-proto'];
+    const isEncrypted = Boolean(socket.conn?.request?.connection?.encrypted);
+    const protocol = String(forwardedProtocol || (isEncrypted ? 'https' : 'http'))
+        .split(',')[0]
+        .trim();
+
+    return `${protocol}://${host}`;
+};
 
 /**
  * Handle scribble send event
- * Saves scribble to partner's DB record and broadcasts via socket
+ * Saves the couple's current shared canvas and broadcasts via socket.
  */
 export const handleScribbleSend = async (socket, io, data) => {
     try {
@@ -19,12 +38,51 @@ export const handleScribbleSend = async (socket, io, data) => {
             return;
         }
 
-        // Save the shared scribble board for both users.
+        // Replace the couple's one current shared canvas.
         if (partnerId) {
-            await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now, dimensions);
+            const couple = await Couple.findOneAndUpdate(getCoupleFilter(userId, partnerId), {
+                $set: {
+                    'liveScribble.paths': paths,
+                    'liveScribble.canvasWidth': dimensions.canvasWidth,
+                    'liveScribble.canvasHeight': dimensions.canvasHeight,
+                    'liveScribble.updatedByUserId': userId,
+                    'liveScribble.updatedByUserName': userName,
+                    'liveScribble.updatedAt': now,
+                },
+            }, { new: true });
 
-            // Send push notification to partner (for widget update when app killed)
-            sendScribbleNotification(partnerId, userName, paths, dimensions);
+            // Keep FCM small. The signed URL always reads the one current shared
+            // canvas and creates no per-notification database copy.
+            try {
+                if (!couple) {
+                    throw new Error('Active couple not found for scribble notification');
+                }
+
+                const canvasRevision = now.getTime();
+                const coupleId = couple._id.toString();
+                const recipientId = partnerId.toString();
+                const signature = createCurrentScribbleSignature(coupleId, recipientId);
+
+                void sendScribbleNotification(partnerId, userName, {
+                    coupleId,
+                    recipientId,
+                    signature,
+                    apiBaseUrl: getNotificationApiBaseUrl(socket),
+                    canvasRevision,
+                    timestamp: now,
+                    legacyPaths: paths,
+                    ...dimensions,
+                });
+            } catch (notificationError) {
+                console.error('Failed to create current scribble notification URL:', notificationError);
+                // The shared canvas is already saved, so notification failure
+                // must not turn a successful drawing update into an error.
+                void sendScribbleNotification(partnerId, userName, {
+                    timestamp: now,
+                    legacyPaths: paths,
+                    ...dimensions,
+                });
+            }
         }
 
         // Broadcast to partner via couple room (if online)
@@ -74,10 +132,10 @@ export const handleScribbleRequest = async (socket, io) => {
     try {
         const { userId } = socket;
 
-        // Get the user's saved shared scribble board.
-        const user = await User.findById(userId);
+        const couple = await Couple.findByPartner(userId);
+        const scribble = couple?.liveScribble;
 
-        if (!user || !user.lastScribble || !user.lastScribble.paths || user.lastScribble.paths.length === 0) {
+        if (!scribble || !Array.isArray(scribble.paths) || scribble.paths.length === 0) {
             socket.emit('scribble:partnerScribble', {
                 hasScribble: false,
                 paths: null
@@ -88,12 +146,12 @@ export const handleScribbleRequest = async (socket, io) => {
 
         socket.emit('scribble:partnerScribble', {
             hasScribble: true,
-            paths: user.lastScribble.paths,
-            canvasWidth: user.lastScribble.canvasWidth,
-            canvasHeight: user.lastScribble.canvasHeight,
-            fromUserId: user.lastScribble.fromUserId,
-            fromUserName: user.lastScribble.fromUserName,
-            timestamp: user.lastScribble.receivedAt?.toISOString(),
+            paths: scribble.paths,
+            canvasWidth: scribble.canvasWidth,
+            canvasHeight: scribble.canvasHeight,
+            fromUserId: scribble.updatedByUserId,
+            fromUserName: scribble.updatedByUserName,
+            timestamp: scribble.updatedAt?.toISOString(),
         });
 
     } catch (error) {
@@ -132,19 +190,6 @@ const getScribbleDimensions = (data = {}) => {
         canvasWidth: safeCanvasWidth,
         canvasHeight: safeCanvasHeight,
     };
-};
-
-const saveScribbleForUsers = async (userIds, fromUserId, fromUserName, paths, receivedAt, dimensions = {}) => {
-    const scribbleDimensions = getScribbleDimensions(dimensions);
-    await User.updateMany({ _id: { $in: userIds } }, {
-        lastScribble: {
-            paths,
-            ...scribbleDimensions,
-            fromUserId,
-            fromUserName,
-            receivedAt,
-        },
-    });
 };
 
 export const handleScribbleLiveStart = (socket) => {
@@ -213,8 +258,6 @@ export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
         });
 
         const paths = nextPaths || couple?.liveScribble?.paths || [savedStroke];
-        await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now, dimensions);
-
         io.to(partnerSocketId).emit('scribble:liveStrokeReceived', {
             stroke: savedStroke,
             fromUserId: userId,
@@ -260,8 +303,6 @@ export const handleScribbleLiveClear = async (socket, io, data = {}) => {
                 'liveScribble.canvasHeight': dimensions.canvasHeight,
             },
         });
-
-        await saveScribbleForUsers([userId, partnerId], userId, userName, [], now, dimensions);
 
         io.to(partnerSocketId).emit('scribble:liveCleared', {
             fromUserId: userId,
@@ -329,8 +370,6 @@ export const handleScribbleLiveUndo = async (socket, io, data) => {
         });
 
         const paths = nextPaths || couple?.liveScribble?.paths || [];
-        await saveScribbleForUsers([userId, partnerId], userId, userName, paths, now, dimensions);
-
         io.to(partnerSocketId).emit('scribble:liveUndone', {
             strokeId,
             fromUserId: userId,

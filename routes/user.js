@@ -9,7 +9,7 @@ const router = express.Router();
 
 const VALID_PLATFORMS = new Set(['ios', 'android', 'web']);
 const TOGETHER_DISTANCE_KM = 0.1;
-const WIDGET_TYPES = ['scribble', 'togetherDays', 'togetherCountdown', 'distance'];
+const WIDGET_TYPES = ['scribble', 'togetherDays', 'togetherCountdown', 'distance', 'couplePhoto'];
 
 const normalizePlatform = (platform) => (
     typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'

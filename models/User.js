@@ -162,6 +162,15 @@ const userSchema = new mongoose.Schema({
             lastSeenAt: { type: Date },
             source: { type: String },
         },
+        couplePhoto: {
+            intentEnabled: { type: Boolean, default: false },
+            installed: { type: Boolean, default: false },
+            activeCount: { type: Number, default: 0 },
+            platform: { type: String, enum: ['ios', 'android', 'web', 'unknown'], default: 'unknown' },
+            lastIntentAt: { type: Date },
+            lastSeenAt: { type: Date },
+            source: { type: String },
+        },
     },
 }, {
     timestamps: true,

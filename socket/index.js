@@ -41,6 +41,17 @@ import {
     handleChatRead,
     handleChatReaction
 } from './handlers/chat.js';
+import {
+    handleCallStart,
+    handleCallAccept,
+    handleCallReject,
+    handleCallCancel,
+    handleCallEnd,
+    handleCallMediaState,
+    handleWebRTCSignal,
+    handleCallDiagnostic,
+    handleCallDisconnect,
+} from './handlers/call.js';
 
 /**
  * Initialize Socket.io server
@@ -211,6 +222,19 @@ export const initializeSocket = (httpServer) => {
         socket.on('chat:reaction', (data) => {
             handleChatReaction(socket, io, data);
         });
+
+        // ======== VIDEO CALL EVENTS ========
+        socket.on('call:start', (data) => handleCallStart(socket, io, data));
+        socket.on('call:accept', (data) => handleCallAccept(socket, io, data));
+        socket.on('call:reject', (data) => handleCallReject(socket, io, data));
+        socket.on('call:cancel', (data) => handleCallCancel(socket, io, data));
+        socket.on('call:end', (data) => handleCallEnd(socket, io, data));
+        socket.on('call:media-state', (data) => handleCallMediaState(socket, io, data));
+        socket.on('call:diagnostic', (data) => handleCallDiagnostic(socket, io, data));
+        socket.on('webrtc:offer', (data) => handleWebRTCSignal('webrtc:offer')(socket, io, data));
+        socket.on('webrtc:answer', (data) => handleWebRTCSignal('webrtc:answer')(socket, io, data));
+        socket.on('webrtc:ice-candidate', (data) => handleWebRTCSignal('webrtc:ice-candidate')(socket, io, data));
+        socket.on('disconnect', () => handleCallDisconnect(socket, io));
 
 
         // ======== NOW DO ASYNC SETUP (after handlers are ready) ========

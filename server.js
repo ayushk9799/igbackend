@@ -30,6 +30,8 @@ import wordleRoutes from './routes/wordle.js';
 import chatRoutes from './routes/chat.js';
 import webhookRoutes from './routes/webhook.js';
 import appConfigRoutes from './routes/appConfig.js';
+import scribbleRoutes from './routes/scribble.js';
+import couplePhotoRoutes from './routes/couplePhoto.js';
 import initializeSocket from './socket/index.js';
 
 const app = express();
@@ -84,6 +86,8 @@ app.use('/api/wordle', wordleRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/app-config', appConfigRoutes);
+app.use('/api/scribbles', scribbleRoutes);
+app.use('/api/couple-photo', couplePhotoRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);
