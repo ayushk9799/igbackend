@@ -52,6 +52,14 @@ import {
     handleCallDiagnostic,
     handleCallDisconnect,
 } from './handlers/call.js';
+import {
+    handleLiveChatJoin,
+    handleLiveChatLeave,
+    handleLiveChatMessageSet,
+    handleLiveChatMediaState,
+    handleLiveChatSignal,
+    handleLiveChatDisconnect,
+} from './handlers/liveChat.js';
 
 /**
  * Initialize Socket.io server
@@ -223,6 +231,15 @@ export const initializeSocket = (httpServer) => {
             handleChatReaction(socket, io, data);
         });
 
+        // ======== EPHEMERAL LIVE CHAT EVENTS ========
+        socket.on('liveChat:join', () => handleLiveChatJoin(socket, io));
+        socket.on('liveChat:leave', (data) => handleLiveChatLeave(socket, io, data));
+        socket.on('liveChat:message:set', (data) => handleLiveChatMessageSet(socket, io, data));
+        socket.on('liveChat:mediaState', (data) => handleLiveChatMediaState(socket, io, data));
+        socket.on('liveChat:webrtc:offer', (data) => handleLiveChatSignal('liveChat:webrtc:offer')(socket, io, data));
+        socket.on('liveChat:webrtc:answer', (data) => handleLiveChatSignal('liveChat:webrtc:answer')(socket, io, data));
+        socket.on('liveChat:webrtc:iceCandidate', (data) => handleLiveChatSignal('liveChat:webrtc:iceCandidate')(socket, io, data));
+
         // ======== VIDEO CALL EVENTS ========
         socket.on('call:start', (data) => handleCallStart(socket, io, data));
         socket.on('call:accept', (data) => handleCallAccept(socket, io, data));
@@ -234,7 +251,10 @@ export const initializeSocket = (httpServer) => {
         socket.on('webrtc:offer', (data) => handleWebRTCSignal('webrtc:offer')(socket, io, data));
         socket.on('webrtc:answer', (data) => handleWebRTCSignal('webrtc:answer')(socket, io, data));
         socket.on('webrtc:ice-candidate', (data) => handleWebRTCSignal('webrtc:ice-candidate')(socket, io, data));
-        socket.on('disconnect', () => handleCallDisconnect(socket, io));
+        socket.on('disconnect', () => {
+            handleLiveChatDisconnect(socket, io);
+            handleCallDisconnect(socket, io);
+        });
 
 
         // ======== NOW DO ASYNC SETUP (after handlers are ready) ========

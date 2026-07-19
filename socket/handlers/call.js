@@ -2,6 +2,11 @@ import crypto from 'crypto';
 import CallDiagnostic from '../../models/CallDiagnostic.js';
 import User from '../../models/User.js';
 import { getCoupleRoomId } from '../auth.js';
+import {
+    claimMediaSession,
+    MEDIA_SESSION_TYPE,
+    releaseMediaSession,
+} from '../mediaSessionRegistry.js';
 
 const RING_TIMEOUT_MS = 30_000;
 const ACTIVE_STATUSES = new Set(['ringing', 'accepted', 'connecting', 'connected']);
@@ -57,11 +62,17 @@ const endCall = (socket, call, event, status, reason) => {
     call.status = status;
     call.endedAt = new Date().toISOString();
     activeCalls.delete(call.callId);
+    releaseMediaSession({
+        coupleId: call.coupleId,
+        type: MEDIA_SESSION_TYPE.CALL,
+        sessionId: call.callId,
+    });
     emitToCallPartner(socket, call, event, { reason, endedBy: socket.userId });
     socket.emit(event, { callId: call.callId, reason, endedBy: socket.userId });
 };
 
 export const handleCallStart = async (socket, io, data = {}) => {
+    let claimedMediaSession = null;
     try {
         const callerId = String(socket.userId);
         const caller = await User.findById(callerId).select('partnerId name nickname');
@@ -84,8 +95,28 @@ export const handleCallStart = async (socket, io, data = {}) => {
             return;
         }
 
+        const callId = crypto.randomUUID();
+        const coupleId = getCoupleRoomId(callerId, calleeId);
+        const claim = claimMediaSession({
+            coupleId,
+            type: MEDIA_SESSION_TYPE.CALL,
+            sessionId: callId,
+            participantIds: [callerId, calleeId],
+        });
+        if (!claim.success) {
+            socket.emit('call:busy', {
+                code: claim.session?.type === MEDIA_SESSION_TYPE.LIVE_CHAT ? 'LIVE_CHAT_ACTIVE' : 'CALL_ACTIVE',
+                message: claim.session?.type === MEDIA_SESSION_TYPE.LIVE_CHAT
+                    ? 'Leave Live Chat before starting a video call.'
+                    : 'A call is already active.',
+            });
+            return;
+        }
+        claimedMediaSession = { coupleId, callId };
+
         const call = {
-            callId: crypto.randomUUID(),
+            callId,
+            coupleId,
             callerId,
             callerName: caller.nickname || caller.name || 'Your partner',
             calleeId,
@@ -99,10 +130,16 @@ export const handleCallStart = async (socket, io, data = {}) => {
         };
 
         activeCalls.set(call.callId, call);
+        claimedMediaSession = null;
         call.ringTimer = setTimeout(() => {
             if (!activeCalls.has(call.callId)) return;
             call.status = 'missed';
             activeCalls.delete(call.callId);
+            releaseMediaSession({
+                coupleId: call.coupleId,
+                type: MEDIA_SESSION_TYPE.CALL,
+                sessionId: call.callId,
+            });
             const roomId = getCoupleRoomId(callerId, calleeId);
             io.to(roomId).emit('call:missed', { callId: call.callId, reason: 'ring_timeout' });
         }, RING_TIMEOUT_MS);
@@ -110,6 +147,13 @@ export const handleCallStart = async (socket, io, data = {}) => {
         socket.emit('call:outgoing', publicCall(call));
         emitToCallPartner(socket, call, 'call:incoming', publicCall(call));
     } catch (error) {
+        if (claimedMediaSession) {
+            releaseMediaSession({
+                coupleId: claimedMediaSession.coupleId,
+                type: MEDIA_SESSION_TYPE.CALL,
+                sessionId: claimedMediaSession.callId,
+            });
+        }
         console.error('Call start error:', error);
         socket.emit('call:error', { code: 'START_FAILED', message: 'Unable to start the call.' });
     }
@@ -263,6 +307,11 @@ export const handleCallDisconnect = (socket, io) => {
         if (!isParticipant(call, socket.userId)) continue;
         clearRingTimer(call);
         activeCalls.delete(call.callId);
+        releaseMediaSession({
+            coupleId: call.coupleId,
+            type: MEDIA_SESSION_TYPE.CALL,
+            sessionId: call.callId,
+        });
         emitToCallPartner(socket, call, 'call:ended', {
             reason: 'socket_disconnected',
             endedBy: socket.userId,
