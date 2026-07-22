@@ -437,6 +437,7 @@ router.put('/location', async (req, res) => {
             });
         }
 
+        const sharingStateChanged = user.locationSharingEnabled !== shouldShare;
         user.locationSharingEnabled = shouldShare;
         if (shouldShare) {
             user.location = {
@@ -454,12 +455,25 @@ router.put('/location', async (req, res) => {
                 ? activeCouple.partner2
                 : activeCouple?.partner1
         );
-        if (partnerId && shouldShare) {
+        if (partnerId && sharingStateChanged) {
             sendSilentPush(partnerId, {
                 type: 'distance_widget_refresh',
                 senderUserId: user._id.toString(),
+                sharingEnabled: shouldShare,
                 timestamp: new Date().toISOString(),
             }).catch(() => {});
+
+            try {
+                const io = getIO();
+                if (io && activeCouple?._id) {
+                    io.to(getCoupleRoomId(activeCouple._id)).emit('distance_status_updated', {
+                        userId: user._id.toString(),
+                        sharingEnabled: shouldShare,
+                    });
+                }
+            } catch {
+                // Ignore socket error
+            }
         }
         const shouldAskRelationshipStartDate = !!(
             activeCouple
@@ -564,6 +578,58 @@ router.get('/distance/:userId', async (req, res) => {
             success: false,
             error: 'Failed to get partner distance'
         });
+    }
+});
+
+/**
+ * POST /api/user/distance/remind
+ * Send push notification to partner reminding them to enable location for the distance widget.
+ */
+router.post('/distance/remind', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) {
+            return res.status(400).json({ success: false, error: 'userId is required' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        const activeCouple = await Couple.findByPartner(user._id);
+        const partnerId = user.partnerId || (
+            activeCouple?.partner1?.toString() === user._id.toString()
+                ? activeCouple.partner2
+                : activeCouple?.partner1
+        );
+
+        if (!partnerId) {
+            return res.status(400).json({ success: false, error: 'No active partner found' });
+        }
+
+        const partner = await User.findById(partnerId);
+        if (!partner) {
+            return res.status(404).json({ success: false, error: 'Partner not found' });
+        }
+
+        const { sendPushNotification } = await import('../utils/pushNotification.js');
+        const senderName = user.nickname || user.name || 'Your partner';
+        const title = '📍 Distance Widget';
+        const body = `${senderName} enabled location! Turn on location in Penguin to see your distance on widgets.`;
+
+        await sendPushNotification(partner._id.toString(), title, body, {
+            type: 'distance_location_remind',
+            action: 'open_distance_widget',
+        });
+
+        res.json({
+            success: true,
+            message: `Reminder sent to ${partner.nickname || partner.name || 'partner'}`,
+        });
+    } catch (error) {
+        console.error('Distance reminder error:', error);
+        res.status(500).json({ success: false, error: 'Failed to send partner location reminder' });
     }
 });
 
