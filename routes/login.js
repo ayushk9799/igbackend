@@ -140,7 +140,12 @@ router.post("/google/loginSignUp", async (req, res) => {
                 isPremium: couplePremium.isPremium,
                 premiumExpiresAt: couplePremium.premiumExpiresAt,
                 premiumPlan: couplePremium.premiumPlan,
+                premiumWillRenew: couplePremium.premiumWillRenew,
+                premiumCancelledAt: couplePremium.premiumCancelledAt,
                 premiumSource: couplePremium.premiumSource,
+                premiumOwnerUserId: couplePremium.premiumOwnerUserId,
+                subscriptionStatus: couplePremium.subscriptionStatus,
+                subscriptionBillingIssueAt: couplePremium.subscriptionBillingIssueAt,
             },
         });
     } catch (error) {
@@ -258,7 +263,12 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 isPremium: couplePremium.isPremium,
                 premiumExpiresAt: couplePremium.premiumExpiresAt,
                 premiumPlan: couplePremium.premiumPlan,
+                premiumWillRenew: couplePremium.premiumWillRenew,
+                premiumCancelledAt: couplePremium.premiumCancelledAt,
                 premiumSource: couplePremium.premiumSource,
+                premiumOwnerUserId: couplePremium.premiumOwnerUserId,
+                subscriptionStatus: couplePremium.subscriptionStatus,
+                subscriptionBillingIssueAt: couplePremium.subscriptionBillingIssueAt,
             },
         });
     } catch (error) {

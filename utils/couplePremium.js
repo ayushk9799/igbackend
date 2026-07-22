@@ -1,57 +1,55 @@
-import User from '../models/User.js';
+import {
+    buildLegacyPremiumFields,
+    getCoupleSubscriptionAccess,
+    getOwnerPremiumStatus,
+    serializeSubscription,
+} from '../services/subscriptionService.js';
 
 /**
- * Check if a user has an active premium subscription based on premiumExpiresAt date.
- * This is more robust than checking the isPremium boolean, as it auto-expires
- * even if a RevenueCat webhook is missed.
- *
- * @param {Object} user - The user document (must have premiumExpiresAt)
- * @returns {boolean}
+ * Legacy-compatible date helper. New code should use getOwnerPremiumStatus.
  */
 export function isActivePremium(user) {
-    return !!(user.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date());
+    return !!(user?.premiumExpiresAt && new Date(user.premiumExpiresAt) > new Date());
 }
 
 /**
- * Get the effective couple premium status for a user.
- * If either the user or their partner has an active premium subscription,
- * both are considered premium (couple premium).
- *
- * @param {Object} user - The user document (must have partnerId, premiumExpiresAt, premiumPlan)
- * @returns {Object} { isPremium, premiumExpiresAt, premiumPlan, premiumSource }
+ * Resolve premium for the user or their currently linked partner. A verified
+ * Subscription record wins; old User premium dates remain a migration fallback.
  */
 export async function getCouplePremiumStatus(user) {
-    const userIsActive = isActivePremium(user);
+    const access = await getCoupleSubscriptionAccess(user);
+    if (!access) {
+        return {
+            isPremium: false,
+            premiumExpiresAt: null,
+            premiumPlan: null,
+            premiumWillRenew: null,
+            premiumCancelledAt: null,
+            premiumSource: null,
+        };
+    }
 
-    // Default: user's own premium status
-    const result = {
-        isPremium: userIsActive,
-        premiumExpiresAt: user.premiumExpiresAt || null,
-        premiumPlan: user.premiumPlan || null,
-        premiumSource: userIsActive ? 'self' : null,
+    return {
+        ...buildLegacyPremiumFields(access),
+        subscription: access.subscription,
+        ownSubscription: access.ownSubscription,
+        partnerSubscription: access.partnerSubscription,
+        usedLegacyFallback: access.usedLegacyFallback,
     };
+}
 
-    // If user is already premium, return self status
-    if (result.isPremium) {
-        return result;
-    }
-
-    // If user has a partner, check partner's premium
-    if (user.partnerId) {
-        try {
-            const partner = await User.findById(user.partnerId).select('premiumExpiresAt premiumPlan').lean();
-            if (partner && isActivePremium(partner)) {
-                return {
-                    isPremium: true,
-                    premiumExpiresAt: partner.premiumExpiresAt || null,
-                    premiumPlan: partner.premiumPlan || null,
-                    premiumSource: 'partner',
-                };
-            }
-        } catch (err) {
-            console.error('Error checking partner premium:', err.message);
-        }
-    }
-
-    return result;
+/** Resolve only subscriptions owned by this user, without partner sharing. */
+export async function getDirectPremiumStatus(user) {
+    const status = await getOwnerPremiumStatus(user);
+    const subscription = serializeSubscription(status.subscription, 'self');
+    return {
+        isPremium: status.hasPremiumAccess,
+        premiumExpiresAt: subscription?.expiresAt || null,
+        premiumPlan: subscription?.productId || null,
+        premiumWillRenew: subscription?.willRenew ?? null,
+        premiumCancelledAt: subscription?.cancelledAt || null,
+        subscriptionStatus: subscription?.status || null,
+        subscriptionBillingIssueAt: subscription?.billingIssueAt || null,
+        usedLegacyFallback: status.usedLegacyFallback,
+    };
 }

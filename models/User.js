@@ -114,6 +114,14 @@ const userSchema = new mongoose.Schema({
     premiumPlan: {
         type: String,
     },
+    premiumWillRenew: {
+        type: Boolean,
+        default: null,
+    },
+    premiumCancelledAt: {
+        type: Date,
+        default: null,
+    },
     locationSharingEnabled: {
         type: Boolean,
         default: false,
