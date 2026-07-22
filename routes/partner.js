@@ -5,6 +5,7 @@ import { generatePartnerCode, generateUserId } from '../utils/partnerCode.js';
 import { isUserOnline, getSocketId, getCoupleRoomId, updateSocketPartnerStatus } from '../socket/auth.js';
 import { getIO } from '../socket/index.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import { getDirectPremiumStatus } from '../utils/couplePremium.js';
 
 const router = express.Router();
 
@@ -208,6 +209,8 @@ router.post('/pair', async (req, res) => {
             }
         }
 
+        const partnerPremium = await getDirectPremiumStatus(partner);
+
         res.json({
             success: true,
             message: 'Successfully paired!',
@@ -218,9 +221,7 @@ router.post('/pair', async (req, res) => {
                 connectionDate,
                 relationshipStartDate: couple.relationshipStartDate || null,
                 shouldAskRelationshipStartDate: !couple.relationshipStartDate,
-                isPremium: !!(partner.premiumExpiresAt && new Date(partner.premiumExpiresAt) > new Date()),
-                premiumExpiresAt: partner.premiumExpiresAt || null,
-                premiumPlan: partner.premiumPlan || null,
+                ...partnerPremium,
             },
             coupleId: couple._id
         });
@@ -313,7 +314,10 @@ router.get('/status/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
-        const user = await User.findById(userId).populate('partnerId', 'name email avatar premiumExpiresAt premiumPlan');
+        const user = await User.findById(userId).populate(
+            'partnerId',
+            'name email avatar premiumExpiresAt premiumPlan premiumWillRenew premiumCancelledAt'
+        );
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -322,6 +326,7 @@ router.get('/status/:userId', async (req, res) => {
         }
 
         if (user.partnerId) {
+            const partnerPremium = await getDirectPremiumStatus(user.partnerId);
             const couple = await Couple.findByPartner(user._id);
             const relationshipStartDate = couple?.relationshipStartDate || user.pendingRelationshipStartDate || null;
             const pendingRelationshipStartDate = user.pendingRelationshipStartDate || null;
@@ -340,9 +345,7 @@ router.get('/status/:userId', async (req, res) => {
                     name: user.partnerId.name,
                     email: user.partnerId.email,
                     avatar: user.partnerId.avatar || null,
-                    isPremium: !!(user.partnerId.premiumExpiresAt && new Date(user.partnerId.premiumExpiresAt) > new Date()),
-                    premiumExpiresAt: user.partnerId.premiumExpiresAt || null,
-                    premiumPlan: user.partnerId.premiumPlan || null,
+                    ...partnerPremium,
                 },
                 connectionDate: user.connectionDate,
                 relationshipStartDate,

@@ -4,6 +4,9 @@ import Couple from '../models/Couple.js';
 import { getIO } from '../socket/index.js';
 import { getCoupleRoomId } from '../socket/auth.js';
 import { sendSilentPush } from '../utils/pushNotification.js';
+import { refreshUserSubscriptionFromRevenueCat } from '../services/revenueCatService.js';
+import { buildLegacyPremiumFields, getCoupleSubscriptionAccess } from '../services/subscriptionService.js';
+import { notifyCoupleSubscriptionChanged } from '../services/subscriptionNotificationService.js';
 
 const router = express.Router();
 
@@ -90,6 +93,8 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     isPremium: user.isPremium,
     premiumExpiresAt: user.premiumExpiresAt,
     premiumPlan: user.premiumPlan,
+    premiumWillRenew: user.premiumWillRenew ?? null,
+    premiumCancelledAt: user.premiumCancelledAt || null,
     widgetStatus: user.widgetStatus || {},
 });
 
@@ -246,11 +251,12 @@ router.put('/profile', async (req, res) => {
 
 /**
  * PUT /api/user/premium
- * Update user premium status
+ * Backward-compatible endpoint for older app versions. Client-supplied premium
+ * values are deliberately ignored; RevenueCat/server state is authoritative.
  */
 router.put('/premium', async (req, res) => {
     try {
-        const { userId, isPremium, premiumExpiresAt, premiumPlan } = req.body;
+        const { userId } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -267,28 +273,25 @@ router.put('/premium', async (req, res) => {
             });
         }
 
-        // Update premium fields
-        if (isPremium !== undefined) user.isPremium = isPremium;
-        if (premiumExpiresAt !== undefined) user.premiumExpiresAt = premiumExpiresAt;
-        if (premiumPlan !== undefined) user.premiumPlan = premiumPlan;
-
-        await user.save();
+        await refreshUserSubscriptionFromRevenueCat(user);
+        notifyCoupleSubscriptionChanged(user, 'legacy_client_refresh');
+        const access = await getCoupleSubscriptionAccess(user);
+        const fields = buildLegacyPremiumFields(access);
 
         res.json({
             success: true,
             user: {
                 id: user._id,
-                isPremium: user.isPremium,
-                premiumExpiresAt: user.premiumExpiresAt,
-                premiumPlan: user.premiumPlan,
+                ...fields,
             }
         });
 
     } catch (error) {
         console.error('Premium update error:', error);
-        res.status(500).json({
+        // Never mutate or clear legacy access when RevenueCat is unavailable.
+        res.status(503).json({
             success: false,
-            error: 'Failed to update premium status'
+            error: 'Subscription verification is temporarily unavailable'
         });
     }
 });
