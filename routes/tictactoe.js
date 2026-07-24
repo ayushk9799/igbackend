@@ -1,9 +1,56 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import TicTacToe from '../models/TicTacToe.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import { getCoupleSubscriptionAccess } from '../services/subscriptionService.js';
 
 const router = express.Router();
+const FREE_TICTACTOE_GAME_LIMIT = 5;
+const COMPLETED_STATUSES = ['won_creator', 'won_partner', 'draw'];
+
+const getCompletedTicTacToeGameCount = async (userId) => {
+    const [result] = await TicTacToe.aggregate([
+        {
+            $match: {
+                $or: [
+                    { creatorId: new mongoose.Types.ObjectId(userId) },
+                    { partnerId: new mongoose.Types.ObjectId(userId) }
+                ]
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                total: {
+                    $sum: {
+                        $cond: [
+                            { $gt: [{ $ifNull: ['$completedRounds', 0] }, 0] },
+                            { $ifNull: ['$completedRounds', 0] },
+                            { $cond: [{ $in: ['$status', COMPLETED_STATUSES] }, 1, 0] }
+                        ]
+                    }
+                }
+            }
+        }
+    ]);
+
+    return result?.total || 0;
+};
+
+const getTicTacToeLimitStatus = async (userId) => {
+    const access = await getCoupleSubscriptionAccess(userId);
+    if (access?.hasPremiumAccess) {
+        return { hasPremiumAccess: true, completedGames: 0, limitReached: false };
+    }
+
+    const completedGames = await getCompletedTicTacToeGameCount(userId);
+    return {
+        hasPremiumAccess: false,
+        completedGames,
+        limitReached: completedGames >= FREE_TICTACTOE_GAME_LIMIT
+    };
+};
 
 // Winning combinations (indices)
 const WIN_PATTERNS = [
@@ -50,6 +97,28 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'creatorId and partnerId are required'
+            });
+        }
+
+        const [creatorLimit, partnerLimit] = await Promise.all([
+            getTicTacToeLimitStatus(creatorId),
+            getTicTacToeLimitStatus(partnerId)
+        ]);
+
+        if (creatorLimit.limitReached || partnerLimit.limitReached) {
+            const requesterReachedLimit = creatorLimit.limitReached;
+            return res.status(403).json({
+                success: false,
+                code: 'TICTACTOE_FREE_LIMIT_REACHED',
+                message: requesterReachedLimit
+                    ? 'You have used all 5 free Tic Tac Toe games. Unlock Premium to keep playing.'
+                    : 'Your partner has used all 5 free Tic Tac Toe games. Premium is required to continue.',
+                data: {
+                    freeGameLimit: FREE_TICTACTOE_GAME_LIMIT,
+                    completedGames: requesterReachedLimit
+                        ? creatorLimit.completedGames
+                        : partnerLimit.completedGames
+                }
             });
         }
 
@@ -268,9 +337,38 @@ router.get('/pending/:userId', async (req, res) => {
 router.post('/:id/restart', async (req, res) => {
     try {
         const { userId } = req.body;
+        const existingGame = await TicTacToe.findOne({
+            _id: req.params.id,
+            $or: [
+                { creatorId: userId },
+                { partnerId: userId },
+            ],
+        });
+
+        if (!existingGame) {
+            return res.status(404).json({
+                success: false,
+                message: 'Game not found or you are not a player'
+            });
+        }
+
+        const limit = await getTicTacToeLimitStatus(userId);
+        if (limit.limitReached) {
+            return res.status(403).json({
+                success: false,
+                code: 'TICTACTOE_FREE_LIMIT_REACHED',
+                message: 'You have used all 5 free Tic Tac Toe games. Unlock Premium to keep playing.',
+                data: {
+                    freeGameLimit: FREE_TICTACTOE_GAME_LIMIT,
+                    completedGames: limit.completedGames
+                }
+            });
+        }
+
         const game = await TicTacToe.findOneAndUpdate(
             {
                 _id: req.params.id,
+                round: existingGame.round,
                 $or: [
                     { creatorId: userId },
                     { partnerId: userId },
@@ -285,6 +383,10 @@ router.post('/:id/restart', async (req, res) => {
                     moveHistory: [],
                     moveCount: 0,
                     completedAt: null,
+                    completedRounds: Math.max(
+                        existingGame.completedRounds || 0,
+                        COMPLETED_STATUSES.includes(existingGame.status) ? 1 : 0
+                    ),
                 },
                 $inc: { round: 1, __v: 1 },
             },
@@ -292,9 +394,9 @@ router.post('/:id/restart', async (req, res) => {
         );
 
         if (!game) {
-            return res.status(404).json({
+            return res.status(409).json({
                 success: false,
-                message: 'Game not found or you are not a player'
+                message: 'The game changed before it could be restarted. Please try again.'
             });
         }
 
@@ -391,6 +493,19 @@ router.post('/:id/move', async (req, res) => {
             });
         }
 
+        const playerLimit = await getTicTacToeLimitStatus(userId);
+        if (playerLimit.limitReached) {
+            return res.status(403).json({
+                success: false,
+                code: 'TICTACTOE_FREE_LIMIT_REACHED',
+                message: 'You have used all 5 free Tic Tac Toe games. Unlock Premium to keep playing.',
+                data: {
+                    freeGameLimit: FREE_TICTACTOE_GAME_LIMIT,
+                    completedGames: playerLimit.completedGames
+                }
+            });
+        }
+
         // Make the move
         const symbol = isCreator ? game.creatorSymbol : game.partnerSymbol;
         const newBoard = [...game.board];
@@ -433,6 +548,10 @@ router.post('/:id/move', async (req, res) => {
         } else {
             // Switch turns
             game.currentTurn = game.currentTurn === 'creator' ? 'partner' : 'creator';
+        }
+
+        if (gameComplete) {
+            game.completedRounds = (game.completedRounds || 0) + 1;
         }
 
         await game.save();
@@ -482,9 +601,12 @@ router.get('/history/:userId', async (req, res) => {
             .sort({ completedAt: -1 })
             .limit(parseInt(limit));
 
+        const completedGames = await getCompletedTicTacToeGameCount(userId);
+
         res.status(200).json({
             success: true,
-            data: games
+            data: games,
+            completedGames
         });
 
     } catch (error) {

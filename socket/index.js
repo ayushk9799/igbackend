@@ -15,7 +15,9 @@ import {
     handleScribbleLiveEnd,
     handleScribbleLiveStrokeEnd,
     handleScribbleLiveClear,
-    handleScribbleLiveUndo
+    handleScribbleLiveUndo,
+    handleScribbleFreeLimitReached,
+    handleScribbleDisconnect
 } from './handlers/scribble.js';
 import {
     handleTicTacToeJoin,
@@ -60,6 +62,7 @@ import {
     handleLiveChatMediaState,
     handleLiveChatTyping,
     handleLiveChatSignal,
+    handleLiveChatFreeLimitReached,
     handleLiveChatDisconnect,
 } from './handlers/liveChat.js';
 
@@ -154,6 +157,10 @@ export const initializeSocket = (httpServer) => {
             handleScribbleLiveUndo(socket, io, data);
         });
 
+        socket.on('scribble:freeLimitReached', () => {
+            handleScribbleFreeLimitReached(socket, io);
+        });
+
         // Question/Answer events
         socket.on('answer:submit', (data) => {
         });
@@ -239,6 +246,7 @@ export const initializeSocket = (httpServer) => {
         socket.on('liveChat:message:set', (data) => handleLiveChatMessageSet(socket, io, data));
         socket.on('liveChat:mediaState', (data) => handleLiveChatMediaState(socket, io, data));
         socket.on('liveChat:typing', (data) => handleLiveChatTyping(socket, io, data));
+        socket.on('liveChat:freeLimitReached', (data) => handleLiveChatFreeLimitReached(socket, io, data));
         socket.on('liveChat:webrtc:offer', (data) => handleLiveChatSignal('liveChat:webrtc:offer')(socket, io, data));
         socket.on('liveChat:webrtc:answer', (data) => handleLiveChatSignal('liveChat:webrtc:answer')(socket, io, data));
         socket.on('liveChat:webrtc:iceCandidate', (data) => handleLiveChatSignal('liveChat:webrtc:iceCandidate')(socket, io, data));
@@ -256,6 +264,7 @@ export const initializeSocket = (httpServer) => {
         socket.on('webrtc:answer', (data) => handleWebRTCSignal('webrtc:answer')(socket, io, data));
         socket.on('webrtc:ice-candidate', (data) => handleWebRTCSignal('webrtc:ice-candidate')(socket, io, data));
         socket.on('disconnect', () => {
+            handleScribbleDisconnect(socket, io);
             handleLiveChatDisconnect(socket, io);
             handleCallDisconnect(socket, io);
         });

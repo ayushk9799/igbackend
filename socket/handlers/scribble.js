@@ -1,7 +1,10 @@
 import Couple from '../../models/Couple.js';
-import { getCoupleRoomId, getSocketId } from '../auth.js';
+import { getCoupleRoomId } from '../auth.js';
 import { sendScribbleNotification } from '../../utils/pushNotification.js';
 import { createCurrentScribbleSignature } from '../../utils/scribbleWidgetAccess.js';
+
+const liveScribbleSessions = new Map();
+const liveScribbleRoom = coupleId => `scribble-live:${coupleId}`;
 
 const getNotificationApiBaseUrl = (socket) => {
     const configuredBaseUrl = process.env.PUBLIC_API_BASE_URL?.trim();
@@ -172,12 +175,25 @@ const emitLiveUnavailable = (socket) => {
     socket.emit('scribble:liveStatus', {
         isLive: true,
         partnerAvailable: false,
+        participantCount: 1,
     });
 };
 
+const getLiveSessionForSocket = (socket) => {
+    const coupleId = getCoupleRoomId(socket.userId, socket.partnerId);
+    const session = coupleId ? liveScribbleSessions.get(coupleId) : null;
+    const participant = session?.participants.get(String(socket.userId));
+    if (!session || participant?.socketId !== socket.id) return null;
+    return session;
+};
+
 const getLivePartnerSocketId = (socket) => {
-    if (!socket.partnerId) return null;
-    return getSocketId(socket.partnerId);
+    const session = getLiveSessionForSocket(socket);
+    if (!session || session.freeLimitReached || session.participants.size < 2) return null;
+    const partner = [...session.participants.values()].find(
+        participant => participant.userId !== String(socket.userId),
+    );
+    return partner?.socketId || null;
 };
 
 const getScribbleDimensions = (data = {}) => {
@@ -192,18 +208,93 @@ const getScribbleDimensions = (data = {}) => {
     };
 };
 
-export const handleScribbleLiveStart = (socket) => {
-    socket.emit('scribble:liveStatus', {
+export const handleScribbleLiveStart = (socket, io) => {
+    const userId = String(socket.userId);
+    const partnerId = String(socket.partnerId || '');
+    const coupleId = getCoupleRoomId(userId, partnerId);
+    if (!partnerId || !coupleId) {
+        emitLiveUnavailable(socket);
+        return;
+    }
+
+    let session = liveScribbleSessions.get(coupleId);
+    if (!session) {
+        session = {
+            coupleId,
+            participants: new Map(),
+            freeLimitReached: false,
+            freeLimitReachedAt: null,
+        };
+        liveScribbleSessions.set(coupleId, session);
+    }
+
+    session.participants.set(userId, { userId, socketId: socket.id });
+    socket.data.liveScribbleCoupleId = coupleId;
+    socket.join(liveScribbleRoom(coupleId));
+
+    io.to(liveScribbleRoom(coupleId)).emit('scribble:liveStatus', {
         isLive: true,
-        partnerAvailable: Boolean(socket.partnerId && getSocketId(socket.partnerId)),
+        partnerAvailable: session.participants.size >= 2,
+        participantCount: session.participants.size,
+        freeLimitReached: session.freeLimitReached,
+    });
+
+    if (session.freeLimitReached) {
+        socket.emit('scribble:freeLimitReached', {
+            reachedAt: session.freeLimitReachedAt,
+        });
+    }
+};
+
+export const handleScribbleLiveEnd = (socket, io) => {
+    const coupleId = socket.data.liveScribbleCoupleId;
+    const session = coupleId ? liveScribbleSessions.get(coupleId) : null;
+    socket.data.liveScribbleCoupleId = null;
+
+    if (!session) {
+        return;
+    }
+
+    const participant = session.participants.get(String(socket.userId));
+    if (participant?.socketId !== socket.id) return;
+
+    session.participants.delete(String(socket.userId));
+    socket.leave(liveScribbleRoom(coupleId));
+    socket.emit('scribble:liveStatus', {
+        isLive: false,
+        partnerAvailable: false,
+        participantCount: 0,
+    });
+
+    if (session.participants.size === 0) {
+        liveScribbleSessions.delete(coupleId);
+        return;
+    }
+
+    io.to(liveScribbleRoom(coupleId)).emit('scribble:liveStatus', {
+        isLive: true,
+        partnerAvailable: false,
+        participantCount: session.participants.size,
+        freeLimitReached: session.freeLimitReached,
     });
 };
 
-export const handleScribbleLiveEnd = (socket) => {
-    socket.emit('scribble:liveStatus', {
-        isLive: false,
-        partnerAvailable: Boolean(socket.partnerId && getSocketId(socket.partnerId)),
+export const handleScribbleFreeLimitReached = (socket, io) => {
+    const session = getLiveSessionForSocket(socket);
+    if (!session || session.participants.size < 2) return;
+
+    if (!session.freeLimitReached) {
+        session.freeLimitReached = true;
+        session.freeLimitReachedAt = new Date().toISOString();
+    }
+
+    io.to(liveScribbleRoom(session.coupleId)).emit('scribble:freeLimitReached', {
+        reachedAt: session.freeLimitReachedAt,
     });
+};
+
+export const handleScribbleDisconnect = (socket, io) => {
+    handleScribbleLiveEnd(socket, io);
 };
 
 export const handleScribbleLiveStrokeEnd = async (socket, io, data) => {
@@ -401,4 +492,6 @@ export default {
     handleScribbleLiveStrokeEnd,
     handleScribbleLiveClear,
     handleScribbleLiveUndo,
+    handleScribbleFreeLimitReached,
+    handleScribbleDisconnect,
 };

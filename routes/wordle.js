@@ -3,8 +3,31 @@ import Wordle from '../models/Wordle.js';
 import User from '../models/User.js';
 import { isValidWord } from '../utils/wordValidator.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import { getCoupleSubscriptionAccess } from '../services/subscriptionService.js';
 
 const router = express.Router();
+const FREE_WORDLE_GAME_LIMIT = 3;
+
+const getWordleLimitStatus = async (userId) => {
+    const access = await getCoupleSubscriptionAccess(userId);
+    if (access?.hasPremiumAccess) {
+        return { hasPremiumAccess: true, completedGames: 0, limitReached: false };
+    }
+
+    const completedGames = await Wordle.countDocuments({
+        $or: [
+            { creatorId: userId },
+            { partnerId: userId }
+        ],
+        status: { $in: ['won', 'lost'] }
+    });
+
+    return {
+        hasPremiumAccess: false,
+        completedGames,
+        limitReached: completedGames >= FREE_WORDLE_GAME_LIMIT
+    };
+};
 
 /**
  * Evaluate a guess against the secret word
@@ -65,6 +88,28 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'secretWord is required'
+            });
+        }
+
+        const [creatorLimit, partnerLimit] = await Promise.all([
+            getWordleLimitStatus(creatorId),
+            getWordleLimitStatus(partnerId)
+        ]);
+
+        if (creatorLimit.limitReached || partnerLimit.limitReached) {
+            const requesterReachedLimit = creatorLimit.limitReached;
+            return res.status(403).json({
+                success: false,
+                code: 'WORDLE_FREE_LIMIT_REACHED',
+                message: requesterReachedLimit
+                    ? 'You have used all 3 free Wordle games. Unlock Premium to keep playing.'
+                    : 'Your partner has used all 3 free Wordle games. Premium is required to continue.',
+                data: {
+                    freeGameLimit: FREE_WORDLE_GAME_LIMIT,
+                    completedGames: requesterReachedLimit
+                        ? creatorLimit.completedGames
+                        : partnerLimit.completedGames
+                }
             });
         }
 
@@ -323,6 +368,19 @@ router.post('/:id/guess', async (req, res) => {
             return res.status(403).json({
                 success: false,
                 message: 'Only the challenged partner can guess'
+            });
+        }
+
+        const guesserLimit = await getWordleLimitStatus(userId);
+        if (guesserLimit.limitReached) {
+            return res.status(403).json({
+                success: false,
+                code: 'WORDLE_FREE_LIMIT_REACHED',
+                message: 'You have used all 3 free Wordle games. Unlock Premium to keep playing.',
+                data: {
+                    freeGameLimit: FREE_WORDLE_GAME_LIMIT,
+                    completedGames: guesserLimit.completedGames
+                }
             });
         }
 

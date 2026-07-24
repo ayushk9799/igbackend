@@ -36,6 +36,7 @@ const buildSnapshot = (session, userId) => {
         shouldOffer: participantIds[0] === String(userId),
         myMessage: publicMessage(own),
         partnerMessage: publicMessage(partner),
+        freeLimitReached: session.freeLimitReached === true,
     };
 };
 
@@ -85,6 +86,7 @@ export const handleLiveChatJoin = async (socket, io) => {
                 coupleId,
                 participants: new Map(),
                 mediaClaimed: false,
+                freeLimitReached: false,
                 createdAt: new Date().toISOString(),
             };
             liveChatSessions.set(coupleId, session);
@@ -139,6 +141,13 @@ export const handleLiveChatJoin = async (socket, io) => {
 export const handleLiveChatMessageSet = (socket, io, data = {}) => {
     const session = getSessionForSocket(socket, data.sessionId);
     if (!session) return;
+    if (session.freeLimitReached) {
+        socket.emit('liveChat:freeLimitReached', {
+            sessionId: session.sessionId,
+            reachedAt: session.freeLimitReachedAt,
+        });
+        return;
+    }
     const text = String(data.text || '').trim();
     if (!text || text.length > MAX_MESSAGE_LENGTH) {
         socket.emit('liveChat:error', { code: 'INVALID_MESSAGE', message: 'Message must be 1–500 characters.' });
@@ -189,7 +198,7 @@ export const handleLiveChatMessageSet = (socket, io, data = {}) => {
 
 export const handleLiveChatMediaState = (socket, io, data = {}) => {
     const session = getSessionForSocket(socket, data.sessionId);
-    if (!session) return;
+    if (!session || session.freeLimitReached) return;
     socket.to(sessionRoom(session.sessionId)).emit('liveChat:partnerMediaState', {
         sessionId: session.sessionId,
         senderId: String(socket.userId),
@@ -199,7 +208,7 @@ export const handleLiveChatMediaState = (socket, io, data = {}) => {
 
 export const handleLiveChatTyping = (socket, io, data = {}) => {
     const session = getSessionForSocket(socket, data.sessionId);
-    if (!session) return;
+    if (!session || session.freeLimitReached) return;
     socket.to(sessionRoom(session.sessionId)).emit('liveChat:partnerTyping', {
         sessionId: session.sessionId,
         senderId: String(socket.userId),
@@ -209,11 +218,38 @@ export const handleLiveChatTyping = (socket, io, data = {}) => {
 
 export const handleLiveChatSignal = event => (socket, io, data = {}) => {
     const session = getSessionForSocket(socket, data.sessionId);
-    if (!session || session.participants.size < 2) return;
+    if (!session || session.freeLimitReached || session.participants.size < 2) return;
     const payload = { sessionId: session.sessionId, fromUserId: String(socket.userId) };
     if (event === 'liveChat:webrtc:offer' || event === 'liveChat:webrtc:answer') payload.description = data.description;
     if (event === 'liveChat:webrtc:iceCandidate') payload.candidate = data.candidate;
     socket.to(sessionRoom(session.sessionId)).emit(event, payload);
+};
+
+export const handleLiveChatFreeLimitReached = (socket, io, data = {}) => {
+    const session = getSessionForSocket(
+        socket,
+        data.sessionId || socket.data.liveChatSessionId,
+    );
+    if (!session || session.participants.size < 2) return;
+
+    if (session.freeLimitReached) {
+        socket.emit('liveChat:freeLimitReached', {
+            sessionId: session.sessionId,
+            reachedAt: session.freeLimitReachedAt,
+            triggeredBy: session.freeLimitTriggeredBy,
+        });
+        return;
+    }
+
+    session.freeLimitReached = true;
+    session.freeLimitReachedAt = new Date().toISOString();
+    session.freeLimitTriggeredBy = String(socket.userId);
+
+    io.to(sessionRoom(session.sessionId)).emit('liveChat:freeLimitReached', {
+        sessionId: session.sessionId,
+        reachedAt: session.freeLimitReachedAt,
+        triggeredBy: session.freeLimitTriggeredBy,
+    });
 };
 
 export const handleLiveChatLeave = (socket, io, data = {}) => {
@@ -256,6 +292,7 @@ export default {
     handleLiveChatMediaState,
     handleLiveChatTyping,
     handleLiveChatSignal,
+    handleLiveChatFreeLimitReached,
     handleLiveChatLeave,
     handleLiveChatDisconnect,
 };

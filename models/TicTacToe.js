@@ -66,6 +66,12 @@ const ticTacToeSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Number of completed boards played within this reusable match document.
+    // This survives restarts so free-game limits remain accurate.
+    completedRounds: {
+        type: Number,
+        default: 0
+    },
     // Timestamps
     createdAt: {
         type: Date,
