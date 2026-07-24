@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import CallDiagnostic from '../../models/CallDiagnostic.js';
 import User from '../../models/User.js';
-import { getCoupleRoomId } from '../auth.js';
+import { getCoupleRoomId, isUserOnline } from '../auth.js';
+import { sendPushNotification } from '../../utils/pushNotification.js';
 import {
     claimMediaSession,
     MEDIA_SESSION_TYPE,
@@ -146,6 +147,21 @@ export const handleCallStart = async (socket, io, data = {}) => {
 
         socket.emit('call:outgoing', publicCall(call));
         emitToCallPartner(socket, call, 'call:incoming', publicCall(call));
+
+        if (!isUserOnline(calleeId)) {
+            void sendPushNotification(
+                calleeId,
+                `${call.callerName} is calling…`,
+                'Tap to answer the video call.',
+                {
+                    type: 'incoming_call',
+                    callId: call.callId,
+                    callerId,
+                    callerName: call.callerName,
+                    mediaType: call.mediaType,
+                }
+            );
+        }
     } catch (error) {
         if (claimedMediaSession) {
             releaseMediaSession({
@@ -156,6 +172,16 @@ export const handleCallStart = async (socket, io, data = {}) => {
         }
         console.error('Call start error:', error);
         socket.emit('call:error', { code: 'START_FAILED', message: 'Unable to start the call.' });
+    }
+};
+
+export const handleCallGetPending = (socket) => {
+    const userId = String(socket.userId);
+    for (const call of activeCalls.values()) {
+        if (call.calleeId === userId && call.status === 'ringing') {
+            socket.emit('call:incoming', publicCall(call));
+            return;
+        }
     }
 };
 

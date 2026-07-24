@@ -60,3 +60,44 @@ test('access helper requires both access state and an unexpired date', () => {
         expiresAt: new Date('2026-06-22T00:00:00.000Z'),
     }, now), false);
 });
+
+test('auto-renewing access remains available during the renewal handoff', () => {
+    assert.equal(subscriptionGivesAccess({
+        status: 'active',
+        givesAccess: true,
+        willRenew: true,
+        expiresAt: new Date('2026-07-21T23:55:00.000Z'),
+    }, now), true);
+});
+
+test('renewal restores an expired subscription with its new expiration', () => {
+    const renewedUntil = new Date('2026-08-22T00:00:00.000Z');
+    const state = __testables.determineState({
+        type: 'RENEWAL',
+        expiration_at_ms: renewedUntil.getTime(),
+    }, {
+        status: 'expired',
+        givesAccess: false,
+        willRenew: false,
+        expiresAt: new Date('2026-07-22T00:00:00.000Z'),
+    }, now);
+
+    assert.equal(state.status, 'active');
+    assert.equal(state.givesAccess, true);
+    assert.equal(state.willRenew, true);
+    assert.equal(state.expiresAt.getTime(), renewedUntil.getTime());
+});
+
+test('an older expiration event cannot overwrite an API-verified renewal', () => {
+    const state = __testables.determineState({
+        type: 'EXPIRATION',
+        expiration_at_ms: new Date('2026-07-22T00:00:00.000Z').getTime(),
+    }, {
+        status: 'active',
+        givesAccess: true,
+        willRenew: true,
+        expiresAt: new Date('2026-08-22T00:00:00.000Z'),
+    }, now);
+
+    assert.equal(state, null);
+});

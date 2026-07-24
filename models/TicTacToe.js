@@ -60,6 +60,12 @@ const ticTacToeSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Increments whenever either player restarts the same game document.
+    // Move requests must target the current round to prevent stale moves.
+    round: {
+        type: Number,
+        default: 0
+    },
     // Timestamps
     createdAt: {
         type: Date,

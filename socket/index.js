@@ -51,12 +51,14 @@ import {
     handleWebRTCSignal,
     handleCallDiagnostic,
     handleCallDisconnect,
+    handleCallGetPending,
 } from './handlers/call.js';
 import {
     handleLiveChatJoin,
     handleLiveChatLeave,
     handleLiveChatMessageSet,
     handleLiveChatMediaState,
+    handleLiveChatTyping,
     handleLiveChatSignal,
     handleLiveChatDisconnect,
 } from './handlers/liveChat.js';
@@ -236,12 +238,14 @@ export const initializeSocket = (httpServer) => {
         socket.on('liveChat:leave', (data) => handleLiveChatLeave(socket, io, data));
         socket.on('liveChat:message:set', (data) => handleLiveChatMessageSet(socket, io, data));
         socket.on('liveChat:mediaState', (data) => handleLiveChatMediaState(socket, io, data));
+        socket.on('liveChat:typing', (data) => handleLiveChatTyping(socket, io, data));
         socket.on('liveChat:webrtc:offer', (data) => handleLiveChatSignal('liveChat:webrtc:offer')(socket, io, data));
         socket.on('liveChat:webrtc:answer', (data) => handleLiveChatSignal('liveChat:webrtc:answer')(socket, io, data));
         socket.on('liveChat:webrtc:iceCandidate', (data) => handleLiveChatSignal('liveChat:webrtc:iceCandidate')(socket, io, data));
 
         // ======== VIDEO CALL EVENTS ========
         socket.on('call:start', (data) => handleCallStart(socket, io, data));
+        socket.on('call:getPending', () => handleCallGetPending(socket));
         socket.on('call:accept', (data) => handleCallAccept(socket, io, data));
         socket.on('call:reject', (data) => handleCallReject(socket, io, data));
         socket.on('call:cancel', (data) => handleCallCancel(socket, io, data));

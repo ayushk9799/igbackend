@@ -1,7 +1,10 @@
 import User from '../models/User.js';
 
-// Track connected users in memory
-// Format: { userId: { socketId, partnerId, userId } }
+// Track every active socket for each user.
+// A user may temporarily have multiple sockets during reconnects or may be
+// signed in on more than one device. Presence changes only when the first
+// socket connects or the last socket disconnects.
+// Format: { userId: { socketIds: Set<string>, partnerId, userId } }
 export const connectedUsers = new Map();
 
 /**
@@ -50,61 +53,90 @@ export const getCoupleRoomId = (userId, partnerId) => {
  */
 export const handleConnection = async (socket, io) => {
     const { userId, partnerId, userName } = socket;
+    const normalizedUserId = String(userId);
 
-
-    // Track this user's connection
-    connectedUsers.set(userId, {
-        socketId: socket.id,
+    const existingUser = connectedUsers.get(normalizedUserId);
+    const wasOffline = !existingUser || existingUser.socketIds.size === 0;
+    const socketIds = existingUser?.socketIds || new Set();
+    socketIds.add(socket.id);
+    connectedUsers.set(normalizedUserId, {
+        socketIds,
         partnerId,
-        userId,
+        userId: normalizedUserId,
     });
 
-    // Update user's online status in database
-    await User.findByIdAndUpdate(userId, {
+    // Join couple room if user has a partner
+    const roomId = getCoupleRoomId(normalizedUserId, partnerId);
+    if (roomId) {
+        socket.join(roomId);
+
+        // Notify the partner only for a real offline -> online transition.
+        if (wasOffline) {
+            socket.to(roomId).emit('presence:online', {
+                userId: normalizedUserId,
+                userName,
+                timestamp: new Date().toISOString(),
+            });
+        }
+    }
+
+    // Register disconnect handling before any database await so a connection
+    // that drops immediately cannot remain stuck in the active socket set.
+    socket.on('disconnect', async (reason) => {
+        const currentUser = connectedUsers.get(normalizedUserId);
+
+        // Ignore a stale disconnect that no longer belongs to a tracked
+        // connection. Most importantly, never remove another active socket.
+        if (!currentUser?.socketIds?.has(socket.id)) {
+            return;
+        }
+
+        currentUser.socketIds.delete(socket.id);
+        if (currentUser.socketIds.size > 0) {
+            connectedUsers.set(normalizedUserId, currentUser);
+            return;
+        }
+
+        connectedUsers.delete(normalizedUserId);
+        const lastSeen = new Date();
+
+        await User.findByIdAndUpdate(normalizedUserId, {
+            isOnline: false,
+            lastSeen,
+        });
+
+        if (roomId) {
+            io.to(roomId).emit('presence:offline', {
+                userId: normalizedUserId,
+                lastSeen: lastSeen.toISOString(),
+            });
+        }
+    });
+
+    // Keep the persisted status for last-seen/fallback purposes. Live presence
+    // is determined by connectedUsers, not by this asynchronously written flag.
+    await User.findByIdAndUpdate(normalizedUserId, {
         isOnline: true,
         lastSeen: new Date(),
     });
 
-    // Join couple room if user has a partner
-    const roomId = getCoupleRoomId(userId, partnerId);
-    if (roomId) {
-        socket.join(roomId);
-
-        // Notify partner that this user is now online
-        socket.to(roomId).emit('presence:online', {
-            userId,
-            userName,
-            timestamp: new Date().toISOString(),
-        });
-    }
-
-    // Handle disconnection
-    socket.on('disconnect', async (reason) => {
-
-        // Remove from connected users
-        connectedUsers.delete(userId);
-
-        // Update database
-        await User.findByIdAndUpdate(userId, {
+    // The socket may have disconnected while the database write was pending.
+    // Correct the persisted flag if no connection for this user remains.
+    if (!isUserOnline(normalizedUserId)) {
+        await User.findByIdAndUpdate(normalizedUserId, {
             isOnline: false,
             lastSeen: new Date(),
         });
-
-        // Notify partner
-        if (roomId) {
-            socket.to(roomId).emit('presence:offline', {
-                userId,
-                lastSeen: new Date().toISOString(),
-            });
-        }
-    });
+    }
 };
 
 /**
  * Check if a user is currently online
  */
 export const isUserOnline = (userId) => {
-    return connectedUsers.has(userId);
+    if (!userId) return false;
+    const user = connectedUsers.get(String(userId));
+    return Boolean(user?.socketIds?.size);
 };
 
 /**
@@ -112,19 +144,32 @@ export const isUserOnline = (userId) => {
  * Called when users pair or unpair via REST API
  */
 export const updateSocketPartnerStatus = async (userId, partnerId) => {
-    const userData = connectedUsers.get(userId);
+    const normalizedUserId = String(userId);
+    const userData = connectedUsers.get(normalizedUserId);
     if (userData) {
-        // Update the tracked data in memory
-        userData.partnerId = partnerId ? partnerId.toString() : null;
-        connectedUsers.set(userId, userData);
+        const previousPartnerId = userData.partnerId;
+        const nextPartnerId = partnerId ? partnerId.toString() : null;
 
-        // Find the active socket and update its property directly
+        // Update the tracked data in memory
+        userData.partnerId = nextPartnerId;
+        connectedUsers.set(normalizedUserId, userData);
+
+        // Update every active socket for this user.
         const io = (await import('./index.js')).getIO();
         if (io) {
-            const socketId = userData.socketId;
-            const socket = io.sockets.sockets.get(socketId);
-            if (socket) {
-                socket.partnerId = userData.partnerId;
+            for (const socketId of userData.socketIds) {
+                const socket = io.sockets.sockets.get(socketId);
+                if (socket) {
+                    const previousRoomId = getCoupleRoomId(normalizedUserId, previousPartnerId);
+                    const nextRoomId = getCoupleRoomId(normalizedUserId, nextPartnerId);
+                    if (previousRoomId && previousRoomId !== nextRoomId) {
+                        socket.leave(previousRoomId);
+                    }
+                    socket.partnerId = nextPartnerId;
+                    if (nextRoomId) {
+                        socket.join(nextRoomId);
+                    }
+                }
             }
         }
     }
@@ -134,8 +179,9 @@ export const updateSocketPartnerStatus = async (userId, partnerId) => {
  * Get socket ID for a user (to send direct messages)
  */
 export const getSocketId = (userId) => {
-    const user = connectedUsers.get(userId);
-    return user?.socketId || null;
+    if (!userId) return null;
+    const user = connectedUsers.get(String(userId));
+    return user?.socketIds?.values().next().value || null;
 };
 
 export default {

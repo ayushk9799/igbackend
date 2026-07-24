@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import User from '../../models/User.js';
-import { getCoupleRoomId } from '../auth.js';
+import { connectedUsers, getCoupleRoomId } from '../auth.js';
+import { sendPushNotification } from '../../utils/pushNotification.js';
 import {
     claimMediaSession,
     MEDIA_SESSION_TYPE,
@@ -160,6 +161,30 @@ export const handleLiveChatMessageSet = (socket, io, data = {}) => {
         message: participant.message,
         clientMessageId: typeof data.clientMessageId === 'string' ? data.clientMessageId.slice(0, 80) : undefined,
     });
+
+    const partnerId = String(socket.partnerId || '');
+    if (partnerId) {
+        const notificationData = {
+            type: 'live_chat',
+            sessionId: session.sessionId,
+            messageId: participant.message.id,
+            senderId: String(socket.userId),
+            senderName: socket.userName || 'Your partner',
+            preview: text,
+        };
+
+        const partnerConnection = connectedUsers.get(partnerId);
+        for (const socketId of partnerConnection?.socketIds || []) {
+            io.to(socketId).emit('liveChat:notification', notificationData);
+        }
+
+        void sendPushNotification(
+            partnerId,
+            'live chat message',
+            text,
+            notificationData,
+        );
+    }
 };
 
 export const handleLiveChatMediaState = (socket, io, data = {}) => {
@@ -169,6 +194,16 @@ export const handleLiveChatMediaState = (socket, io, data = {}) => {
         sessionId: session.sessionId,
         senderId: String(socket.userId),
         cameraEnabled: data.cameraEnabled === true,
+    });
+};
+
+export const handleLiveChatTyping = (socket, io, data = {}) => {
+    const session = getSessionForSocket(socket, data.sessionId);
+    if (!session) return;
+    socket.to(sessionRoom(session.sessionId)).emit('liveChat:partnerTyping', {
+        sessionId: session.sessionId,
+        senderId: String(socket.userId),
+        isTyping: data.isTyping === true,
     });
 };
 
@@ -219,6 +254,7 @@ export default {
     handleLiveChatJoin,
     handleLiveChatMessageSet,
     handleLiveChatMediaState,
+    handleLiveChatTyping,
     handleLiveChatSignal,
     handleLiveChatLeave,
     handleLiveChatDisconnect,

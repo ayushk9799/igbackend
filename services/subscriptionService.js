@@ -2,6 +2,14 @@ import Subscription from '../models/Subscription.js';
 import User from '../models/User.js';
 
 const ACTIVE_STATUSES = new Set(['active', 'cancelled', 'billing_issue', 'paused']);
+const DEFAULT_RENEWAL_HANDOFF_MS = 10 * 60 * 1000;
+
+const getRenewalHandoffMs = () => {
+    const configured = Number(process.env.SUBSCRIPTION_RENEWAL_HANDOFF_MS);
+    return Number.isFinite(configured) && configured >= 0
+        ? configured
+        : DEFAULT_RENEWAL_HANDOFF_MS;
+};
 
 export const normalizeRevenueCatId = (value) => String(value || '').trim().toLowerCase();
 
@@ -18,7 +26,16 @@ export const normalizeEnvironment = (value) => {
 export const subscriptionGivesAccess = (subscription, now = new Date()) => {
     if (!subscription?.givesAccess || !ACTIVE_STATUSES.has(subscription.status)) return false;
     if (!subscription.expiresAt) return true;
-    return new Date(subscription.expiresAt) > now;
+
+    const expiresAt = new Date(subscription.expiresAt);
+    if (expiresAt > now) return true;
+
+    // Auto-renewing subscriptions can briefly pass their old expiry while the
+    // store and RevenueCat deliver the renewal. Keep access during this small
+    // handoff window; an EXPIRATION webhook still revokes it immediately.
+    return subscription.status === 'active'
+        && subscription.willRenew === true
+        && now.getTime() - expiresAt.getTime() <= getRenewalHandoffMs();
 };
 
 const environmentQuery = () => {

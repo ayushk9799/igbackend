@@ -1,6 +1,6 @@
 import User from '../../models/User.js';
 import MoodLog from '../../models/MoodLog.js';
-import { getCoupleRoomId } from '../auth.js';
+import { getCoupleRoomId, isUserOnline } from '../auth.js';
 import { sendMoodNotification } from '../../utils/pushNotification.js';
 
 const MOOD_HISTORY_DAYS = 31;
@@ -128,7 +128,10 @@ export const handleMoodRequest = async (socket, io) => {
         const hasUpdated = partner.currentMood && partner.currentMood.updatedAt;
         socket.emit('mood:partnerMood', {
             mood: hasUpdated ? partner.currentMood : null,
-            isOnline: partner.isOnline,
+            // Kept for backwards compatibility with older clients. Use the
+            // active socket registry instead of the asynchronously persisted
+            // MongoDB flag so this value cannot be stale.
+            isOnline: isUserOnline(partnerId),
             lastSeen: partner.lastSeen,
         });
 

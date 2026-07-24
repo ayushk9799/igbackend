@@ -67,9 +67,24 @@ const determineState = (event, existing, eventAt) => {
     const type = event.type;
     const normalExpiration = parseDateFromMs(event.expiration_at_ms);
     const graceExpiration = parseDateFromMs(event.grace_period_expiration_at_ms);
-    const expiresAt = graceExpiration && (!normalExpiration || graceExpiration > normalExpiration)
+    const incomingExpiration = graceExpiration && (!normalExpiration || graceExpiration > normalExpiration)
         ? graceExpiration
-        : normalExpiration || existing?.expiresAt || null;
+        : normalExpiration;
+    const existingExpiration = existing?.expiresAt ? new Date(existing.expiresAt) : null;
+    const incomingIsOlder = incomingExpiration
+        && existingExpiration
+        && incomingExpiration < existingExpiration;
+
+    // An API verification may already contain the next renewal period before
+    // an older webhook arrives. Never let that older event shorten/revoke it.
+    if (incomingIsOlder && !GRANT_EVENTS.has(type)) return null;
+
+    const expiresAt = GRANT_EVENTS.has(type)
+        && incomingExpiration
+        && existingExpiration
+        && existingExpiration > incomingExpiration
+        ? existingExpiration
+        : incomingExpiration || existingExpiration || null;
     const expiresInFuture = !expiresAt || expiresAt > eventAt;
 
     if (type === 'EXPIRATION') {
@@ -250,20 +265,9 @@ export async function processRevenueCatWebhook(event) {
         const update = await Subscription.updateOne(
             {
                 _id: subscription._id,
-                $and: [
-                    {
-                        $or: [
-                            { lastEventAt: null },
-                            { lastEventAt: { $lte: eventAt } },
-                        ],
-                    },
-                    {
-                        $or: [
-                            { verificationStatus: { $ne: 'verified' } },
-                            { lastApiVerifiedAt: null },
-                            { lastApiVerifiedAt: { $lte: eventAt } },
-                        ],
-                    },
+                $or: [
+                    { lastEventAt: null },
+                    { lastEventAt: { $lte: eventAt } },
                 ],
             },
             {

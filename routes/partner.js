@@ -316,7 +316,7 @@ router.get('/status/:userId', async (req, res) => {
 
         const user = await User.findById(userId).populate(
             'partnerId',
-            'name email avatar premiumExpiresAt premiumPlan premiumWillRenew premiumCancelledAt'
+            'name nickname email avatar premiumExpiresAt premiumPlan premiumWillRenew premiumCancelledAt'
         );
         if (!user) {
             return res.status(404).json({
@@ -343,6 +343,7 @@ router.get('/status/:userId', async (req, res) => {
                 partner: {
                     id: user.partnerId._id,
                     name: user.partnerId.name,
+                    nickname: user.partnerId.nickname || null,
                     email: user.partnerId.email,
                     avatar: user.partnerId.avatar || null,
                     ...partnerPremium,

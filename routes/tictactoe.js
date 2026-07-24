@@ -75,6 +75,7 @@ router.post('/create', async (req, res) => {
                     creatorSymbol: existingGame.creatorSymbol,
                     partnerSymbol: existingGame.partnerSymbol,
                     status: existingGame.status,
+                    round: existingGame.round,
                     isCreator: existingGame.creatorId._id.toString() === creatorId || existingGame.creatorId.toString() === creatorId
                 },
                 message: 'Active game already exists',
@@ -138,6 +139,7 @@ router.post('/create', async (req, res) => {
                 creatorSymbol: game.creatorSymbol,
                 partnerSymbol: game.partnerSymbol,
                 status: game.status,
+                round: game.round,
                 isCreator: true
             },
             isExisting: false
@@ -259,19 +261,88 @@ router.get('/pending/:userId', async (req, res) => {
 });
 
 /**
+ * POST /api/tictactoe/:id/restart
+ * Reset the current game while preserving both players and their symbols.
+ * Body: { userId }
+ */
+router.post('/:id/restart', async (req, res) => {
+    try {
+        const { userId } = req.body;
+        const game = await TicTacToe.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                $or: [
+                    { creatorId: userId },
+                    { partnerId: userId },
+                ],
+            },
+            {
+                $set: {
+                    board: Array(9).fill(null),
+                    currentTurn: 'creator',
+                    status: 'pending',
+                    winner: null,
+                    moveHistory: [],
+                    moveCount: 0,
+                    completedAt: null,
+                },
+                $inc: { round: 1, __v: 1 },
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!game) {
+            return res.status(404).json({
+                success: false,
+                message: 'Game not found or you are not a player'
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                gameId: game._id,
+                creatorId: game.creatorId,
+                partnerId: game.partnerId,
+                board: game.board,
+                currentTurn: game.currentTurn,
+                status: game.status,
+                creatorSymbol: game.creatorSymbol,
+                partnerSymbol: game.partnerSymbol,
+                round: game.round
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error restarting TicTacToe game:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to restart game',
+            error: error.message
+        });
+    }
+});
+
+/**
  * POST /api/tictactoe/:id/move
  * Make a move
- * Body: { userId, position (0-8) }
+ * Body: { userId, position (0-8), round }
  */
 router.post('/:id/move', async (req, res) => {
     try {
-        const { userId, position } = req.body;
+        const { userId, position, round } = req.body;
         const game = await TicTacToe.findById(req.params.id);
 
         if (!game) {
             return res.status(404).json({
                 success: false,
                 message: 'Game not found'
+            });
+        }
+
+        if (!Number.isInteger(round) || round !== game.round) {
+            return res.status(409).json({
+                success: false,
+                message: 'This game was restarted. Refreshing the board is required.'
             });
         }
 
@@ -374,6 +445,7 @@ router.post('/:id/move', async (req, res) => {
                 status: game.status,
                 winner: game.winner,
                 moveCount: game.moveCount,
+                round: game.round,
                 gameComplete
             }
         });

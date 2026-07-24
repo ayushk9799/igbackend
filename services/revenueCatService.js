@@ -4,6 +4,7 @@ import {
     getPremiumEntitlementId,
     normalizeEnvironment,
     normalizeRevenueCatId,
+    subscriptionGivesAccess,
     syncLegacyUserSnapshot,
 } from './subscriptionService.js';
 
@@ -61,6 +62,8 @@ export async function refreshUserSubscriptionFromRevenueCat(user, { confirmMissi
         for (const subscription of existing) {
             const expirationPassed = !!subscription.expiresAt && subscription.expiresAt <= now;
             const protectLegacyMigration = subscription.source === 'legacy' && !expirationPassed;
+            const protectRenewalHandoff = expirationPassed
+                && subscriptionGivesAccess(subscription, now);
             const firstMissingCheck = !confirmMissing
                 && (subscription.consecutiveMissingCount || 0) < 1
                 && !expirationPassed;
@@ -69,9 +72,11 @@ export async function refreshUserSubscriptionFromRevenueCat(user, { confirmMissi
             subscription.lastMissingAt = now;
             subscription.lastVerifiedAt = now;
             subscription.lastApiVerifiedAt = now;
-            subscription.verificationStatus = protectLegacyMigration || firstMissingCheck ? 'failed' : 'verified';
+            subscription.verificationStatus = protectLegacyMigration || protectRenewalHandoff || firstMissingCheck
+                ? 'failed'
+                : 'verified';
 
-            if (!protectLegacyMigration && !firstMissingCheck) {
+            if (!protectLegacyMigration && !protectRenewalHandoff && !firstMissingCheck) {
                 subscription.status = 'expired';
                 subscription.givesAccess = false;
                 subscription.willRenew = false;
@@ -79,7 +84,7 @@ export async function refreshUserSubscriptionFromRevenueCat(user, { confirmMissi
             }
 
             await subscription.save();
-            if (!protectLegacyMigration && !firstMissingCheck) {
+            if (!protectLegacyMigration && !protectRenewalHandoff && !firstMissingCheck) {
                 await syncLegacyUserSnapshot(user, subscription);
             }
         }
@@ -91,10 +96,6 @@ export async function refreshUserSubscriptionFromRevenueCat(user, { confirmMissi
     const expiresAt = parseDate(entitlement.expires_date || product?.expires_date);
     const cancelledAt = parseDate(product?.unsubscribe_detected_at);
     const billingIssueAt = parseDate(product?.billing_issues_detected_at);
-    const givesAccess = !expiresAt || expiresAt > now;
-    const status = givesAccess
-        ? (billingIssueAt ? 'billing_issue' : cancelledAt ? 'cancelled' : 'active')
-        : 'expired';
     const isSandbox = product?.is_sandbox ?? entitlement?.is_sandbox;
     const environment = normalizeEnvironment(
         typeof isSandbox === 'boolean'
@@ -109,6 +110,23 @@ export async function refreshUserSubscriptionFromRevenueCat(user, { confirmMissi
     ) {
         return null;
     }
+
+    const existingSubscription = await Subscription.findOne({
+        ownerUserId: user._id,
+        entitlementId,
+        environment,
+    });
+    const isRenewalHandoff = !!(
+        expiresAt
+        && expiresAt <= now
+        && !cancelledAt
+        && existingSubscription
+        && subscriptionGivesAccess(existingSubscription, now)
+    );
+    const givesAccess = isRenewalHandoff || !expiresAt || expiresAt > now;
+    const status = givesAccess
+        ? (billingIssueAt ? 'billing_issue' : cancelledAt ? 'cancelled' : 'active')
+        : 'expired';
 
     const subscription = await Subscription.findOneAndUpdate(
         { ownerUserId: user._id, entitlementId, environment },

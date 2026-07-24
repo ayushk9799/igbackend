@@ -81,7 +81,7 @@ export const handleTicTacToeLeave = (socket, io, data) => {
  */
 export const handleTicTacToeMove = async (socket, io, data) => {
     try {
-        const { gameId, position, board, currentTurn, status, winner, gameComplete } = data;
+        const { gameId, position, gameComplete } = data;
         const { userId, userName } = socket;
 
         if (!gameId) {
@@ -89,36 +89,49 @@ export const handleTicTacToeMove = async (socket, io, data) => {
             return;
         }
 
+        const game = await TicTacToe.findById(gameId);
+        if (!game) {
+            socket.emit('tictactoe:error', { message: 'Game not found' });
+            return;
+        }
+
+        const isPlayer = game.creatorId.toString() === String(userId)
+            || game.partnerId.toString() === String(userId);
+        if (!isPlayer) {
+            socket.emit('tictactoe:error', { message: 'Not a player in this game' });
+            return;
+        }
+
         // Broadcast to game room (excluding sender)
         const gameRoom = `tictactoe_${gameId}`;
         socket.to(gameRoom).emit('tictactoe:moveReceived', {
+            gameId,
             playerId: userId,
             playerName: userName,
             position,
-            board,
-            currentTurn,
-            status,
-            winner,
+            board: game.board,
+            currentTurn: game.currentTurn,
+            status: game.status,
+            winner: game.winner,
+            round: game.round,
             gameComplete,
             timestamp: new Date().toISOString()
         });
 
         // Also broadcast to couple room for notifications
-        const game = await TicTacToe.findById(gameId);
-        if (game) {
-            const partnerId = game.creatorId.toString() === userId
-                ? game.partnerId.toString()
-                : game.creatorId.toString();
+        const partnerId = game.creatorId.toString() === String(userId)
+            ? game.partnerId.toString()
+            : game.creatorId.toString();
 
-            const coupleRoom = getCoupleRoomId(userId, partnerId);
-            if (coupleRoom) {
-                socket.to(coupleRoom).emit('tictactoe:update', {
-                    gameId,
-                    board,
-                    status,
-                    currentTurn
-                });
-            }
+        const coupleRoom = getCoupleRoomId(userId, partnerId);
+        if (coupleRoom) {
+            socket.to(coupleRoom).emit('tictactoe:update', {
+                gameId,
+                board: game.board,
+                status: game.status,
+                currentTurn: game.currentTurn,
+                round: game.round,
+            });
         }
 
     } catch (error) {
@@ -187,12 +200,24 @@ export const handleTicTacToeComplete = async (socket, io, data) => {
  */
 export const handleTicTacToeNewGame = async (socket, io, data) => {
     try {
-        const { gameId, board, currentTurn, status, creatorSymbol, partnerSymbol } = data;
+        const { gameId, previousGameId } = data;
         const { userId, userName, partnerId } = socket;
-
 
         if (!partnerId) {
             socket.emit('tictactoe:error', { message: 'No partner to notify' });
+            return;
+        }
+
+        const game = await TicTacToe.findById(gameId);
+        if (!game) {
+            socket.emit('tictactoe:error', { message: 'Game not found' });
+            return;
+        }
+
+        const isPlayer = game.creatorId.toString() === String(userId)
+            || game.partnerId.toString() === String(userId);
+        if (!isPlayer) {
+            socket.emit('tictactoe:error', { message: 'Not a player in this game' });
             return;
         }
 
@@ -200,13 +225,16 @@ export const handleTicTacToeNewGame = async (socket, io, data) => {
         const coupleRoom = getCoupleRoomId(userId, partnerId);
         if (coupleRoom) {
             socket.to(coupleRoom).emit('tictactoe:newGame', {
-                gameId,
-                board,
-                currentTurn,
-                status,
-                creatorSymbol,
-                partnerSymbol,
-                creatorId: userId,
+                gameId: game._id,
+                board: game.board,
+                currentTurn: game.currentTurn,
+                status: game.status,
+                round: game.round,
+                creatorSymbol: game.creatorSymbol,
+                partnerSymbol: game.partnerSymbol,
+                creatorId: game.creatorId,
+                partnerId: game.partnerId,
+                previousGameId,
                 creatorName: userName,
                 timestamp: new Date().toISOString()
             });
