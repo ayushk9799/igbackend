@@ -31,7 +31,7 @@ const jigsawPuzzleSchema = new mongoose.Schema({
     // Puzzle status
     status: {
         type: String,
-        enum: ['pending', 'in_progress', 'solved'],
+        enum: ['pending', 'in_progress', 'solved', 'expired'],
         default: 'pending'
     },
     // Move count
@@ -44,7 +44,19 @@ const jigsawPuzzleSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    startedAt: {
+        type: Date,
+        default: null
+    },
+    expiresAt: {
+        type: Date,
+        default: null
+    },
     solvedAt: {
+        type: Date,
+        default: null
+    },
+    expiredAt: {
         type: Date,
         default: null
     }

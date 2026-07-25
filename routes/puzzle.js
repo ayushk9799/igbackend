@@ -2,8 +2,59 @@ import express from 'express';
 import JigsawPuzzle from '../models/JigsawPuzzle.js';
 import User from '../models/User.js';
 import { sendPuzzleNotification } from '../utils/pushNotification.js';
+import { getIO } from '../socket/index.js';
+import { getCoupleRoomId } from '../socket/auth.js';
 
 const router = express.Router();
+const PUZZLE_DURATION_MS = 5 * 60 * 1000;
+
+const notifyPuzzleUpdate = (puzzle, eventName = 'puzzle:updated') => {
+    try {
+        const io = getIO();
+        if (!io || !puzzle) return;
+        const creatorId = puzzle.creatorId?._id || puzzle.creatorId;
+        const partnerId = puzzle.partnerId?._id || puzzle.partnerId;
+        if (!creatorId || !partnerId) return;
+
+        const roomId = getCoupleRoomId(creatorId.toString(), partnerId.toString());
+        if (roomId) {
+            io.to(roomId).emit('puzzle:updated', {
+                puzzleId: puzzle._id || puzzle.id,
+                puzzle,
+                eventName,
+                timestamp: new Date().toISOString()
+            });
+        }
+    } catch (err) {
+        console.error('❌ Failed to emit puzzle socket update:', err);
+    }
+};
+
+const expirePuzzleIfNeeded = async (puzzle, now = new Date()) => {
+    if (
+        puzzle?.status === 'in_progress'
+        && puzzle.expiresAt
+        && puzzle.expiresAt.getTime() <= now.getTime()
+    ) {
+        puzzle.status = 'expired';
+        puzzle.expiredAt = now;
+        await puzzle.save();
+        return true;
+    }
+    return puzzle?.status === 'expired';
+};
+
+const expiredResponse = (res, puzzle) => res.status(410).json({
+    success: false,
+    code: 'PUZZLE_EXPIRED',
+    message: 'The 5-minute puzzle timer has expired',
+    data: {
+        status: 'expired',
+        startedAt: puzzle.startedAt,
+        expiresAt: puzzle.expiresAt,
+        expiredAt: puzzle.expiredAt
+    }
+});
 
 /**
  * Fisher-Yates shuffle algorithm to randomize puzzle pieces
@@ -105,6 +156,7 @@ router.post('/create', async (req, res) => {
 
         // Send push notification to partner
         await sendPuzzleNotification(partnerId, creatorName, puzzle._id);
+        notifyPuzzleUpdate(puzzle, 'puzzle:created');
 
         res.status(201).json({
             success: true,
@@ -127,6 +179,73 @@ router.post('/create', async (req, res) => {
 });
 
 /**
+ * POST /api/puzzle/:id/start
+ * Atomically starts the permanent 5-minute solving window.
+ */
+router.post('/:id/start', async (req, res) => {
+    try {
+        const now = new Date();
+        const expiresAt = new Date(now.getTime() + PUZZLE_DURATION_MS);
+        let puzzle = await JigsawPuzzle.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                $or: [
+                    { status: 'pending' },
+                    {
+                        status: 'in_progress',
+                        $or: [
+                            { expiresAt: null },
+                            { expiresAt: { $exists: false } }
+                        ]
+                    }
+                ]
+            },
+            {
+                $set: {
+                    status: 'in_progress',
+                    startedAt: now,
+                    expiresAt
+                }
+            },
+            { new: true }
+        );
+
+        if (!puzzle) {
+            puzzle = await JigsawPuzzle.findById(req.params.id);
+        }
+        if (!puzzle) {
+            return res.status(404).json({ success: false, message: 'Puzzle not found' });
+        }
+
+        if (await expirePuzzleIfNeeded(puzzle, now)) {
+            return expiredResponse(res, puzzle);
+        }
+        if (puzzle.status === 'solved') {
+            return res.status(409).json({
+                success: false,
+                code: 'PUZZLE_SOLVED',
+                message: 'Puzzle is already solved'
+            });
+        }
+
+        notifyPuzzleUpdate(puzzle, 'puzzle:started');
+
+        res.status(200).json({
+            success: true,
+            data: puzzle,
+            serverTime: now.toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error starting puzzle:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to start puzzle',
+            error: error.message
+        });
+    }
+});
+
+/**
  * GET /api/puzzle/:id
  * Get puzzle by ID
  */
@@ -141,9 +260,12 @@ router.get('/:id', async (req, res) => {
             });
         }
 
+        await expirePuzzleIfNeeded(puzzle);
+
         res.status(200).json({
             success: true,
-            data: puzzle
+            data: puzzle,
+            serverTime: new Date().toISOString()
         });
 
     } catch (error) {
@@ -163,12 +285,31 @@ router.get('/:id', async (req, res) => {
 router.get('/pending/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
+        const now = new Date();
+
+        await JigsawPuzzle.updateMany(
+            {
+                partnerId: userId,
+                status: 'in_progress',
+                expiresAt: { $lte: now }
+            },
+            {
+                $set: {
+                    status: 'expired',
+                    expiredAt: now
+                }
+            }
+        );
 
         const puzzles = await JigsawPuzzle.find({
-            partnerId: userId,
+            $or: [
+                { partnerId: userId },
+                { creatorId: userId }
+            ],
             status: { $in: ['pending', 'in_progress'] }
         })
             .populate('creatorId', 'name avatar')
+            .populate('partnerId', 'name avatar')
             .sort({ createdAt: -1 })
             .limit(10);
 
@@ -214,6 +355,16 @@ router.post('/:id/move', async (req, res) => {
                 message: 'Puzzle is already solved'
             });
         }
+        if (await expirePuzzleIfNeeded(puzzle)) {
+            return expiredResponse(res, puzzle);
+        }
+        if (puzzle.status !== 'in_progress' || !puzzle.expiresAt) {
+            return res.status(409).json({
+                success: false,
+                code: 'PUZZLE_NOT_STARTED',
+                message: 'Puzzle must be started before moving pieces'
+            });
+        }
 
         // Use client-provided pieces or perform the swap
         let pieces;
@@ -226,10 +377,33 @@ router.post('/:id/move', async (req, res) => {
             }
         }
 
+        const expectedPieceCount = puzzle.gridSize.rows * puzzle.gridSize.cols;
+        const normalizedPieceIds = pieces.map((piece) => (
+            Number.isInteger(piece) ? (piece < 0 ? -piece - 1 : piece) : NaN
+        ));
+        const hasValidPieceSet = (
+            pieces.length === expectedPieceCount
+            && normalizedPieceIds.every((piece) => piece >= 0 && piece < expectedPieceCount)
+            && new Set(normalizedPieceIds).size === expectedPieceCount
+        );
+        if (!hasValidPieceSet) {
+            return res.status(400).json({
+                success: false,
+                code: 'INVALID_PUZZLE_STATE',
+                message: 'Puzzle pieces are invalid'
+            });
+        }
+
         // Check if puzzle is solved
         const isSolved = pieces.every((piece, index) => piece === index);
 
         // Update puzzle
+        if (puzzle.expiresAt.getTime() <= Date.now()) {
+            puzzle.status = 'expired';
+            puzzle.expiredAt = new Date();
+            await puzzle.save();
+            return expiredResponse(res, puzzle);
+        }
         puzzle.pieces = pieces;
         puzzle.moveCount += 1;
         if (puzzle.status === 'pending') {
@@ -241,6 +415,7 @@ router.post('/:id/move', async (req, res) => {
         }
 
         await puzzle.save();
+        notifyPuzzleUpdate(puzzle, 'puzzle:move');
 
         res.status(200).json({
             success: true,
@@ -268,21 +443,43 @@ router.post('/:id/move', async (req, res) => {
  */
 router.post('/:id/solve', async (req, res) => {
     try {
-        const puzzle = await JigsawPuzzle.findByIdAndUpdate(
-            req.params.id,
+        const now = new Date();
+        const existingPuzzle = await JigsawPuzzle.findById(req.params.id);
+        if (!existingPuzzle) {
+            return res.status(404).json({ success: false, message: 'Puzzle not found' });
+        }
+        if (!existingPuzzle.pieces.every((piece, index) => piece === index)) {
+            return res.status(400).json({
+                success: false,
+                code: 'PUZZLE_NOT_COMPLETE',
+                message: 'Puzzle pieces are not in the solved order'
+            });
+        }
+        let puzzle = await JigsawPuzzle.findOneAndUpdate(
             {
-                status: 'solved',
-                solvedAt: new Date()
+                _id: req.params.id,
+                status: 'in_progress',
+                expiresAt: { $gt: now }
             },
+            { $set: { status: 'solved', solvedAt: now } },
             { new: true }
         );
 
         if (!puzzle) {
-            return res.status(404).json({
+            puzzle = await JigsawPuzzle.findById(req.params.id);
+            if (!puzzle) {
+                return res.status(404).json({ success: false, message: 'Puzzle not found' });
+            }
+            if (await expirePuzzleIfNeeded(puzzle, now)) {
+                return expiredResponse(res, puzzle);
+            }
+            return res.status(409).json({
                 success: false,
-                message: 'Puzzle not found'
+                message: `Puzzle cannot be solved while ${puzzle.status}`
             });
         }
+
+        notifyPuzzleUpdate(puzzle, 'puzzle:solved');
 
         res.status(200).json({
             success: true,
