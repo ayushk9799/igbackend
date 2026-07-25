@@ -97,6 +97,10 @@ export const handleConnection = async (socket, io) => {
             return;
         }
 
+        const disconnectRoomId = getCoupleRoomId(
+            normalizedUserId,
+            currentUser.partnerId || socket.partnerId,
+        );
         connectedUsers.delete(normalizedUserId);
         const lastSeen = new Date();
 
@@ -105,8 +109,8 @@ export const handleConnection = async (socket, io) => {
             lastSeen,
         });
 
-        if (roomId) {
-            io.to(roomId).emit('presence:offline', {
+        if (disconnectRoomId) {
+            io.to(disconnectRoomId).emit('presence:offline', {
                 userId: normalizedUserId,
                 lastSeen: lastSeen.toISOString(),
             });
@@ -169,6 +173,14 @@ export const updateSocketPartnerStatus = async (userId, partnerId) => {
                     if (nextRoomId) {
                         socket.join(nextRoomId);
                     }
+
+                    // These sockets may have connected before the users paired,
+                    // so proactively replace their initial "no partner" state.
+                    socket.emit('presence:status', {
+                        partnerId: nextPartnerId,
+                        isOnline: nextPartnerId ? isUserOnline(nextPartnerId) : false,
+                        timestamp: new Date().toISOString(),
+                    });
                 }
             }
         }

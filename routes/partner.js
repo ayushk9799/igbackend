@@ -109,10 +109,12 @@ router.post('/pair', async (req, res) => {
 
         user.partnerId = partner._id;
         user.partnerUsername = partner.name || 'Partner';
+        user.partnerNickname = partner.nickname || partner.name || 'Partner';
         user.connectionDate = connectionDate;
 
         partner.partnerId = user._id;
         partner.partnerUsername = user.name || 'Partner';
+        partner.partnerNickname = user.nickname || user.name || 'Partner';
         partner.connectionDate = connectionDate;
 
         // Keep the partner code active (allow reuse if unpaired later)
@@ -167,6 +169,7 @@ router.post('/pair', async (req, res) => {
         const pairingPayload = {
             partnerId: user._id,
             partnerName: user.name || 'Your Partner',
+            partnerNickname: user.nickname || user.name || 'Your Partner',
             partnerAvatar: user.avatar || null,
                 connectionDate,
                 relationshipStartDate: couple.relationshipStartDate || null,
@@ -217,6 +220,7 @@ router.post('/pair', async (req, res) => {
             partner: {
                 id: partner._id,
                 name: partner.name,
+                nickname: partner.nickname || partner.name || null,
                 avatar: partner.avatar || null,
                 connectionDate,
                 relationshipStartDate: couple.relationshipStartDate || null,
@@ -277,12 +281,14 @@ router.post('/unpair', async (req, res) => {
 
             partner.partnerId = null;
             partner.partnerUsername = null;
+            partner.partnerNickname = null;
             partner.connectionDate = null;
             await partner.save();
         }
 
         user.partnerId = null;
         user.partnerUsername = null;
+        user.partnerNickname = null;
         user.connectionDate = null;
         await user.save();
 
@@ -326,6 +332,16 @@ router.get('/status/:userId', async (req, res) => {
         }
 
         if (user.partnerId) {
+            const resolvedPartnerNickname = user.partnerId.nickname
+                || user.partnerId.name
+                || user.partnerUsername
+                || null;
+            if (user.partnerNickname !== resolvedPartnerNickname) {
+                await User.updateOne(
+                    { _id: user._id },
+                    { $set: { partnerNickname: resolvedPartnerNickname } },
+                );
+            }
             const partnerPremium = await getDirectPremiumStatus(user.partnerId);
             const couple = await Couple.findByPartner(user._id);
             const relationshipStartDate = couple?.relationshipStartDate || user.pendingRelationshipStartDate || null;

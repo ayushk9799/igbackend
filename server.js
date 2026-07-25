@@ -40,12 +40,16 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 
 // MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose.connect(MONGODB_URI)
-    .then(() => {
-    })
-    .catch((err) => console.error('❌ MongoDB connection error:', err));
+if (!MONGODB_URI) {
+    console.error('❌ FATAL: MONGODB_URI is not defined in environment variables.');
+} else {
+    mongoose.connect(MONGODB_URI)
+        .then(() => {
+        })
+        .catch((err) => console.error('❌ MongoDB connection error:', err));
+}
 
 // Middleware
 app.use(cors());

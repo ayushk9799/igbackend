@@ -84,6 +84,7 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     gender: user.gender,
     partnerId: user.partnerId,
     partnerUsername: user.partnerUsername,
+    partnerNickname: user.partnerNickname || user.partnerUsername || null,
     connectionDate: user.connectionDate,
     partnerCode: user.partnerCode,
     timezone: user.timezone,
@@ -234,6 +235,13 @@ router.put('/profile', async (req, res) => {
         }
 
         await user.save();
+
+        if (user.partnerId && (name !== undefined || req.body.nickname !== undefined)) {
+            await User.findByIdAndUpdate(user.partnerId, {
+                partnerUsername: user.name || 'Partner',
+                partnerNickname: user.nickname || user.name || 'Partner',
+            });
+        }
 
         res.json({
             success: true,
@@ -851,6 +859,7 @@ router.delete('/delete-account', async (req, res) => {
                 $unset: {
                     partnerId: 1,
                     partnerUsername: 1,
+                    partnerNickname: 1,
                     connectionDate: 1,
                     lastScribble: 1
                 }

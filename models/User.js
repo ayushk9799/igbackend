@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
     partnerUsername: {
         type: String,
     },
+    partnerNickname: {
+        type: String,
+        trim: true,
+    },
     connectionDate: {
         type: Date,
     },
