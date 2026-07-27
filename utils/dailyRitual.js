@@ -4,6 +4,7 @@ import CoupleStreak from '../models/CoupleStreak.js';
 import DailyAnswers from '../models/DailyAnswers.js';
 import DailyChallenge from '../models/DailyChallenge.js';
 import User from '../models/User.js';
+import { localizeDailyChallenge } from './localization.js';
 
 const DEFAULT_RITUAL_TIMEZONE = 'UTC';
 const DEFAULT_RITUAL_RESET_HOUR = 5;
@@ -323,7 +324,7 @@ export const updateRitualStatusForCompletion = async ({ userId, challenge }) => 
     };
 };
 
-export const getCoupleTodayPayload = async ({ userId }) => {
+export const getCoupleTodayPayload = async ({ userId, language = 'en' }) => {
     const { user, couple, partnerId } = await getActiveCoupleForUser(userId);
 
     if (!user) {
@@ -401,7 +402,7 @@ export const getCoupleTodayPayload = async ({ userId }) => {
                 closesAt: window.closesAt,
                 ritualTimezone: couple.ritualTimezone,
                 ritualResetHour: couple.ritualResetHour,
-                challenge,
+                challenge: localizeDailyChallenge(challenge, language),
                 answers,
                 partnerAnswers,
                 progress: answers ? {

@@ -11,6 +11,7 @@ import PoliticalQuestion from '../models/PoliticalQuestion.js';
 import FitnessQuestion from '../models/FitnessQuestion.js';
 import TravelQuestion from '../models/TravelQuestion.js';
 import FamilyQuestion from '../models/FamilyQuestion.js';
+import { getRequestLanguage, localizeLegacyQuestion } from '../utils/localization.js';
 
 const router = express.Router();
 
@@ -115,6 +116,7 @@ router.get('/topic/:topicId', async (req, res) => {
     try {
         const { topicId } = req.params;
         const { limit = 20, userId } = req.query;
+        const language = getRequestLanguage(req);
 
         const TopicModel = TOPIC_MODELS[topicId];
 
@@ -148,11 +150,14 @@ router.get('/topic/:topicId', async (req, res) => {
         ]);
 
         // Transform questions for frontend TaskCard
-        const questions = fetchedQuestions.map(q => ({
-            ...q,
-            category: q.visualType,
-            taskstatement: q.question || q.statement || q.taskstatement
-        }));
+        const questions = fetchedQuestions.map((question) => {
+            const localized = localizeLegacyQuestion(question, language);
+            return {
+                ...localized,
+                category: localized.visualType,
+                taskstatement: localized.question || localized.statement || localized.taskstatement
+            };
+        });
 
         res.status(200).json({
             success: true,
@@ -183,6 +188,7 @@ router.get('/:topicId/all', async (req, res) => {
     try {
         const { topicId } = req.params;
         const { active = 'true' } = req.query;
+        const language = getRequestLanguage(req);
 
         const TopicModel = TOPIC_MODELS[topicId];
 
@@ -200,11 +206,14 @@ router.get('/:topicId/all', async (req, res) => {
             success: true,
             data: {
                 topic: topicId,
-                questions: questions.map(q => ({
-                    ...q.toObject(),
-                    category: q.visualType,
-                    taskstatement: q.question
-                })),
+                questions: questions.map((question) => {
+                    const localized = localizeLegacyQuestion(question, language);
+                    return {
+                        ...localized,
+                        category: localized.visualType,
+                        taskstatement: localized.question
+                    };
+                }),
                 total: questions.length
             }
         });
@@ -288,6 +297,7 @@ router.delete('/:topicId/order-range', async (req, res) => {
 router.get('/:topicId/:id', async (req, res) => {
     try {
         const { topicId, id } = req.params;
+        const language = getRequestLanguage(req);
 
         const TopicModel = TOPIC_MODELS[topicId];
 
@@ -307,12 +317,13 @@ router.get('/:topicId/:id', async (req, res) => {
             });
         }
 
+        const localized = localizeLegacyQuestion(question, language);
         res.status(200).json({
             success: true,
             data: {
-                ...question.toObject(),
-                category: question.visualType,
-                taskstatement: question.question
+                ...localized,
+                category: localized.visualType,
+                taskstatement: localized.question
             }
         });
     } catch (error) {
@@ -548,6 +559,7 @@ router.delete('/:topicId/:id', async (req, res) => {
 router.get('/:topicId/random/:count', async (req, res) => {
     try {
         const { topicId, count } = req.params;
+        const language = getRequestLanguage(req);
 
         const TopicModel = TOPIC_MODELS[topicId];
 
@@ -567,11 +579,14 @@ router.get('/:topicId/random/:count', async (req, res) => {
             success: true,
             data: {
                 topic: topicId,
-                questions: questions.map(q => ({
-                    ...q,
-                    category: q.visualType,
-                    taskstatement: q.question
-                }))
+                questions: questions.map((question) => {
+                    const localized = localizeLegacyQuestion(question, language);
+                    return {
+                        ...localized,
+                        category: localized.visualType,
+                        taskstatement: localized.question
+                    };
+                })
             }
         });
     } catch (error) {

@@ -51,6 +51,11 @@ const userSchema = new mongoose.Schema({
     timezone: {
         type: String,
     },
+    preferredLanguage: {
+        type: String,
+        enum: ['en', 'fr', 'de', 'es', 'it', 'ja', 'ko'],
+        default: 'en',
+    },
     platform: {
         type: String,
         enum: ['ios', 'android', 'web', 'unknown'],

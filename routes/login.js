@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import { generatePartnerCode, generateUserId } from "../utils/partnerCode.js";
 import { getCouplePremiumStatus } from "../utils/couplePremium.js";
+import { normalizeLanguage } from "../utils/localization.js";
 
 const router = Router();
 
@@ -29,7 +30,7 @@ const normalizePlatform = (platform) => (
     typeof platform === "string" && VALID_PLATFORMS.has(platform) ? platform : "unknown"
 );
 
-const applyDeviceInfo = (user, { platform, timezone, appVersion, appBuildNumber }) => {
+const applyDeviceInfo = (user, { platform, timezone, appVersion, appBuildNumber, preferredLanguage }) => {
     user.platform = normalizePlatform(platform);
     if (typeof timezone === "string" && timezone.trim()) {
         user.timezone = timezone.trim();
@@ -42,6 +43,9 @@ const applyDeviceInfo = (user, { platform, timezone, appVersion, appBuildNumber 
         if (Number.isFinite(parsedBuildNumber)) {
             user.appBuildNumber = parsedBuildNumber;
         }
+    }
+    if (preferredLanguage !== undefined) {
+        user.preferredLanguage = normalizeLanguage(preferredLanguage);
     }
     user.deviceInfoUpdatedAt = new Date();
 };
@@ -71,7 +75,7 @@ const getRelationshipStartDateStateForUser = async (user) => {
 router.post("/google/loginSignUp", async (req, res) => {
 
     try {
-        const { token, platform, timezone, appVersion, appBuildNumber } = req.body;
+        const { token, platform, timezone, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
 
 
@@ -110,9 +114,10 @@ router.post("/google/loginSignUp", async (req, res) => {
                 appVersion: typeof appVersion === "string" && appVersion.trim() ? appVersion.trim() : undefined,
                 appBuildNumber: Number.isFinite(Number.parseInt(appBuildNumber, 10)) ? Number.parseInt(appBuildNumber, 10) : undefined,
                 deviceInfoUpdatedAt: new Date(),
+                preferredLanguage: normalizeLanguage(preferredLanguage),
             });
         } else {
-            applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber });
+            applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber, preferredLanguage });
             await user.save();
         }
 
@@ -137,6 +142,7 @@ router.post("/google/loginSignUp", async (req, res) => {
                 pendingRelationshipStartDate: relationshipStartDateState.pendingRelationshipStartDate,
                 shouldAskRelationshipStartDate: relationshipStartDateState.shouldAskRelationshipStartDate,
                 timezone: user.timezone,
+                preferredLanguage: user.preferredLanguage,
                 platform: user.platform,
                 isPremium: couplePremium.isPremium,
                 premiumExpiresAt: couplePremium.premiumExpiresAt,
@@ -172,7 +178,7 @@ function getAppleSigningKey(header, callback) {
 // Apple authentication route
 router.post("/apple/loginSignUp", async (req, res) => {
     try {
-        const { idToken, displayName, email: providedEmail, platform, timezone, appVersion, appBuildNumber } = req.body;
+        const { idToken, displayName, email: providedEmail, platform, timezone, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
         if (!idToken) {
             return res.status(400).json({ error: "Identity token is required" });
@@ -230,13 +236,14 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 appVersion: typeof appVersion === "string" && appVersion.trim() ? appVersion.trim() : undefined,
                 appBuildNumber: Number.isFinite(Number.parseInt(appBuildNumber, 10)) ? Number.parseInt(appBuildNumber, 10) : undefined,
                 deviceInfoUpdatedAt: new Date(),
+                preferredLanguage: normalizeLanguage(preferredLanguage),
             });
         } else {
             // Update existing user with Apple ID
             if (!user.appleUserId) {
                 user.appleUserId = appleUserId;
             }
-            applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber });
+            applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber, preferredLanguage });
             await user.save();
         }
 
@@ -261,6 +268,7 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 pendingRelationshipStartDate: relationshipStartDateState.pendingRelationshipStartDate,
                 shouldAskRelationshipStartDate: relationshipStartDateState.shouldAskRelationshipStartDate,
                 timezone: user.timezone,
+                preferredLanguage: user.preferredLanguage,
                 platform: user.platform,
                 isPremium: couplePremium.isPremium,
                 premiumExpiresAt: couplePremium.premiumExpiresAt,

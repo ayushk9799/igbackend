@@ -1,5 +1,6 @@
 import express from 'express';
 import Categories from '../models/Categories.js';
+import { getRequestLanguage, localizeCategory } from '../utils/localization.js';
 
 const router = express.Router();
 
@@ -9,10 +10,11 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
     try {
-        const categories = await Categories.find({ isActive: true }).sort({ title: 1 });
+        const language = getRequestLanguage(req);
+        const categories = await Categories.find({ isActive: true }).sort({ title: 1 }).lean();
         res.status(200).json({
             success: true,
-            data: categories
+            data: categories.map(category => localizeCategory(category, language))
         });
     } catch (error) {
         console.error('Error fetching categories:', error);
@@ -31,7 +33,8 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
-        const category = await Categories.findOne({ slug, isActive: true });
+        const language = getRequestLanguage(req);
+        const category = await Categories.findOne({ slug, isActive: true }).lean();
 
         if (!category) {
             return res.status(404).json({
@@ -42,7 +45,7 @@ router.get('/:slug', async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: category
+            data: localizeCategory(category, language)
         });
     } catch (error) {
         console.error('Error fetching category:', error);

@@ -22,7 +22,7 @@ import FutureQuestionSetV2 from '../models/v2/FutureQuestionSetV2.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const TOPIC_MODELS = {
     relationship: RelationshipQuestionSetV2,

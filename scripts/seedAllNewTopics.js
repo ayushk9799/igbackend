@@ -8,7 +8,7 @@ import FamilyQuestion from '../models/FamilyQuestion.js';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // 💰 Money questions
 const moneyQuestions = [

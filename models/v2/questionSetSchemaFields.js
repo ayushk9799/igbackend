@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { translationsField } from '../localizationFields.js';
 
 export const QUESTION_V2_FORMATS = [
     'deep',
@@ -40,6 +41,7 @@ export const questionV2Schema = new mongoose.Schema({
         type: String,
         trim: true,
     },
+    translations: translationsField,
 }, { _id: false });
 
 export const createQuestionSetSchema = () => {
@@ -95,6 +97,7 @@ export const createQuestionSetSchema = () => {
             type: [questionV2Schema],
             default: [],
         },
+        translations: translationsField,
     }, { timestamps: true });
 
     schema.index({ isActive: 1, order: 1 });

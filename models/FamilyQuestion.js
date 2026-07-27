@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
+import { translationsField } from "./localizationFields.js";
 
 /**
  * FamilyQuestion - Questions about family, kids, and future family plans
@@ -57,6 +58,7 @@ const familyQuestionSchema = new mongoose.Schema({
         default: 0,
         index: true
     },
+    translations: translationsField,
 }, { timestamps: true });
 
 familyQuestionSchema.index({ isActive: 1, visualType: 1 });

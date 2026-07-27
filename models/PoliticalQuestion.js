@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
+import { translationsField } from "./localizationFields.js";
 
 /**
  * PoliticalQuestion - Questions about political views, opinions, and debates
@@ -57,6 +58,7 @@ const politicalQuestionSchema = new mongoose.Schema({
         default: 0,
         index: true
     },
+    translations: translationsField,
 }, { timestamps: true });
 
 politicalQuestionSchema.index({ isActive: 1, visualType: 1 });
