@@ -61,18 +61,14 @@ const cleanObject = (obj) => {
 };
 
 const run = async () => {
-    console.log('Connecting to MongoDB...');
     await mongoose.connect(MONGODB_URI);
-    console.log('Connected successfully.');
 
     const allData = {};
     let totalSets = 0;
     let totalQuestions = 0;
 
     for (const [topicId, Model] of Object.entries(TOPIC_MODELS)) {
-        console.log(`Fetching sets for topic: ${topicId}...`);
         const sets = await Model.find({}).sort({ order: 1 }).lean();
-        console.log(`Found ${sets.length} sets for ${topicId}.`);
         
         const cleanedSets = cleanObject(sets);
         allData[topicId] = cleanedSets;
@@ -89,13 +85,7 @@ const run = async () => {
     const outputPath = path.join(__dirname, '..', outputFileName);
     fs.writeFileSync(outputPath, JSON.stringify(allData, null, 2), 'utf8');
     
-    console.log('\n==================================================');
-    console.log(`Successfully downloaded all V2 questions!`);
-    console.log(`Total Topics: ${Object.keys(TOPIC_MODELS).length}`);
-    console.log(`Total Sets: ${totalSets}`);
-    console.log(`Total Questions: ${totalQuestions}`);
-    console.log(`Saved output to: ${outputPath}`);
-    console.log('==================================================\n');
+ 
 
     await mongoose.disconnect();
 };

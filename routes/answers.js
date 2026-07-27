@@ -3,7 +3,7 @@ import DailyAnswers from '../models/DailyAnswers.js';
 import DailyChallenge from '../models/DailyChallenge.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
-import { updateRitualStatusForCompletion } from '../utils/dailyRitual.js';
+import { getRitualWeek, updateRitualStatusForCompletion } from '../utils/dailyRitual.js';
 
 const router = express.Router();
 
@@ -142,6 +142,11 @@ router.post('/submit', async (req, res) => {
                 const ritualUpdate = await updateRitualStatusForCompletion({ userId, challenge });
                 if (ritualUpdate?.status && ritualUpdate?.streak) {
                     const userIsA = ritualUpdate.status.userA.toString() === userId.toString();
+                    const week = await getRitualWeek({
+                        coupleId: ritualUpdate.couple._id,
+                        ritualDate: ritualUpdate.status.ritualDate,
+                        userId,
+                    });
                     ritualResponse = {
                         heartState: ritualUpdate.status.heartState,
                         currentStreak: ritualUpdate.streak.currentStreak || 0,
@@ -149,6 +154,7 @@ router.post('/submit', async (req, res) => {
                         youComplete: userIsA ? ritualUpdate.status.userAComplete : ritualUpdate.status.userBComplete,
                         partnerComplete: userIsA ? ritualUpdate.status.userBComplete : ritualUpdate.status.userAComplete,
                         lastFullHeartDate: ritualUpdate.streak.lastFullHeartDate,
+                        week,
                     };
                 }
                 const senderName = user.name || 'Your partner';

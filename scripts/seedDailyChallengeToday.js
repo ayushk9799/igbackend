@@ -50,20 +50,15 @@ const challengeData = {
 
 async function seed() {
     try {
-        console.log('Connecting to database...');
         await mongoose.connect(MONGODB_URI);
-        console.log('Connected!');
 
-        console.log(`Upserting daily challenge for ${challengeData.date}...`);
         const result = await DailyChallenge.findOneAndUpdate(
             { date: challengeData.date },
             challengeData,
             { upsert: true, new: true, runValidators: true }
         );
 
-        console.log('Successfully seeded today\'s challenge:');
-        console.log(JSON.stringify(result, null, 2));
-
+      
         process.exit(0);
     } catch (error) {
         console.error('Error seeding today\'s challenge:', error);

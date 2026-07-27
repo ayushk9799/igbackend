@@ -63,6 +63,71 @@ const addDaysToDateKey = (dateKey, days) => {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
 };
 
+const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+export const getRitualWeekDateKeys = (ritualDate) => {
+    const [year, month, day] = ritualDate.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    const sunday = addDaysToDateKey(ritualDate, -date.getUTCDay());
+
+    return Array.from({ length: 7 }, (_, index) => addDaysToDateKey(sunday, index));
+};
+
+export const buildRitualWeekDays = ({ ritualDate, statuses = [], userId }) => {
+    const statusByDate = new Map(statuses.map(status => [status.ritualDate, status]));
+
+    return getRitualWeekDateKeys(ritualDate).map((date, index) => {
+        const status = statusByDate.get(date);
+        const userIsA = status && String(status.userA) === String(userId);
+        const youComplete = status
+            ? Boolean(userIsA ? status.userAComplete : status.userBComplete)
+            : false;
+        const partnerComplete = status
+            ? Boolean(userIsA ? status.userBComplete : status.userAComplete)
+            : false;
+        const isToday = date === ritualDate;
+
+        let state;
+        if (date > ritualDate) {
+            state = 'future';
+        } else if (status?.heartState === 'full') {
+            state = 'full';
+        } else if (date < ritualDate) {
+            state = 'missed';
+        } else if (status?.heartState === 'half') {
+            state = 'half';
+        } else {
+            state = 'today-empty';
+        }
+
+        return {
+            date,
+            label: WEEKDAY_LABELS[index],
+            state,
+            isToday,
+            youComplete,
+            partnerComplete,
+        };
+    });
+};
+
+export const getRitualWeek = async ({ coupleId, ritualDate, userId }) => {
+    const dateKeys = getRitualWeekDateKeys(ritualDate);
+    const statuses = await CoupleDailyRitualStatus.find({
+        coupleId,
+        ritualDate: {
+            $gte: dateKeys[0],
+            $lte: dateKeys[dateKeys.length - 1],
+        },
+    }).lean();
+
+    return {
+        startDate: dateKeys[0],
+        endDate: dateKeys[dateKeys.length - 1],
+        days: buildRitualWeekDays({ ritualDate, statuses, userId }),
+    };
+};
+
 const getTimezoneOffsetMs = (date, timeZone) => {
     const parts = getZonedParts(date, timeZone);
     const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
@@ -390,6 +455,11 @@ export const getCoupleTodayPayload = async ({ userId }) => {
     const userIsA = status.userA.toString() === userId.toString();
     const youComplete = userIsA ? status.userAComplete : status.userBComplete;
     const partnerComplete = userIsA ? status.userBComplete : status.userAComplete;
+    const week = await getRitualWeek({
+        coupleId: couple._id,
+        ritualDate: window.ritualDate,
+        userId,
+    });
 
     return {
         statusCode: 200,
@@ -431,6 +501,7 @@ export const getCoupleTodayPayload = async ({ userId }) => {
                     streakBroken: !!streak.streakBrokenAt && status.heartState !== 'full',
                     streakBrokenAt: streak.streakBrokenAt,
                     lastFullHeartDate: streak.lastFullHeartDate,
+                    week,
                 },
             },
         },

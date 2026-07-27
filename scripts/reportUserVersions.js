@@ -173,10 +173,7 @@ const run = async () => {
             fs.writeFile(htmlPath, createUserVersionReportHtml(report), 'utf8'),
         ]);
 
-        console.log(JSON.stringify(summary, null, 2));
-        console.log(`JSON report: ${jsonPath}`);
-        console.log(`CSV report: ${csvPath}`);
-        console.log(`HTML dashboard: ${htmlPath}`);
+      
     } finally {
         await mongoose.disconnect();
     }
