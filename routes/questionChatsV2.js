@@ -5,6 +5,12 @@ import QuestionChatMessageV2 from '../models/v2/QuestionChatMessageV2.js';
 import { getIO } from '../socket/index.js';
 import { getSocketId } from '../socket/auth.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import { getRequestLanguage } from '../utils/localization.js';
+import {
+    getLocalizedV2Question,
+    localizeQuestionChatMessagesV2,
+    localizeQuestionChatV2,
+} from '../services/questionsV2/localizedContentService.js';
 
 const router = express.Router();
 
@@ -23,6 +29,7 @@ const getUnreadCount = (chat, userId) => {
 router.get('/', async (req, res) => {
     try {
         const { userId } = req.query;
+        const language = getRequestLanguage(req);
 
         if (!userId) {
             return res.status(400).json({ success: false, message: 'userId is required' });
@@ -46,10 +53,14 @@ router.get('/', async (req, res) => {
             .populate('partner2', 'name nickname avatar')
             .lean();
 
+        const contentCache = new Map();
+        const localizedChats = await Promise.all(
+            chats.map(chat => localizeQuestionChatV2(chat, language, contentCache))
+        );
         res.status(200).json({
             success: true,
             data: {
-                chats: chats.map((chat) => ({
+                chats: localizedChats.map((chat) => ({
                     ...chat,
                     partner: getChatPartner(chat, userId),
                     unreadCount: getUnreadCount(chat, userId),
@@ -71,6 +82,7 @@ router.get('/', async (req, res) => {
 router.get('/by-question', async (req, res) => {
     try {
         const { userId, topicId, setId, questionId } = req.query;
+        const language = getRequestLanguage(req);
 
         if (!userId || !topicId || !setId || !questionId) {
             return res.status(400).json({
@@ -103,13 +115,14 @@ router.get('/by-question', async (req, res) => {
             return res.status(404).json({ success: false, message: 'V2 question chat not found' });
         }
 
+        const localizedChat = await localizeQuestionChatV2(chat, language);
         res.status(200).json({
             success: true,
             data: {
                 chat: {
-                    ...chat,
-                    partner: getChatPartner(chat, userId),
-                    unreadCount: getUnreadCount(chat, userId),
+                    ...localizedChat,
+                    partner: getChatPartner(localizedChat, userId),
+                    unreadCount: getUnreadCount(localizedChat, userId),
                 },
             },
         });
@@ -127,6 +140,7 @@ router.get('/:chatId', async (req, res) => {
     try {
         const { chatId } = req.params;
         const { userId, limit = 50 } = req.query;
+        const language = getRequestLanguage(req);
 
         if (!userId) {
             return res.status(400).json({ success: false, message: 'userId is required' });
@@ -167,15 +181,20 @@ router.get('/:chatId', async (req, res) => {
             { $set: { isRead: true, readAt: new Date() } }
         );
 
+        const localizedChat = await localizeQuestionChatV2(chat, language);
+        const localizedMessages = localizeQuestionChatMessagesV2(
+            messages.reverse(),
+            localizedChat.prompt
+        );
         res.status(200).json({
             success: true,
             data: {
                 chat: {
-                    ...chat,
-                    partner: getChatPartner(chat, userId),
+                    ...localizedChat,
+                    partner: getChatPartner(localizedChat, userId),
                     unreadCount: 0,
                 },
-                messages: messages.reverse(),
+                messages: localizedMessages,
             },
         });
     } catch (error) {
@@ -227,8 +246,17 @@ router.post('/:chatId/messages', async (req, res) => {
         chat[unreadField] += 1;
         await chat.save();
 
-        const sender = await User.findById(senderId).select('name partnerId').lean();
         const recipientId = isPartner1 ? chat.partner2 : chat.partner1;
+        const [sender, recipient] = await Promise.all([
+            User.findById(senderId).select('name partnerId').lean(),
+            User.findById(recipientId).select('preferredLanguage').lean(),
+        ]);
+        const recipientQuestion = await getLocalizedV2Question({
+            topicId: chat.topicId,
+            setId: chat.setId,
+            questionId: chat.questionId,
+            language: recipient?.preferredLanguage || 'en',
+        });
         const io = getIO();
         const recipientSocketId = getSocketId(recipientId.toString());
 
@@ -243,7 +271,7 @@ router.post('/:chatId/messages', async (req, res) => {
         try {
             await sendPushNotification(
                 recipientId,
-                chat.prompt.substring(0, 120),
+                (recipientQuestion?.prompt || chat.prompt).substring(0, 120),
                 `${sender?.name || 'Your partner'}: ${chat.lastMessage}`,
                 {
                     type: 'questionChatV2',

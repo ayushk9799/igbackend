@@ -4,7 +4,7 @@ dotenv.config();
 
 import DailyChallenge from '../models/DailyChallenge.js';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://ayushkumarsanu00:ypGJ4XV0qhOYTk6E@cluster0.c6ey1bf.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const challengeData = {
     date: '2026-06-28',

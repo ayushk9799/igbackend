@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
+import { translationsField } from "./localizationFields.js";
 
 /**
  * TravelQuestion - Questions about travel dreams, adventures, and destinations
@@ -57,6 +58,7 @@ const travelQuestionSchema = new mongoose.Schema({
         default: 0,
         index: true
     },
+    translations: translationsField,
 }, { timestamps: true });
 
 travelQuestionSchema.index({ isActive: 1, visualType: 1 });

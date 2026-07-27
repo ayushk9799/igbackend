@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { addActiveQuestionCountHooks } from "../utils/questionActiveCount.js";
+import { translationsField } from "./localizationFields.js";
 
 /**
  * FitnessQuestion - Questions about health, wellness, and fitness habits
@@ -57,6 +58,7 @@ const fitnessQuestionSchema = new mongoose.Schema({
         default: 0,
         index: true
     },
+    translations: translationsField,
 }, { timestamps: true });
 
 fitnessQuestionSchema.index({ isActive: 1, visualType: 1 });

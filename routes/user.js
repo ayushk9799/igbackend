@@ -1,5 +1,6 @@
 import express from 'express';
 import User from '../models/User.js';
+import { normalizeLanguage } from '../utils/localization.js';
 import Couple from '../models/Couple.js';
 import { getIO } from '../socket/index.js';
 import { getCoupleRoomId } from '../socket/auth.js';
@@ -88,6 +89,7 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     connectionDate: user.connectionDate,
     partnerCode: user.partnerCode,
     timezone: user.timezone,
+    preferredLanguage: user.preferredLanguage || 'en',
     platform: user.platform,
     locationSharingEnabled: user.locationSharingEnabled || false,
     locationUpdatedAt: user.locationUpdatedAt || null,
@@ -310,7 +312,7 @@ router.put('/premium', async (req, res) => {
  */
 router.put('/device-info', async (req, res) => {
     try {
-        const { userId, timezone, platform, appVersion, appBuildNumber } = req.body;
+        const { userId, timezone, platform, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
         if (!userId) {
             return res.status(400).json({
@@ -339,6 +341,9 @@ router.put('/device-info', async (req, res) => {
             if (Number.isFinite(parsedBuildNumber)) {
                 user.appBuildNumber = parsedBuildNumber;
             }
+        }
+        if (preferredLanguage !== undefined) {
+            user.preferredLanguage = normalizeLanguage(preferredLanguage);
         }
         user.deviceInfoUpdatedAt = new Date();
 
@@ -371,7 +376,7 @@ router.put('/device-info', async (req, res) => {
  */
 router.post('/fcm-token', async (req, res) => {
     try {
-        const { userId, fcmToken, timezone, platform, appVersion, appBuildNumber } = req.body;
+        const { userId, fcmToken, timezone, platform, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
         if (!userId || !fcmToken) {
             return res.status(400).json({
@@ -399,6 +404,10 @@ router.post('/fcm-token', async (req, res) => {
                 update.appBuildNumber = parsedBuildNumber;
                 update.deviceInfoUpdatedAt = new Date();
             }
+        }
+        if (preferredLanguage !== undefined) {
+            update.preferredLanguage = normalizeLanguage(preferredLanguage);
+            update.deviceInfoUpdatedAt = new Date();
         }
 
         await User.findByIdAndUpdate(userId, update);

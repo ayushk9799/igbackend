@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { translationsField } from "./localizationFields.js";
 
 // Individual question schema within a set
 const taskItemSchema = new mongoose.Schema({
@@ -29,6 +30,7 @@ const taskItemSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
+    translations: translationsField,
 
 }, { _id: true });
 
@@ -57,7 +59,8 @@ const dailyChallengeSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: true
-    }
+    },
+    translations: translationsField,
 }, { timestamps: true });
 
 dailyChallengeSchema.index({ isActive: 1 });

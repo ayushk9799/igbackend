@@ -4,6 +4,7 @@ import DailyAnswers from '../models/DailyAnswers.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 import { getCoupleTodayPayload } from '../utils/dailyRitual.js';
+import { getRequestLanguage, localizeDailyChallenge } from '../utils/localization.js';
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
     try {
         const { limit = 50, skip = 0, active = 'true' } = req.query;
+        const language = getRequestLanguage(req);
 
         const query = active === 'true' ? { isActive: true } : {};
         const challenges = await DailyChallenge
@@ -27,7 +29,7 @@ router.get('/', async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                challenges,
+                challenges: challenges.map(challenge => localizeDailyChallenge(challenge, language)),
                 pagination: {
                     total,
                     limit: parseInt(limit),
@@ -52,6 +54,7 @@ router.get('/', async (req, res) => {
  */
 router.get('/today', async (req, res) => {
     try {
+        const language = getRequestLanguage(req);
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
         const challenge = await DailyChallenge.findOne({
@@ -68,7 +71,7 @@ router.get('/today', async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: challenge
+            data: localizeDailyChallenge(challenge, language)
         });
     } catch (error) {
         console.error('Error fetching today\'s challenge:', error);
@@ -96,7 +99,10 @@ router.get('/couple-today', async (req, res) => {
             });
         }
 
-        const result = await getCoupleTodayPayload({ userId });
+        const result = await getCoupleTodayPayload({
+            userId,
+            language: getRequestLanguage(req),
+        });
         return res.status(result.statusCode).json(result.body);
     } catch (error) {
         console.error('[dailyChallenge] Error fetching shared couple ritual:', error);
@@ -115,6 +121,7 @@ router.get('/couple-today', async (req, res) => {
 router.get('/date/:date', async (req, res) => {
     try {
         const { date } = req.params;
+        const language = getRequestLanguage(req);
 
         const challenge = await DailyChallenge.findOne({
             date,
@@ -130,7 +137,7 @@ router.get('/date/:date', async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: challenge
+            data: localizeDailyChallenge(challenge, language)
         });
     } catch (error) {
         console.error('Error fetching challenge by date:', error);
@@ -151,6 +158,7 @@ router.get('/date/:date/with-answers', async (req, res) => {
     try {
         const { date } = req.params;
         const { userId } = req.query;
+        const language = getRequestLanguage(req);
 
         // Fetch challenge
         const challenge = await DailyChallenge.findOne({
@@ -177,7 +185,7 @@ router.get('/date/:date/with-answers', async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
-                challenge,
+                challenge: localizeDailyChallenge(challenge, language),
                 answers,
                 progress: answers ? {
                     completedCount: answers.completedCount,
@@ -207,6 +215,7 @@ router.get('/date/:date/with-answers', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const language = getRequestLanguage(req);
 
         const challenge = await DailyChallenge.findById(id);
 
@@ -219,7 +228,7 @@ router.get('/:id', async (req, res) => {
 
         res.status(200).json({
             success: true,
-            data: challenge
+            data: localizeDailyChallenge(challenge, language)
         });
     } catch (error) {
         console.error('Error fetching challenge:', error);

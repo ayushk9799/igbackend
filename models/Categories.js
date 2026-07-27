@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { translationsField } from "./localizationFields.js";
 
 const categoriesSchema = new mongoose.Schema({
     slug:{
@@ -27,6 +28,7 @@ const categoriesSchema = new mongoose.Schema({
         required:true,
         default:true
     },
+    translations: translationsField,
 },{timestamps:true});
 categoriesSchema.index({title:1});
 const Categories = mongoose.model("Categories",categoriesSchema);

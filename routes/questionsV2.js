@@ -19,6 +19,12 @@ import { buildSetSimilarityReport, compareAnswersByFormat } from '../services/qu
 import { getIO } from '../socket/index.js';
 import { getSocketId } from '../socket/auth.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import {
+    getRequestLanguage,
+    localizeV2Question,
+    localizeV2Set,
+} from '../utils/localization.js';
+import { getLocalizedV2Question } from '../services/questionsV2/localizedContentService.js';
 
 const router = express.Router();
 
@@ -35,6 +41,99 @@ const TOPICS_V2 = [
     { topicId: 'family', title: 'Family', order: 10, isActive: true },
     { topicId: 'future', title: 'Future', order: 11, isActive: true },
 ];
+
+const TOPIC_TITLES_FR = {
+    relationship: 'Relation',
+    sexlove: 'Sexe et amour',
+    coupletherapy: 'Thérapie de couple',
+    longdistance: 'Relation à distance',
+    naughty: 'Coquin',
+    gossip: 'Potins',
+    money: 'Argent',
+    gettoknow: 'Mieux se connaître',
+    travel: 'Voyage',
+    family: 'Famille',
+    future: 'Avenir',
+};
+
+const TOPIC_TITLES_DE = {
+    relationship: 'Beziehung',
+    sexlove: 'Sex und Liebe',
+    coupletherapy: 'Paartherapie',
+    longdistance: 'Fernbeziehung',
+    naughty: 'Frech',
+    gossip: 'Klatsch',
+    money: 'Geld',
+    gettoknow: 'Kennenlernen',
+    travel: 'Reisen',
+    family: 'Familie',
+    future: 'Zukunft',
+};
+
+const TOPIC_TITLES_ES = {
+    relationship: 'Relación',
+    sexlove: 'Sexo y amor',
+    coupletherapy: 'Terapia de pareja',
+    longdistance: 'Relación a distancia',
+    naughty: 'Atrevido',
+    gossip: 'Cotilleos',
+    money: 'Dinero',
+    gettoknow: 'Conocerse',
+    travel: 'Viajes',
+    family: 'Familia',
+    future: 'Futuro',
+};
+
+const TOPIC_TITLES_IT = {
+    relationship: 'Relazione',
+    sexlove: 'Sesso e amore',
+    coupletherapy: 'Terapia di coppia',
+    longdistance: 'Relazione a distanza',
+    naughty: 'Piccante',
+    gossip: 'Pettegolezzi',
+    money: 'Denaro',
+    gettoknow: 'Conoscersi',
+    travel: 'Viaggi',
+    family: 'Famiglia',
+    future: 'Futuro',
+};
+
+const TOPIC_TITLES_JA = {
+    relationship: '恋愛',
+    sexlove: 'セックスと愛',
+    coupletherapy: 'カップルセラピー',
+    longdistance: '遠距離恋愛',
+    naughty: 'ちょっと刺激的',
+    gossip: 'ゴシップ',
+    money: 'お金',
+    gettoknow: 'お互いを知る',
+    travel: '旅行',
+    family: '家族',
+    future: '将来',
+};
+
+const TOPIC_TITLES_KO = {
+    relationship: '연애',
+    sexlove: '사랑과 성',
+    coupletherapy: '커플 상담',
+    longdistance: '장거리 연애',
+    naughty: '짜릿한 질문',
+    gossip: '가십',
+    money: '돈',
+    gettoknow: '서로 알아가기',
+    travel: '여행',
+    family: '가족',
+    future: '미래',
+};
+
+const TOPIC_TITLES = {
+    fr: TOPIC_TITLES_FR,
+    de: TOPIC_TITLES_DE,
+    es: TOPIC_TITLES_ES,
+    it: TOPIC_TITLES_IT,
+    ja: TOPIC_TITLES_JA,
+    ko: TOPIC_TITLES_KO,
+};
 
 const TOPIC_SET_MODELS_V2 = {
     future: FutureQuestionSetV2,
@@ -254,10 +353,16 @@ const createOrUpdateQuestionChat = async ({ user, set, topicId, question, answer
 };
 
 router.get('/topics', async (req, res) => {
+    const language = getRequestLanguage(req);
     res.status(200).json({
         success: true,
         data: {
-            topics: TOPICS_V2.filter((topic) => topic.isActive),
+            topics: TOPICS_V2
+                .filter((topic) => topic.isActive)
+                .map(topic => ({
+                    ...topic,
+                    title: TOPIC_TITLES[language]?.[topic.topicId] ?? topic.title,
+                })),
         },
     });
 });
@@ -266,6 +371,7 @@ router.get('/topic/:topicId/sets', async (req, res) => {
     try {
         const { topicId } = req.params;
         const { userId } = req.query;
+        const language = getRequestLanguage(req);
         const TopicSetModel = getTopicModel(topicId);
 
         if (!TopicSetModel) {
@@ -273,7 +379,7 @@ router.get('/topic/:topicId/sets', async (req, res) => {
         }
 
         const sets = await TopicSetModel.find({ isActive: true })
-            .select('setId title format order premium icon iconType iconUrl iconKey questions')
+            .select('setId title format order premium icon iconType iconUrl iconKey questions translations')
             .sort({ order: 1, createdAt: 1 })
             .lean();
 
@@ -304,6 +410,7 @@ router.get('/topic/:topicId/sets', async (req, res) => {
             data: {
                 topicId,
                 sets: sets.map((set) => {
+                    const localizedSet = localizeV2Set(set, language);
                     const totalQuestions = (set.questions || []).filter((q) => q.isActive !== false).length;
                     const progress = progressBySetId.get(set.setId);
                     const partnerProgress = partnerProgressUserId
@@ -312,7 +419,7 @@ router.get('/topic/:topicId/sets', async (req, res) => {
 
                     return {
                         setId: set.setId,
-                        title: set.title,
+                        title: localizedSet.title,
                         format: set.format,
                         order: set.order,
                         premium: set.premium,
@@ -343,6 +450,7 @@ router.get('/topic/:topicId/sets/:setId/report', async (req, res) => {
     try {
         const { topicId, setId } = req.params;
         const { userId } = req.query;
+        const language = getRequestLanguage(req);
         const TopicSetModel = getTopicModel(topicId);
 
         if (!TopicSetModel) {
@@ -377,7 +485,7 @@ router.get('/topic/:topicId/sets/:setId/report', async (req, res) => {
         const latestPartnerAnswers = latestAnswersByQuestion(partnerAnswers);
 
         const report = buildSetSimilarityReport({
-            set,
+            set: localizeV2Set(set, language),
             userAnswers: latestUserAnswers,
             partnerAnswers: latestPartnerAnswers,
             userId,
@@ -419,6 +527,7 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
     try {
         const { topicId, setId } = req.params;
         const { userId } = req.query;
+        const language = getRequestLanguage(req);
         const limit = clampLimit(req.query.limit);
         const cursor = parseCursor(req.query.cursor);
         const TopicSetModel = getTopicModel(topicId);
@@ -434,6 +543,10 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
 
         const activeQuestions = (set.questions || []).filter((question) => question.isActive !== false);
         const pageQuestions = activeQuestions.slice(cursor, cursor + limit);
+        const localizedSet = localizeV2Set(set, language);
+        const localizedQuestionsById = new Map(
+            localizedSet.questions.map(question => [question.questionId, question])
+        );
         const nextIndex = cursor + pageQuestions.length;
         const hasMore = nextIndex < activeQuestions.length;
         const [progress, savedAnswers] = userId
@@ -451,7 +564,7 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
                 topicId,
                 set: {
                     setId: set.setId,
-                    title: set.title,
+                    title: localizedSet.title,
                     format: set.format,
                     premium: set.premium,
                     icon: set.icon || null,
@@ -459,16 +572,21 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
                     iconUrl: set.iconUrl || null,
                     iconKey: set.iconKey || null,
                 },
-                questions: pageQuestions.map((question, offset) => ({
-                    questionId: question.questionId,
-                    prompt: question.prompt,
+                questions: pageQuestions.map((question, offset) => {
+                    const localizedQuestion = localizedQuestionsById.get(question.questionId)
+                        || localizeV2Question(question, language);
+                    return ({
+                    questionId: localizedQuestion.questionId,
+                    prompt: localizedQuestion.prompt,
                     index: cursor + offset,
-                    options: question.options || [],
-                    minValue: question.minValue,
-                    maxValue: question.maxValue,
-                    minLabel: question.minLabel,
-                    maxLabel: question.maxLabel,
-                })),
+                    options: localizedQuestion.options || [],
+                    optionItems: localizedQuestion.optionItems || [],
+                    minValue: localizedQuestion.minValue,
+                    maxValue: localizedQuestion.maxValue,
+                    minLabel: localizedQuestion.minLabel,
+                    maxLabel: localizedQuestion.maxLabel,
+                });
+                }),
                 page: {
                     limit,
                     cursor,
@@ -581,6 +699,14 @@ router.post('/answer', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Question not found in set' });
         }
 
+        const recipient = await User.findById(user.partnerId).select('preferredLanguage').lean();
+        const recipientQuestion = await getLocalizedV2Question({
+            topicId,
+            setId,
+            questionId,
+            language: recipient?.preferredLanguage || 'en',
+        });
+        const recipientPrompt = recipientQuestion?.prompt || question.prompt;
         const coupleId = QuestionChatV2.generateCoupleId(userId, user.partnerId);
         const savedAnswer = await QuestionAnswerV2.findOneAndUpdate(
             { userId, topicId, setId, questionId },
@@ -624,7 +750,7 @@ router.post('/answer', async (req, res) => {
                 chatId: chat._id,
                 senderName: user.name,
                 preview: getAnswerPreview(answer, answerType),
-                questionText: question.prompt.substring(0, 120),
+                questionText: recipientPrompt.substring(0, 120),
                 bothAnswered: chat.answerSummary?.bothAnswered || false,
             });
         }
@@ -632,7 +758,7 @@ router.post('/answer', async (req, res) => {
         try {
             await sendPushNotification(
                 user.partnerId,
-                question.prompt.substring(0, 120),
+                recipientPrompt.substring(0, 120),
                 `${user.name || 'Your partner'}: ${getAnswerPreview(answer, answerType)}`,
                 {
                     type: 'questionChatV2',
