@@ -329,27 +329,7 @@ const createJobs = async (
 };
 
 const printUsage = () => {
-    console.log(`
-Database translation using Gemini
-
-Usage:
-  npm run translate:database -- --lang=fr --count=5
-  npm run translate:database -- --lang=de --count=all
-  npm run translate:database -- --lang=es --scope=daily --dry-run
-
-Options:
-  --lang        target language code, such as fr, de, es, pt, or hi (required)
-  --scope       active, all, v2, legacy, daily, or categories (default: active)
-                active translates only content used by this app version: v2 + daily
-                all also includes unused legacy questions and legacy categories
-  --count       number of untranslated documents, or all (default: 5)
-  --dry-run     list untranslated documents without Gemini calls or writes
-  --force       regenerate existing translations for the requested language
-  --include-expired
-                include Daily Challenges dated before today (skipped by default)
-  --env-file    optional private env file containing GEMINI_API_KEY
-  --model       Gemini model (default: GEMINI_TRANSLATION_MODEL or gemini-3.6-flash)
-`);
+   
 };
 
 const run = async () => {
@@ -391,13 +371,7 @@ const run = async () => {
     if (!mongoUri) throw new Error('MONGODB_URI is required.');
     if (!dryRun && !apiKey) throw new Error('GEMINI_API_KEY is required.');
 
-    console.log('Database translation');
-    console.log(`Language: ${languageName} (${language})`);
-    console.log(`Scope: ${scope}; count: ${Number.isFinite(count) ? count : 'all'}; model: ${model}`);
-    console.log(
-        `Daily Challenges: ${includeExpired ? 'including expired' : `UTC date ${today} and future only`}`
-    );
-    console.log(`Mode: ${dryRun ? 'dry run' : 'translate and save directly'}`);
+   
 
     await mongoose.connect(mongoUri);
     try {
@@ -408,10 +382,8 @@ const run = async () => {
             ))
             .slice(0, count);
 
-        console.log(`Found ${pendingJobs.length} document(s) to process.`);
         if (dryRun) {
-            pendingJobs.forEach((job, index) => console.log(`${index + 1}. ${job.label}`));
-            console.log('Dry run complete. Gemini was not called and MongoDB was not modified.');
+            pendingJobs.forEach((job, index) => {});
             return;
         }
 
@@ -435,19 +407,15 @@ const run = async () => {
                 await job.document.save();
                 translatedDocuments += 1;
                 translatedStrings += result.translatedStrings;
-                console.log(`saved (${result.translatedStrings} strings)`);
             } catch (error) {
                 failures.push({ label: job.label, error: error.message });
-                console.log(`failed: ${error.message}`);
             }
 
             if (index < pendingJobs.length - 1) await sleep(DEFAULT_DELAY_MS);
         }
 
-        console.log(`Finished: ${translatedDocuments} document(s), ${translatedStrings} string(s).`);
         if (failures.length) {
-            console.log(`Failures: ${failures.length}`);
-            failures.forEach(failure => console.log(`- ${failure.label}: ${failure.error}`));
+            failures.forEach(failure => {});
             process.exitCode = 1;
         }
     } finally {
