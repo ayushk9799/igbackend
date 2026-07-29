@@ -1,11 +1,14 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Couple from '../models/Couple.js';
-import { generatePartnerCode, generateUserId } from '../utils/partnerCode.js';
+import { generateUniquePartnerCode } from '../utils/partnerCode.js';
 import { isUserOnline, getSocketId, getCoupleRoomId, updateSocketPartnerStatus } from '../socket/auth.js';
 import { getIO } from '../socket/index.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 import { getDirectPremiumStatus } from '../utils/couplePremium.js';
+import { requireAuth, requireSelf } from '../middleware/auth.js';
+import { markOnboardingStep } from '../utils/onboarding.js';
 
 const router = express.Router();
 
@@ -13,7 +16,7 @@ const router = express.Router();
  * GET /api/partner/code/:userId
  * Get the user's partner code (generated at signup)
  */
-router.get('/code/:userId', async (req, res) => {
+router.get('/code/:userId', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -27,7 +30,7 @@ router.get('/code/:userId', async (req, res) => {
 
         // If user doesn't have a code (legacy user), generate one
         if (!user.partnerCode) {
-            user.partnerCode = generatePartnerCode(userId);
+            user.partnerCode = await generateUniquePartnerCode(userId, User);
             await user.save();
         }
 
@@ -49,7 +52,8 @@ router.get('/code/:userId', async (req, res) => {
  * POST /api/partner/pair
  * Pair with another user using their partner code
  */
-router.post('/pair', async (req, res) => {
+router.post('/pair', requireAuth, requireSelf, async (req, res) => {
+    const session = await mongoose.startSession();
     try {
         const { userId, partnerCode } = req.body;
 
@@ -60,109 +64,70 @@ router.post('/pair', async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                error: 'User not found'
-            });
-        }
-
-        // Check if user is already paired
-        if (user.partnerId) {
-            return res.status(400).json({
-                success: false,
-                error: 'You are already paired with someone. Unpair first to connect with someone new.'
-            });
-        }
-
-        // Find partner by code (no expiry check)
-        const partner = await User.findOne({
-            partnerCode: partnerCode.toUpperCase()
-        });
-
-        if (!partner) {
-            return res.status(404).json({
-                success: false,
-                error: 'Invalid partner code'
-            });
-        }
-
-        // Can't pair with yourself
-        if (partner._id.toString() === userId) {
-            return res.status(400).json({
-                success: false,
-                error: 'You cannot pair with yourself'
-            });
-        }
-
-        // Check if partner is already paired
-        if (partner.partnerId) {
-            return res.status(400).json({
-                success: false,
-                error: 'This person is already paired with someone else'
-            });
-        }
-
-        // Pair both users
+        const fail = (status, message) => Object.assign(new Error(message), { status });
+        let user;
+        let partner;
+        let couple;
         const connectionDate = new Date();
 
-        user.partnerId = partner._id;
-        user.partnerUsername = partner.name || 'Partner';
-        user.partnerNickname = partner.nickname || partner.name || 'Partner';
-        user.connectionDate = connectionDate;
+        await session.withTransaction(async () => {
+            user = await User.findById(userId).session(session);
+            if (!user) throw fail(404, 'User not found');
+            if (user.partnerId) {
+                throw fail(409, 'You are already paired with someone. Unpair first to connect with someone new.');
+            }
 
-        partner.partnerId = user._id;
-        partner.partnerUsername = user.name || 'Partner';
-        partner.partnerNickname = user.nickname || user.name || 'Partner';
-        partner.connectionDate = connectionDate;
+            partner = await User.findOne({ partnerCode: partnerCode.toUpperCase() }).session(session);
+            if (!partner) throw fail(404, 'Invalid partner code');
+            if (partner._id.toString() === userId) throw fail(400, 'You cannot pair with yourself');
+            if (partner.partnerId) throw fail(409, 'This person is already paired with someone else');
 
-        // Keep the partner code active (allow reuse if unpaired later)
-        // partner.partnerCode = null;
+            user.partnerId = partner._id;
+            user.partnerUsername = partner.name || 'Partner';
+            user.partnerNickname = partner.nickname || partner.name || 'Partner';
+            user.connectionDate = connectionDate;
+            markOnboardingStep(user, 'partner');
 
-        await user.save();
-        await partner.save();
+            partner.partnerId = user._id;
+            partner.partnerUsername = user.name || 'Partner';
+            partner.partnerNickname = user.nickname || user.name || 'Partner';
+            partner.connectionDate = connectionDate;
 
-        // Sync socket partnerId for both users if they are online
+            const partnerIdValue = partner._id.toString();
+            const [p1, p2] = [user._id.toString(), partnerIdValue].sort();
+            const existingCouple = await Couple.findOne({ partner1: p1, partner2: p2 }).session(session);
+            const relationshipStartDate = existingCouple?.relationshipStartDate
+                || partner.pendingRelationshipStartDate
+                || user.pendingRelationshipStartDate
+                || null;
+            const coupleUpdate = {
+                $set: { partner1: p1, partner2: p2, connectionDate, status: 'active' },
+                $unset: { unpairedDate: 1 },
+            };
+            if (relationshipStartDate) {
+                coupleUpdate.$set.relationshipStartDate = relationshipStartDate;
+                coupleUpdate.$unset.relationshipStartDatePromptUserId = 1;
+                user.pendingRelationshipStartDate = undefined;
+                partner.pendingRelationshipStartDate = undefined;
+            } else {
+                coupleUpdate.$set.relationshipStartDatePromptUserId = user._id;
+            }
+
+            await user.save({ session });
+            await partner.save({ session });
+            couple = await Couple.findOneAndUpdate(
+                { partner1: p1, partner2: p2 },
+                coupleUpdate,
+                { upsert: true, new: true, session },
+            );
+        });
+
         const partnerId = partner._id.toString();
-        await updateSocketPartnerStatus(userId, partner._id);
-        await updateSocketPartnerStatus(partnerId, user._id);
-
-        // Create or update a Couple document (reuse existing if re-pairing)
-        const [p1, p2] = [user._id.toString(), partnerId].sort();
-        const existingCouple = await Couple.findOne({ partner1: p1, partner2: p2 });
-        const relationshipStartDate = existingCouple?.relationshipStartDate
-            || partner.pendingRelationshipStartDate
-            || user.pendingRelationshipStartDate
-            || null;
-
-        const coupleUpdate = {
-            $set: {
-                partner1: p1,
-                partner2: p2,
-                connectionDate,
-                status: 'active',
-            },
-            $unset: { unpairedDate: 1 }
-        };
-        if (relationshipStartDate) {
-            coupleUpdate.$set.relationshipStartDate = relationshipStartDate;
-            coupleUpdate.$unset.relationshipStartDatePromptUserId = 1;
-        } else {
-            coupleUpdate.$set.relationshipStartDatePromptUserId = user._id;
-        }
-
-        const couple = await Couple.findOneAndUpdate(
-            { partner1: p1, partner2: p2 },
-            coupleUpdate,
-            { upsert: true, new: true }
-        );
-
-        if (relationshipStartDate) {
-            user.pendingRelationshipStartDate = undefined;
-            partner.pendingRelationshipStartDate = undefined;
-            await user.save();
-            await partner.save();
+        try {
+            await updateSocketPartnerStatus(userId, partner._id);
+            await updateSocketPartnerStatus(partnerId, user._id);
+        } catch (error) {
+            console.warn('Pairing socket state sync failed:', error.message);
         }
 
         // Notify the partner about the new connection
@@ -191,12 +156,16 @@ router.post('/pair', async (req, res) => {
             }
         } else {
             // Partner is offline — send push notification
-            await sendPushNotification(
-                partnerId,
-                '💕 You\'re now connected!',
-                `${user.name || 'Someone'} just paired with you`,
-                { type: 'partner_paired' }
-            );
+            try {
+                await sendPushNotification(
+                    partnerId,
+                    '💕 You\'re now connected!',
+                    `${user.name || 'Someone'} just paired with you`,
+                    { type: 'partner_paired' }
+                );
+            } catch (error) {
+                console.warn('Pairing push notification failed:', error.message);
+            }
         }
 
         // Also force the CURRENT user's socket to join the room
@@ -212,7 +181,12 @@ router.post('/pair', async (req, res) => {
             }
         }
 
-        const partnerPremium = await getDirectPremiumStatus(partner);
+        let partnerPremium = {};
+        try {
+            partnerPremium = await getDirectPremiumStatus(partner);
+        } catch (error) {
+            console.warn('Pairing premium lookup failed:', error.message);
+        }
 
         res.json({
             success: true,
@@ -231,10 +205,13 @@ router.post('/pair', async (req, res) => {
         });
 
     } catch (error) {
-        res.status(500).json({
+        console.error('Pair error:', error);
+        res.status(error.status || 500).json({
             success: false,
-            error: 'Failed to pair with partner'
+            error: error.status ? error.message : 'Failed to pair with partner'
         });
+    } finally {
+        await session.endSession();
     }
 });
 
@@ -242,7 +219,7 @@ router.post('/pair', async (req, res) => {
  * POST /api/partner/unpair
  * Unpair from current partner
  */
-router.post('/unpair', async (req, res) => {
+router.post('/unpair', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -316,7 +293,7 @@ router.post('/unpair', async (req, res) => {
  * GET /api/partner/status/:userId
  * Get partner status for a user
  */
-router.get('/status/:userId', async (req, res) => {
+router.get('/status/:userId', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.params;
 

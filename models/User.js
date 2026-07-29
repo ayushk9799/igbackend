@@ -16,6 +16,16 @@ const userSchema = new mongoose.Schema({
         type: String,
         trim: true,
     },
+    onboarding: {
+        version: { type: Number },
+        introCompletedAt: { type: Date },
+        nicknameCompletedAt: { type: Date },
+        avatarDecisionAt: { type: Date },
+        notificationPromptedAt: { type: Date },
+        partnerStepCompletedAt: { type: Date },
+        premiumOfferShownAt: { type: Date },
+        completedAt: { type: Date },
+    },
     // Temporary value collected before pairing. Canonical value lives on Couple.
     pendingRelationshipStartDate: {
         type: Date,
