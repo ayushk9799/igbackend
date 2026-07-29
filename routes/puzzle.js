@@ -4,6 +4,11 @@ import User from '../models/User.js';
 import { sendPuzzleNotification } from '../utils/pushNotification.js';
 import { getIO } from '../socket/index.js';
 import { getCoupleRoomId } from '../socket/auth.js';
+import {
+    buildPuzzleStartFields,
+    normalizePuzzleTimerMode
+} from '../services/puzzle/timing.js';
+import { applyLegacyPuzzleMove } from '../services/puzzle/moves.js';
 
 const router = express.Router();
 const PUZZLE_DURATION_MS = 5 * 60 * 1000;
@@ -125,7 +130,13 @@ const shufflePieces = (totalPieces) => {
  */
 router.post('/create', async (req, res) => {
     try {
-        const { creatorId, partnerId, imageUrl, gridSize = { rows: 5, cols: 5 } } = req.body;
+        const {
+            creatorId,
+            partnerId,
+            imageUrl,
+            gridSize = { rows: 5, cols: 5 },
+            timerMode = 'untimed'
+        } = req.body;
 
         if (!creatorId || !partnerId || !imageUrl) {
             return res.status(400).json({
@@ -134,9 +145,15 @@ router.post('/create', async (req, res) => {
             });
         }
 
-        // Get creator's name for notification
-        const creator = await User.findById(creatorId);
-        const creatorName = creator?.name || 'Your partner';
+        // This lookup is only needed for the notification, so let it run beside
+        // the puzzle save instead of adding another database round trip to the
+        // creator's response time.
+        const creatorNamePromise = User.findById(creatorId)
+            .select('name')
+            .lean()
+            .exec()
+            .then(creator => creator?.name || 'Your partner')
+            .catch(() => 'Your partner');
 
         // Calculate total pieces and shuffle them
         const totalPieces = gridSize.rows * gridSize.cols;
@@ -149,13 +166,12 @@ router.post('/create', async (req, res) => {
             imageUrl,
             gridSize,
             pieces: shuffledPieces.map(piece => -piece - 1),
-            status: 'pending'
+            status: 'pending',
+            timerMode: normalizePuzzleTimerMode(timerMode)
         });
 
         await puzzle.save();
 
-        // Send push notification to partner
-        await sendPuzzleNotification(partnerId, creatorName, puzzle._id);
         notifyPuzzleUpdate(puzzle, 'puzzle:created');
 
         res.status(201).json({
@@ -164,9 +180,16 @@ router.post('/create', async (req, res) => {
                 puzzleId: puzzle._id,
                 gridSize: puzzle.gridSize,
                 pieces: puzzle.pieces,
-                status: puzzle.status
+                status: puzzle.status,
+                timerMode: puzzle.timerMode
             }
         });
+
+        // Delivery happens after the durable puzzle record and HTTP response.
+        // A slow push provider must not keep the creator waiting.
+        void creatorNamePromise.then(creatorName => (
+            sendPuzzleNotification(partnerId, creatorName, puzzle._id)
+        ));
 
     } catch (error) {
         console.error('❌ Error creating puzzle:', error);
@@ -180,12 +203,23 @@ router.post('/create', async (req, res) => {
 
 /**
  * POST /api/puzzle/:id/start
- * Atomically starts the permanent 5-minute solving window.
+ * Atomically starts the attempt. A deadline is only added when the puzzle
+ * was created by a client that explicitly supports five-minute attempts.
  */
 router.post('/:id/start', async (req, res) => {
     try {
         const now = new Date();
-        const expiresAt = new Date(now.getTime() + PUZZLE_DURATION_MS);
+        const existingPuzzle = await JigsawPuzzle.findById(req.params.id);
+        if (!existingPuzzle) {
+            return res.status(404).json({ success: false, message: 'Puzzle not found' });
+        }
+
+        const startFields = buildPuzzleStartFields(
+            existingPuzzle.timerMode,
+            now,
+            PUZZLE_DURATION_MS
+        );
+
         let puzzle = await JigsawPuzzle.findOneAndUpdate(
             {
                 _id: req.params.id,
@@ -201,11 +235,7 @@ router.post('/:id/start', async (req, res) => {
                 ]
             },
             {
-                $set: {
-                    status: 'in_progress',
-                    startedAt: now,
-                    expiresAt
-                }
+                $set: startFields
             },
             { new: true }
         );
@@ -213,10 +243,6 @@ router.post('/:id/start', async (req, res) => {
         if (!puzzle) {
             puzzle = await JigsawPuzzle.findById(req.params.id);
         }
-        if (!puzzle) {
-            return res.status(404).json({ success: false, message: 'Puzzle not found' });
-        }
-
         if (await expirePuzzleIfNeeded(puzzle, now)) {
             return expiredResponse(res, puzzle);
         }
@@ -358,11 +384,11 @@ router.post('/:id/move', async (req, res) => {
         if (await expirePuzzleIfNeeded(puzzle)) {
             return expiredResponse(res, puzzle);
         }
-        if (puzzle.status !== 'in_progress' || !puzzle.expiresAt) {
+        if (!['pending', 'in_progress'].includes(puzzle.status)) {
             return res.status(409).json({
                 success: false,
-                code: 'PUZZLE_NOT_STARTED',
-                message: 'Puzzle must be started before moving pieces'
+                code: 'PUZZLE_NOT_ACTIVE',
+                message: 'Puzzle is not active'
             });
         }
 
@@ -371,10 +397,10 @@ router.post('/:id/move', async (req, res) => {
         if (clientPieces && Array.isArray(clientPieces)) {
             pieces = clientPieces;
         } else {
-            pieces = [...puzzle.pieces];
-            if (fromIndex !== undefined && toIndex !== undefined && fromIndex >= 0 && toIndex >= 0) {
-                [pieces[fromIndex], pieces[toIndex]] = [pieces[toIndex], pieces[fromIndex]];
-            }
+            // Old clients only send the swapped indices. Convert the historical
+            // negative encoding into a visible board and replay their move so
+            // a newer setter can watch the saved state.
+            pieces = applyLegacyPuzzleMove(puzzle.pieces, fromIndex, toIndex);
         }
 
         const expectedPieceCount = puzzle.gridSize.rows * puzzle.gridSize.cols;
@@ -398,7 +424,10 @@ router.post('/:id/move', async (req, res) => {
         const isSolved = pieces.every((piece, index) => piece === index);
 
         // Update puzzle
-        if (puzzle.expiresAt.getTime() <= Date.now()) {
+        // A deadline only exists for clients that explicitly started a timed
+        // attempt. Legacy clients remain playable without being forced into
+        // the newer five-minute mode.
+        if (puzzle.expiresAt && puzzle.expiresAt.getTime() <= Date.now()) {
             puzzle.status = 'expired';
             puzzle.expiredAt = new Date();
             await puzzle.save();
