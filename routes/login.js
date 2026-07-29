@@ -4,9 +4,11 @@ import User from "../models/User.js";
 import Couple from "../models/Couple.js";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
-import { generatePartnerCode, generateUserId } from "../utils/partnerCode.js";
+import { generateUniquePartnerCode, generateUserId } from "../utils/partnerCode.js";
 import { getCouplePremiumStatus } from "../utils/couplePremium.js";
 import { normalizeLanguage } from "../utils/localization.js";
+import { createSessionToken } from "../middleware/auth.js";
+import { initializeOnboarding, serializeOnboarding } from "../utils/onboarding.js";
 
 const router = Router();
 
@@ -73,7 +75,7 @@ const getRelationshipStartDateStateForUser = async (user) => {
 
 // Google authentication route
 router.post("/google/loginSignUp", async (req, res) => {
-
+    let tokenVerified = false;
     try {
         const { token, platform, timezone, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
@@ -94,14 +96,17 @@ router.post("/google/loginSignUp", async (req, res) => {
         });
 
         const payload = ticket.getPayload();
+        tokenVerified = true;
 
         // Check if user exists
         let user = await User.findOne({ email: payload.email });
+        let isNewUser = false;
 
         if (!user) {
+            isNewUser = true;
             // Pre-generate user ID for partner code
             const userId = generateUserId();
-            const partnerCode = generatePartnerCode(userId);
+            const partnerCode = await generateUniquePartnerCode(userId, User);
 
             // Create new user with pre-generated ID and partner code
             user = await User.create({
@@ -118,15 +123,18 @@ router.post("/google/loginSignUp", async (req, res) => {
             });
         } else {
             applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber, preferredLanguage });
-            await user.save();
         }
+        initializeOnboarding(user, { isNewUser });
+        await user.save();
 
         // Compute couple premium status
         const couplePremium = await getCouplePremiumStatus(user);
         const relationshipStartDateState = await getRelationshipStartDateStateForUser(user);
+        const sessionToken = createSessionToken(user);
 
         res.json({
             success: true,
+            token: sessionToken,
             user: {
                 id: user._id,
                 email: user.email,
@@ -153,12 +161,14 @@ router.post("/google/loginSignUp", async (req, res) => {
                 premiumOwnerUserId: couplePremium.premiumOwnerUserId,
                 subscriptionStatus: couplePremium.subscriptionStatus,
                 subscriptionBillingIssueAt: couplePremium.subscriptionBillingIssueAt,
+                onboarding: serializeOnboarding(user),
             },
         });
     } catch (error) {
-        res.status(401).json({
+        console.error("Google login error:", error.message);
+        res.status(tokenVerified ? 500 : 401).json({
             success: false,
-            error: "Invalid token",
+            error: tokenVerified ? "Unable to complete sign in" : "Invalid token",
         });
     }
 });
@@ -177,6 +187,7 @@ function getAppleSigningKey(header, callback) {
 
 // Apple authentication route
 router.post("/apple/loginSignUp", async (req, res) => {
+    let tokenVerified = false;
     try {
         const { idToken, displayName, email: providedEmail, platform, timezone, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
@@ -207,6 +218,7 @@ router.post("/apple/loginSignUp", async (req, res) => {
         // Extract email from token or use provided email
         const email = decodedToken.email || providedEmail;
         const appleUserId = decodedToken.sub;
+        tokenVerified = true;
 
         if (!email) {
             return res.status(400).json({
@@ -218,11 +230,13 @@ router.post("/apple/loginSignUp", async (req, res) => {
         let user = await User.findOne({
             $or: [{ email }, { appleUserId }]
         });
+        let isNewUser = false;
 
         if (!user) {
+            isNewUser = true;
             // Pre-generate user ID for partner code
             const userId = generateUserId();
-            const partnerCode = generatePartnerCode(userId);
+            const partnerCode = await generateUniquePartnerCode(userId, User);
 
             // Create new user with pre-generated ID and partner code
             user = await User.create({
@@ -244,15 +258,18 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 user.appleUserId = appleUserId;
             }
             applyDeviceInfo(user, { platform, timezone, appVersion, appBuildNumber, preferredLanguage });
-            await user.save();
         }
+        initializeOnboarding(user, { isNewUser });
+        await user.save();
 
         // Compute couple premium status
         const couplePremium = await getCouplePremiumStatus(user);
         const relationshipStartDateState = await getRelationshipStartDateStateForUser(user);
+        const sessionToken = createSessionToken(user);
 
         res.json({
             success: true,
+            token: sessionToken,
             user: {
                 id: user._id,
                 email: user.email,
@@ -279,13 +296,14 @@ router.post("/apple/loginSignUp", async (req, res) => {
                 premiumOwnerUserId: couplePremium.premiumOwnerUserId,
                 subscriptionStatus: couplePremium.subscriptionStatus,
                 subscriptionBillingIssueAt: couplePremium.subscriptionBillingIssueAt,
+                onboarding: serializeOnboarding(user),
             },
         });
     } catch (error) {
-        console.error("Error verifying Apple token:", error.message);
-        res.status(401).json({
+        console.error("Apple login error:", error.message);
+        res.status(tokenVerified ? 500 : 401).json({
             success: false,
-            error: "Invalid token",
+            error: tokenVerified ? "Unable to complete sign in" : "Invalid token",
         });
     }
 });

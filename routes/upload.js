@@ -2,9 +2,11 @@ import express from 'express';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
+import { requireAuth } from '../middleware/auth.js';
 dotenv.config();
 
 const router = express.Router();
+router.use(requireAuth);
 
 // Initialize S3 Client
 const s3Client = new S3Client({
@@ -16,6 +18,31 @@ const s3Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.AWS_S3_BUCKET;
+const ALLOWED_FOLDERS = new Set([
+    'uploads',
+    'avatars',
+    'puzzles',
+    'memories',
+    'daily-photos',
+    'voice-recordings',
+]);
+const ALLOWED_FILE_TYPES = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+    'audio/m4a',
+    'audio/mp4',
+]);
+
+const validateUploadInput = (fileName, fileType, folder) => (
+    typeof fileName === 'string'
+    && fileName.length > 0
+    && fileName.length <= 160
+    && ALLOWED_FILE_TYPES.has(fileType)
+    && ALLOWED_FOLDERS.has(folder)
+);
 
 /**
  * POST /api/upload/presigned-url
@@ -32,17 +59,16 @@ router.post('/presigned-url', async (req, res) => {
     try {
         const { fileName, fileType, folder = 'uploads' } = req.body;
 
-        if (!fileName || !fileType) {
+        if (!validateUploadInput(fileName, fileType, folder)) {
             return res.status(400).json({
                 success: false,
-                message: 'fileName and fileType are required'
+                message: 'Unsupported file name, type, or upload folder'
             });
         }
 
         // Generate unique file key
         const timestamp = Date.now();
         const randomString = Math.random().toString(36).substring(2, 8);
-        const extension = fileName.split('.').pop();
         const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
         const fileKey = `${folder}/${timestamp}-${randomString}-${sanitizedFileName}`;
 
@@ -107,6 +133,14 @@ router.post('/presigned-url/batch', async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Maximum 10 files allowed per batch'
+            });
+        }
+        if (!ALLOWED_FOLDERS.has(folder) || files.some(({ fileName, fileType }) => (
+            !validateUploadInput(fileName, fileType, folder)
+        ))) {
+            return res.status(400).json({
+                success: false,
+                message: 'One or more files have an unsupported name, type, or folder'
             });
         }
 

@@ -6,6 +6,7 @@ import {
 } from '../services/subscriptionService.js';
 import { refreshUserSubscriptionFromRevenueCat } from '../services/revenueCatService.js';
 import { notifyCoupleSubscriptionChanged } from '../services/subscriptionNotificationService.js';
+import { requireAuth, requireSelf } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ const statusResponse = async (user) => {
     };
 };
 
-router.get('/status/:userId', async (req, res) => {
+router.get('/status/:userId', requireAuth, requireSelf, async (req, res) => {
     try {
         const user = await loadUser(req.params.userId);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });
@@ -34,7 +35,7 @@ router.get('/status/:userId', async (req, res) => {
     }
 });
 
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', requireAuth, requireSelf, async (req, res) => {
     try {
         const user = await loadUser(req.body?.userId);
         if (!user) return res.status(404).json({ success: false, error: 'User not found' });

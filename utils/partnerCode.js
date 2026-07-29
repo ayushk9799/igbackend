@@ -25,6 +25,15 @@ export const generatePartnerCode = (userId) => {
     return prefix + suffix;
 };
 
+export const generateUniquePartnerCode = async (userId, UserModel, maxAttempts = 8) => {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const code = generatePartnerCode(userId);
+        const exists = await UserModel.exists({ partnerCode: code });
+        if (!exists) return code;
+    }
+    throw new Error('Unable to allocate a unique partner code');
+};
+
 /**
  * Generate a new MongoDB ObjectId
  * Use this before creating a user to pre-generate the ID for partner code
@@ -35,4 +44,4 @@ export const generateUserId = () => {
     return new mongoose.Types.ObjectId();
 };
 
-export default { generatePartnerCode, generateUserId };
+export default { generatePartnerCode, generateUniquePartnerCode, generateUserId };

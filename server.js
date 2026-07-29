@@ -38,6 +38,11 @@ import initializeSocket from './socket/index.js';
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
+const APP_JWT_SECRET = process.env.APP_JWT_SECRET || process.env.JWT_SECRET;
+
+if (!APP_JWT_SECRET && process.env.NODE_ENV === 'production') {
+    throw new Error('APP_JWT_SECRET must be configured in production');
+}
 
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI;

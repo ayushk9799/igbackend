@@ -8,6 +8,12 @@ import { sendSilentPush } from '../utils/pushNotification.js';
 import { refreshUserSubscriptionFromRevenueCat } from '../services/revenueCatService.js';
 import { buildLegacyPremiumFields, getCoupleSubscriptionAccess } from '../services/subscriptionService.js';
 import { notifyCoupleSubscriptionChanged } from '../services/subscriptionNotificationService.js';
+import { requireAuth, requireSelf } from '../middleware/auth.js';
+import {
+    markOnboardingStep,
+    ONBOARDING_STEPS,
+    serializeOnboarding,
+} from '../utils/onboarding.js';
 
 const router = express.Router();
 
@@ -18,6 +24,15 @@ const WIDGET_TYPES = ['scribble', 'togetherDays', 'togetherCountdown', 'distance
 const normalizePlatform = (platform) => (
     typeof platform === 'string' && VALID_PLATFORMS.has(platform) ? platform : 'unknown'
 );
+
+const isValidHttpUrl = (value) => {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:';
+    } catch {
+        return false;
+    }
+};
 
 const isValidCoordinate = (firstValue, secondValue, thirdValue) => {
     if (thirdValue !== undefined) {
@@ -99,6 +114,7 @@ const buildUserResponse = (user, relationshipStartDate = null, shouldAskRelation
     premiumWillRenew: user.premiumWillRenew ?? null,
     premiumCancelledAt: user.premiumCancelledAt || null,
     widgetStatus: user.widgetStatus || {},
+    onboarding: serializeOnboarding(user),
 });
 
 const normalizeWidgetPayload = (widgets = {}, platform = 'unknown', source = 'app') => {
@@ -167,7 +183,7 @@ const countWidgetStats = async (platform) => {
  * PUT /api/user/profile
  * Update user profile (name, age, gender)
  */
-router.put('/profile', async (req, res) => {
+router.put('/profile', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId, name, age, gender, avatar, relationshipStartDate } = req.body;
 
@@ -187,13 +203,37 @@ router.put('/profile', async (req, res) => {
         }
 
         // Update fields if provided
-        if (name !== undefined) user.name = name.trim();
+        if (name !== undefined) {
+            if (typeof name !== 'string' || !name.trim() || name.trim().length > 80) {
+                return res.status(400).json({ success: false, error: 'name must be 1-80 characters' });
+            }
+            user.name = name.trim();
+        }
         if (age !== undefined) user.age = parseInt(age, 10);
         if (gender !== undefined && ['male', 'female', 'other'].includes(gender)) {
             user.gender = gender;
         }
-        if (avatar !== undefined) user.avatar = avatar;
-        if (req.body.nickname !== undefined) user.nickname = req.body.nickname.trim();
+        if (avatar !== undefined) {
+            if (avatar !== null && (
+                typeof avatar !== 'string'
+                || avatar.length > 2048
+                || !isValidHttpUrl(avatar)
+            )) {
+                return res.status(400).json({ success: false, error: 'avatar must be a valid URL' });
+            }
+            user.avatar = avatar;
+            markOnboardingStep(user, 'avatar');
+        }
+        if (req.body.nickname !== undefined) {
+            const nickname = typeof req.body.nickname === 'string' ? req.body.nickname.trim() : '';
+            if (!nickname || nickname.length > 20) {
+                return res.status(400).json({ success: false, error: 'nickname must be 1-20 characters' });
+            }
+            user.nickname = nickname;
+            if (!user.onboarding) user.onboarding = {};
+            user.onboarding.version = 1;
+            user.onboarding.nicknameCompletedAt ||= new Date();
+        }
         let effectiveRelationshipStartDate = user.pendingRelationshipStartDate;
         let shouldAskRelationshipStartDate = false;
 
@@ -260,11 +300,36 @@ router.put('/profile', async (req, res) => {
 });
 
 /**
+ * PUT /api/user/onboarding
+ * Persist a non-profile onboarding decision so progress resumes across devices.
+ */
+router.put('/onboarding', requireAuth, requireSelf, async (req, res) => {
+    try {
+        const { userId, step } = req.body;
+        if (!ONBOARDING_STEPS.has(step)) {
+            return res.status(400).json({ success: false, error: 'Invalid onboarding step' });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found' });
+        }
+
+        markOnboardingStep(user, step);
+        await user.save();
+        return res.json({ success: true, onboarding: serializeOnboarding(user) });
+    } catch (error) {
+        console.error('Onboarding update error:', error);
+        return res.status(500).json({ success: false, error: 'Failed to update onboarding' });
+    }
+});
+
+/**
  * PUT /api/user/premium
  * Backward-compatible endpoint for older app versions. Client-supplied premium
  * values are deliberately ignored; RevenueCat/server state is authoritative.
  */
-router.put('/premium', async (req, res) => {
+router.put('/premium', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -310,7 +375,7 @@ router.put('/premium', async (req, res) => {
  * PUT /api/user/device-info
  * Update user device metadata (timezone and platform)
  */
-router.put('/device-info', async (req, res) => {
+router.put('/device-info', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId, timezone, platform, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
@@ -374,7 +439,7 @@ router.put('/device-info', async (req, res) => {
  * POST /api/user/fcm-token
  * Register FCM token for push notifications
  */
-router.post('/fcm-token', async (req, res) => {
+router.post('/fcm-token', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId, fcmToken, timezone, platform, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
@@ -427,7 +492,7 @@ router.post('/fcm-token', async (req, res) => {
  * PUT /api/user/location
  * Update a user's location sharing data for the distance widget.
  */
-router.put('/location', async (req, res) => {
+router.put('/location', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId, latitude, longitude, sharingEnabled = true } = req.body;
 
@@ -519,7 +584,7 @@ router.put('/location', async (req, res) => {
  * GET /api/user/distance/:userId
  * Get distance between a user and their active partner for the distance widget.
  */
-router.get('/distance/:userId', async (req, res) => {
+router.get('/distance/:userId', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -605,7 +670,7 @@ router.get('/distance/:userId', async (req, res) => {
  * POST /api/user/distance/remind
  * Send push notification to partner reminding them to enable location for the distance widget.
  */
-router.post('/distance/remind', async (req, res) => {
+router.post('/distance/remind', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.body;
         if (!userId) {
@@ -657,7 +722,7 @@ router.post('/distance/remind', async (req, res) => {
  * PUT /api/user/widgets/status
  * Store widget intent and native-confirmed install status for a user.
  */
-router.put('/widgets/status', async (req, res) => {
+router.put('/widgets/status', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId, platform = 'unknown', source = 'app', widgets } = req.body;
 
@@ -766,7 +831,7 @@ router.get('/widgets/stats', async (req, res) => {
  * GET /api/user/:userId
  * Get user profile
  */
-router.get('/:userId', async (req, res) => {
+router.get('/:userId', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -803,7 +868,7 @@ router.get('/:userId', async (req, res) => {
  * POST /api/user/test-notification
  * Send a test push notification to a user
  */
-router.post('/test-notification', async (req, res) => {
+router.post('/test-notification', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -842,7 +907,7 @@ router.post('/test-notification', async (req, res) => {
  * DELETE /api/user/delete-account
  * Permanently delete a user account and unlink partner
  */
-router.delete('/delete-account', async (req, res) => {
+router.delete('/delete-account', requireAuth, requireSelf, async (req, res) => {
     try {
         const { userId } = req.body;
 
