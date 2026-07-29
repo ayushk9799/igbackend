@@ -191,6 +191,7 @@ const buildProgressUpdate = ({ action, questionId, cursor }) => {
 
     if (questionId && action === 'answered') {
         update.$addToSet.answeredQuestionIds = questionId;
+        update.$pull = { skippedQuestionIds: questionId };
     }
 
     if (action === 'completed') {
@@ -548,9 +549,14 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
         );
         const nextIndex = cursor + pageQuestions.length;
         const hasMore = nextIndex < activeQuestions.length;
-        const progress = userId
-            ? await QuestionProgressV2.findOne({ userId, topicId, setId }).lean()
-            : null;
+        const [progress, savedAnswers] = userId
+            ? await Promise.all([
+                QuestionProgressV2.findOne({ userId, topicId, setId }).lean(),
+                QuestionAnswerV2.find({ userId, topicId, setId })
+                    .select('questionId answer answerType createdAt updatedAt')
+                    .lean(),
+            ])
+            : [null, []];
 
         res.status(200).json({
             success: true,
@@ -593,9 +599,13 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
                     answeredCount: progress?.answeredQuestionIds?.length || 0,
                     skippedCount: progress?.skippedQuestionIds?.length || 0,
                     seenCount: progress?.seenQuestionIds?.length || 0,
+                    answeredQuestionIds: progress?.answeredQuestionIds || [],
+                    skippedQuestionIds: progress?.skippedQuestionIds || [],
+                    seenQuestionIds: progress?.seenQuestionIds || [],
                     currentIndex: cursor,
                     completedAt: progress?.completedAt || null,
                 },
+                userAnswers: savedAnswers,
             },
         });
     } catch (error) {

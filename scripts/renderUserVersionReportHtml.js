@@ -20,7 +20,6 @@ try {
         : `${inputPath}.html`;
 
     await fs.writeFile(outputPath, createUserVersionReportHtml(report), 'utf8');
-    console.log(`HTML dashboard: ${outputPath}`);
 } catch (error) {
     console.error('Failed to render user version report:', error.message);
     process.exitCode = 1;

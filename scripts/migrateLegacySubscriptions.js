@@ -45,12 +45,7 @@ try {
         created += 1;
     }
 
-    console.log(JSON.stringify({
-        mode: apply ? 'apply' : 'dry-run',
-        eligibleLegacyUsers: users.length,
-        wouldCreateOrCreated: created,
-        alreadyPresent,
-    }, null, 2));
+ 
 } finally {
     await mongoose.disconnect();
 }
