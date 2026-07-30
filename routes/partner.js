@@ -52,7 +52,7 @@ router.get('/code/:userId', requireAuth, requireSelf, async (req, res) => {
  * POST /api/partner/pair
  * Pair with another user using their partner code
  */
-router.post('/pair', requireAuth, requireSelf, async (req, res) => {
+router.post('/pair', async (req, res) => {
     const session = await mongoose.startSession();
     try {
         const { userId, partnerCode } = req.body;
