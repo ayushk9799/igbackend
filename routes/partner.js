@@ -7,7 +7,6 @@ import { isUserOnline, getSocketId, getCoupleRoomId, updateSocketPartnerStatus }
 import { getIO } from '../socket/index.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 import { getDirectPremiumStatus } from '../utils/couplePremium.js';
-import { requireAuth, requireSelf } from '../middleware/auth.js';
 import { markOnboardingStep } from '../utils/onboarding.js';
 
 const router = express.Router();
@@ -16,7 +15,7 @@ const router = express.Router();
  * GET /api/partner/code/:userId
  * Get the user's partner code (generated at signup)
  */
-router.get('/code/:userId', requireAuth, requireSelf, async (req, res) => {
+router.get('/code/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -219,7 +218,7 @@ router.post('/pair', async (req, res) => {
  * POST /api/partner/unpair
  * Unpair from current partner
  */
-router.post('/unpair', requireAuth, requireSelf, async (req, res) => {
+router.post('/unpair', async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -293,7 +292,7 @@ router.post('/unpair', requireAuth, requireSelf, async (req, res) => {
  * GET /api/partner/status/:userId
  * Get partner status for a user
  */
-router.get('/status/:userId', requireAuth, requireSelf, async (req, res) => {
+router.get('/status/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 

@@ -8,7 +8,6 @@ import { sendSilentPush } from '../utils/pushNotification.js';
 import { refreshUserSubscriptionFromRevenueCat } from '../services/revenueCatService.js';
 import { buildLegacyPremiumFields, getCoupleSubscriptionAccess } from '../services/subscriptionService.js';
 import { notifyCoupleSubscriptionChanged } from '../services/subscriptionNotificationService.js';
-import { requireAuth, requireSelf } from '../middleware/auth.js';
 import {
     markOnboardingStep,
     ONBOARDING_STEPS,
@@ -183,7 +182,7 @@ const countWidgetStats = async (platform) => {
  * PUT /api/user/profile
  * Update user profile (name, age, gender)
  */
-router.put('/profile', requireAuth, requireSelf, async (req, res) => {
+router.put('/profile', async (req, res) => {
     try {
         const { userId, name, age, gender, avatar, relationshipStartDate } = req.body;
 
@@ -303,7 +302,7 @@ router.put('/profile', requireAuth, requireSelf, async (req, res) => {
  * PUT /api/user/onboarding
  * Persist a non-profile onboarding decision so progress resumes across devices.
  */
-router.put('/onboarding', requireAuth, requireSelf, async (req, res) => {
+router.put('/onboarding', async (req, res) => {
     try {
         const { userId, step } = req.body;
         if (!ONBOARDING_STEPS.has(step)) {
@@ -329,7 +328,7 @@ router.put('/onboarding', requireAuth, requireSelf, async (req, res) => {
  * Backward-compatible endpoint for older app versions. Client-supplied premium
  * values are deliberately ignored; RevenueCat/server state is authoritative.
  */
-router.put('/premium', requireAuth, requireSelf, async (req, res) => {
+router.put('/premium', async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -375,7 +374,7 @@ router.put('/premium', requireAuth, requireSelf, async (req, res) => {
  * PUT /api/user/device-info
  * Update user device metadata (timezone and platform)
  */
-router.put('/device-info', requireAuth, requireSelf, async (req, res) => {
+router.put('/device-info', async (req, res) => {
     try {
         const { userId, timezone, platform, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
@@ -439,7 +438,7 @@ router.put('/device-info', requireAuth, requireSelf, async (req, res) => {
  * POST /api/user/fcm-token
  * Register FCM token for push notifications
  */
-router.post('/fcm-token', requireAuth, requireSelf, async (req, res) => {
+router.post('/fcm-token', async (req, res) => {
     try {
         const { userId, fcmToken, timezone, platform, appVersion, appBuildNumber, preferredLanguage } = req.body;
 
@@ -492,7 +491,7 @@ router.post('/fcm-token', requireAuth, requireSelf, async (req, res) => {
  * PUT /api/user/location
  * Update a user's location sharing data for the distance widget.
  */
-router.put('/location', requireAuth, requireSelf, async (req, res) => {
+router.put('/location', async (req, res) => {
     try {
         const { userId, latitude, longitude, sharingEnabled = true } = req.body;
 
@@ -584,7 +583,7 @@ router.put('/location', requireAuth, requireSelf, async (req, res) => {
  * GET /api/user/distance/:userId
  * Get distance between a user and their active partner for the distance widget.
  */
-router.get('/distance/:userId', requireAuth, requireSelf, async (req, res) => {
+router.get('/distance/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -670,7 +669,7 @@ router.get('/distance/:userId', requireAuth, requireSelf, async (req, res) => {
  * POST /api/user/distance/remind
  * Send push notification to partner reminding them to enable location for the distance widget.
  */
-router.post('/distance/remind', requireAuth, requireSelf, async (req, res) => {
+router.post('/distance/remind', async (req, res) => {
     try {
         const { userId } = req.body;
         if (!userId) {
@@ -722,7 +721,7 @@ router.post('/distance/remind', requireAuth, requireSelf, async (req, res) => {
  * PUT /api/user/widgets/status
  * Store widget intent and native-confirmed install status for a user.
  */
-router.put('/widgets/status', requireAuth, requireSelf, async (req, res) => {
+router.put('/widgets/status', async (req, res) => {
     try {
         const { userId, platform = 'unknown', source = 'app', widgets } = req.body;
 
@@ -831,7 +830,7 @@ router.get('/widgets/stats', async (req, res) => {
  * GET /api/user/:userId
  * Get user profile
  */
-router.get('/:userId', requireAuth, requireSelf, async (req, res) => {
+router.get('/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -868,7 +867,7 @@ router.get('/:userId', requireAuth, requireSelf, async (req, res) => {
  * POST /api/user/test-notification
  * Send a test push notification to a user
  */
-router.post('/test-notification', requireAuth, requireSelf, async (req, res) => {
+router.post('/test-notification', async (req, res) => {
     try {
         const { userId } = req.body;
 
@@ -907,7 +906,7 @@ router.post('/test-notification', requireAuth, requireSelf, async (req, res) => 
  * DELETE /api/user/delete-account
  * Permanently delete a user account and unlink partner
  */
-router.delete('/delete-account', requireAuth, requireSelf, async (req, res) => {
+router.delete('/delete-account', async (req, res) => {
     try {
         const { userId } = req.body;
 

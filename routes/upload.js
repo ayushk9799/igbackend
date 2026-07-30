@@ -2,11 +2,9 @@ import express from 'express';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
-import { requireAuth } from '../middleware/auth.js';
 dotenv.config();
 
 const router = express.Router();
-router.use(requireAuth);
 
 // Initialize S3 Client
 const s3Client = new S3Client({
