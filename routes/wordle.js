@@ -114,6 +114,7 @@ router.post('/create', async (req, res) => {
         }
 
         const normalizedWord = secretWord.toLowerCase().trim();
+        const validatedByFrontend = req.get('X-Wordle-Validation') === 'frontend-v1';
 
         // Validate word length
         if (normalizedWord.length !== 5) {
@@ -123,8 +124,8 @@ router.post('/create', async (req, res) => {
             });
         }
 
-        // Validate word exists in dictionary
-        if (!isValidWord(normalizedWord)) {
+        // Legacy app versions rely on the API for dictionary validation.
+        if (!validatedByFrontend && !isValidWord(normalizedWord)) {
             return res.status(400).json({
                 success: false,
                 message: 'This word is not in our dictionary. Please choose another word.'
@@ -386,6 +387,7 @@ router.post('/:id/guess', async (req, res) => {
 
         // Validate guess
         const normalizedGuess = guess?.toLowerCase()?.trim();
+        const validatedByFrontend = req.get('X-Wordle-Validation') === 'frontend-v1';
         if (!normalizedGuess || normalizedGuess.length !== 5) {
             return res.status(400).json({
                 success: false,
@@ -393,8 +395,8 @@ router.post('/:id/guess', async (req, res) => {
             });
         }
 
-        // Validate guess is a real word
-        if (!isValidWord(normalizedGuess)) {
+        // Legacy app versions rely on the API for dictionary validation.
+        if (!validatedByFrontend && !isValidWord(normalizedGuess)) {
             return res.status(400).json({
                 success: false,
                 message: 'Not a valid word. Try another!'

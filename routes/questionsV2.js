@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import FutureQuestionSetV2 from '../models/v2/FutureQuestionSetV2.js';
 import RelationshipQuestionSetV2 from '../models/v2/RelationshipQuestionSetV2.js';
@@ -25,6 +26,7 @@ import {
     localizeV2Set,
 } from '../utils/localization.js';
 import { getLocalizedV2Question } from '../services/questionsV2/localizedContentService.js';
+import { calculateQuestionProgress } from '../services/questionsV2/progressMath.js';
 
 const router = express.Router();
 
@@ -150,6 +152,83 @@ const TOPIC_SET_MODELS_V2 = {
 };
 
 const getTopicModel = (topicId) => TOPIC_SET_MODELS_V2[topicId];
+const TOPIC_TOTALS_REFRESH_MS = 30 * 60 * 1000;
+const QUESTION_KEY_SEPARATOR = '\u0000';
+
+let topicQuestionMetadata = new Map();
+let topicTotalsRefreshPromise = null;
+let topicTotalsRefreshTimer = null;
+
+const buildQuestionKey = (setId, questionId) => (
+    `${String(setId)}${QUESTION_KEY_SEPARATOR}${String(questionId)}`
+);
+
+export const refreshTopicQuestionMetadata = async () => {
+    if (topicTotalsRefreshPromise) {
+        return topicTotalsRefreshPromise;
+    }
+
+    topicTotalsRefreshPromise = (async () => {
+        const topicRows = await Promise.all(
+            Object.entries(TOPIC_SET_MODELS_V2).map(async ([topicId, Model]) => {
+                const setRows = await Model.aggregate([
+                    { $match: { isActive: true } },
+                    { $unwind: '$questions' },
+                    { $match: { 'questions.isActive': { $ne: false } } },
+                    {
+                        $group: {
+                            _id: '$setId',
+                            questionIds: { $addToSet: '$questions.questionId' },
+                        },
+                    },
+                ]);
+
+                const activeQuestionKeys = new Set();
+                for (const setRow of setRows) {
+                    for (const questionId of setRow.questionIds || []) {
+                        activeQuestionKeys.add(buildQuestionKey(setRow._id, questionId));
+                    }
+                }
+
+                return [
+                    topicId,
+                    {
+                        totalQuestions: activeQuestionKeys.size,
+                        activeQuestionKeys,
+                    },
+                ];
+            })
+        );
+
+        // Replace the complete snapshot at once so requests never observe a partial refresh.
+        topicQuestionMetadata = new Map(topicRows);
+        return topicQuestionMetadata;
+    })().finally(() => {
+        topicTotalsRefreshPromise = null;
+    });
+
+    return topicTotalsRefreshPromise;
+};
+
+const ensureTopicQuestionMetadata = async () => {
+    if (topicQuestionMetadata.size === 0) {
+        await refreshTopicQuestionMetadata();
+    }
+    return topicQuestionMetadata;
+};
+
+export const initializeTopicQuestionMetadataCache = async () => {
+    if (!topicTotalsRefreshTimer) {
+        topicTotalsRefreshTimer = setInterval(() => {
+            refreshTopicQuestionMetadata().catch((error) => {
+                console.error('[questionsV2] Failed to refresh topic question metadata:', error);
+            });
+        }, TOPIC_TOTALS_REFRESH_MS);
+        topicTotalsRefreshTimer.unref?.();
+    }
+
+    await refreshTopicQuestionMetadata();
+};
 
 const clampLimit = (value) => {
     const parsed = Number.parseInt(value || '10', 10);
@@ -187,6 +266,7 @@ const buildProgressUpdate = ({ action, questionId, cursor }) => {
 
     if (questionId && action === 'skipped') {
         update.$addToSet.skippedQuestionIds = questionId;
+        update.$pull = { answeredQuestionIds: questionId };
     }
 
     if (questionId && action === 'answered') {
@@ -217,20 +297,8 @@ const updateProgress = async ({ userId, topicId, setId, questionId, action, curs
     );
 };
 
-const buildSetProgressSummary = (progress, totalQuestions) => {
-    const answeredCount = progress?.answeredQuestionIds?.length || 0;
-    const completedAt = progress?.completedAt || null;
-    const percentComplete = completedAt
-        ? 100
-        : (totalQuestions > 0 ? Math.min(100, Math.round((answeredCount / totalQuestions) * 100)) : 0);
-
-    return {
-        answeredCount,
-        skippedCount: progress?.skippedQuestionIds?.length || 0,
-        seenCount: progress?.seenQuestionIds?.length || 0,
-        percentComplete,
-        completedAt,
-    };
+const buildSetProgressSummary = (progress, activeQuestionIds) => {
+    return calculateQuestionProgress(progress, activeQuestionIds);
 };
 
 const findQuestionInSet = (set, questionId) => {
@@ -353,18 +421,89 @@ const createOrUpdateQuestionChat = async ({ user, set, topicId, question, answer
 };
 
 router.get('/topics', async (req, res) => {
-    const language = getRequestLanguage(req);
-    res.status(200).json({
-        success: true,
-        data: {
-            topics: TOPICS_V2
-                .filter((topic) => topic.isActive)
-                .map(topic => ({
-                    ...topic,
-                    title: TOPIC_TITLES[language]?.[topic.topicId] ?? topic.title,
-                })),
-        },
-    });
+    try {
+        const { userId } = req.query;
+        const language = getRequestLanguage(req);
+        const metadata = await ensureTopicQuestionMetadata();
+        const doneCountByTopic = new Map();
+
+        if (userId) {
+            if (!mongoose.isValidObjectId(userId)) {
+                return res.status(400).json({ success: false, message: 'Invalid userId' });
+            }
+
+            const progressRows = await QuestionProgressV2.aggregate([
+                {
+                    $match: {
+                        userId: new mongoose.Types.ObjectId(userId),
+                    },
+                },
+                {
+                    $project: {
+                        topicId: 1,
+                        setId: 1,
+                        doneQuestionIds: {
+                            $setUnion: [
+                                { $ifNull: ['$answeredQuestionIds', []] },
+                                { $ifNull: ['$skippedQuestionIds', []] },
+                            ],
+                        },
+                    },
+                },
+            ]);
+
+            for (const row of progressRows) {
+                const activeQuestionKeys = metadata.get(row.topicId)?.activeQuestionKeys;
+                if (!activeQuestionKeys) continue;
+
+                const activeDoneCount = (row.doneQuestionIds || []).reduce(
+                    (count, questionId) => (
+                        activeQuestionKeys.has(buildQuestionKey(row.setId, questionId))
+                            ? count + 1
+                            : count
+                    ),
+                    0
+                );
+                doneCountByTopic.set(
+                    row.topicId,
+                    (doneCountByTopic.get(row.topicId) || 0) + activeDoneCount
+                );
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                topics: TOPICS_V2
+                    .filter((topic) => topic.isActive)
+                    .map((topic) => {
+                        const totalQuestions = metadata.get(topic.topicId)?.totalQuestions || 0;
+                        const doneCount = doneCountByTopic.get(topic.topicId) || 0;
+
+                        return {
+                            ...topic,
+                            title: TOPIC_TITLES[language]?.[topic.topicId] ?? topic.title,
+                            progress: userId
+                                ? {
+                                    doneCount,
+                                    totalQuestions,
+                                    percentComplete: totalQuestions > 0
+                                        ? Math.min(100, Math.round((doneCount / totalQuestions) * 100))
+                                        : 0,
+                                }
+                                : null,
+                        };
+                    }),
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching V2 topics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch V2 topics',
+            error: error.message,
+        });
+    }
 });
 
 router.get('/topic/:topicId/sets', async (req, res) => {
@@ -411,7 +550,10 @@ router.get('/topic/:topicId/sets', async (req, res) => {
                 topicId,
                 sets: sets.map((set) => {
                     const localizedSet = localizeV2Set(set, language);
-                    const totalQuestions = (set.questions || []).filter((q) => q.isActive !== false).length;
+                    const activeQuestionIds = (set.questions || [])
+                        .filter((q) => q.isActive !== false)
+                        .map((q) => q.questionId);
+                    const totalQuestions = activeQuestionIds.length;
                     const progress = progressBySetId.get(set.setId);
                     const partnerProgress = partnerProgressUserId
                         ? partnerProgressBySetId.get(set.setId)
@@ -428,9 +570,9 @@ router.get('/topic/:topicId/sets', async (req, res) => {
                         iconUrl: set.iconUrl || null,
                         iconKey: set.iconKey || null,
                         totalQuestions,
-                        progress: buildSetProgressSummary(progress, totalQuestions),
+                        progress: buildSetProgressSummary(progress, activeQuestionIds),
                         partnerProgress: partnerProgressUserId
-                            ? buildSetProgressSummary(partnerProgress, totalQuestions)
+                            ? buildSetProgressSummary(partnerProgress, activeQuestionIds)
                             : null,
                     };
                 }),

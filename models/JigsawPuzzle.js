@@ -34,6 +34,13 @@ const jigsawPuzzleSchema = new mongoose.Schema({
         enum: ['pending', 'in_progress', 'solved', 'expired'],
         default: 'pending'
     },
+    // Older clients do not support deadlines. Only clients that explicitly
+    // opt in when creating a puzzle receive the five-minute mode.
+    timerMode: {
+        type: String,
+        enum: ['untimed', 'five_minute'],
+        default: 'untimed'
+    },
     // Move count
     moveCount: {
         type: Number,

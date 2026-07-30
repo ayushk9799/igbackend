@@ -18,7 +18,7 @@ import partnerRoutes from './routes/partner.js';
 import userRoutes from './routes/user.js';
 import categoriesRoutes from './routes/categories.js';
 import questionsRoutes from './routes/questions.js';
-import questionsV2Routes from './routes/questionsV2.js';
+import questionsV2Routes, { initializeTopicQuestionMetadataCache } from './routes/questionsV2.js';
 import questionChatsV2Routes from './routes/questionChatsV2.js';
 import dailyChallengeRoutes from './routes/dailyChallenge.js';
 import answersRoutes from './routes/answers.js';
@@ -51,7 +51,13 @@ if (!MONGODB_URI) {
     console.error('❌ FATAL: MONGODB_URI is not defined in environment variables.');
 } else {
     mongoose.connect(MONGODB_URI)
-        .then(() => {
+        .then(async () => {
+            try {
+                await initializeTopicQuestionMetadataCache();
+            } catch (error) {
+                // The topics endpoint retries lazily if startup initialization fails.
+                console.error('❌ Topic question metadata cache initialization failed:', error);
+            }
         })
         .catch((err) => console.error('❌ MongoDB connection error:', err));
 }
