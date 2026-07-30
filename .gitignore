@@ -15,3 +15,4 @@ backend-topic-questions.regenerated.full.json
 check.json
 scripts/cleanSpiceLevel.js
 questionoverhaul.md
+*.yaml
