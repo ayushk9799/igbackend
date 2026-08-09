@@ -33,7 +33,9 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import appConfigRoutes from './routes/appConfig.js';
 import scribbleRoutes from './routes/scribble.js';
 import couplePhotoRoutes from './routes/couplePhoto.js';
+import wordSearchRoutes from './routes/wordSearch.js';
 import initializeSocket from './socket/index.js';
+import { restoreWordSearchTurnTimers } from './services/wordSearch/turnTimer.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,6 +59,12 @@ if (!MONGODB_URI) {
             } catch (error) {
                 // The topics endpoint retries lazily if startup initialization fails.
                 console.error('❌ Topic question metadata cache initialization failed:', error);
+            }
+            try {
+                await restoreWordSearchTurnTimers();
+            } catch (error) {
+                // Active games also restore lazily when either player opens the board.
+                console.error('❌ Word-search turn timer restoration failed:', error);
             }
         })
         .catch((err) => console.error('❌ MongoDB connection error:', err));
@@ -105,6 +113,7 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/app-config', appConfigRoutes);
 app.use('/api/scribbles', scribbleRoutes);
 app.use('/api/couple-photo', couplePhotoRoutes);
+app.use('/api/word-search', wordSearchRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);

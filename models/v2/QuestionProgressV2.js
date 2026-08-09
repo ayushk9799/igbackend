@@ -39,6 +39,22 @@ const questionProgressV2Schema = new mongoose.Schema({
         type: Date,
         default: null,
     },
+    // New clients reuse one answerSessionId for every answer made during a
+    // single opening of this set. Keeping the latest claimed session here lets
+    // the existing progress write also decide whether the partner should be
+    // notified, without introducing another collection.
+    lastNotifiedAnswerSessionId: {
+        type: String,
+        default: null,
+    },
+    answerSessionNotificationClaimToken: {
+        type: String,
+        default: null,
+    },
+    answerSessionNotificationClaimedAt: {
+        type: Date,
+        default: null,
+    },
 }, { timestamps: true });
 
 questionProgressV2Schema.index({ userId: 1, topicId: 1, setId: 1 }, { unique: true });

@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
 import User from '../models/User.js';
 import FutureQuestionSetV2 from '../models/v2/FutureQuestionSetV2.js';
 import RelationshipQuestionSetV2 from '../models/v2/RelationshipQuestionSetV2.js';
@@ -27,6 +28,10 @@ import {
 } from '../utils/localization.js';
 import { getLocalizedV2Question } from '../services/questionsV2/localizedContentService.js';
 import { calculateQuestionProgress } from '../services/questionsV2/progressMath.js';
+import {
+    buildContentManifest,
+    getSetContentRevision,
+} from '../services/questionsV2/contentRevision.js';
 
 const router = express.Router();
 
@@ -163,6 +168,21 @@ const buildQuestionKey = (setId, questionId) => (
     `${String(setId)}${QUESTION_KEY_SEPARATOR}${String(questionId)}`
 );
 
+const getContentManifest = async () => {
+    const topicRows = await Promise.all(
+        Object.entries(TOPIC_SET_MODELS_V2).map(async ([topicId, Model]) => ({
+            topicId,
+            // Include inactive sets so a deactivation advances the revision and
+            // clients can remove the set from their local catalog.
+            sets: await Model.find({})
+                .select('setId isActive revision updatedAt')
+                .lean(),
+        }))
+    );
+
+    return buildContentManifest(topicRows);
+};
+
 export const refreshTopicQuestionMetadata = async () => {
     if (topicTotalsRefreshPromise) {
         return topicTotalsRefreshPromise;
@@ -295,6 +315,117 @@ const updateProgress = async ({ userId, topicId, setId, questionId, action, curs
         update,
         { upsert: true, new: true }
     );
+};
+
+const normalizeAnswerSessionId = (value) => {
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim();
+    return normalized.length >= 8 && normalized.length <= 128 ? normalized : null;
+};
+
+const updateAnswerProgressAndClaimNotification = async ({
+    userId,
+    topicId,
+    setId,
+    questionId,
+    cursor,
+    answerSessionId,
+}) => {
+    // Missing means an older client. Preserve its existing notification-per-
+    // answer behavior while still using the normal progress update.
+    if (answerSessionId === undefined) {
+        const progress = await updateProgress({
+            userId,
+            topicId,
+            setId,
+            questionId,
+            action: 'answered',
+            cursor,
+        });
+        return { progress, shouldNotify: true, legacyClient: true };
+    }
+
+    const normalizedSessionId = normalizeAnswerSessionId(answerSessionId);
+    if (!normalizedSessionId) {
+        const error = new Error('answerSessionId must be a string between 8 and 128 characters');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const claimToken = randomUUID();
+    const now = new Date();
+    const sessionChangedExpression = {
+        $ne: [
+            { $ifNull: ['$lastNotifiedAnswerSessionId', null] },
+            normalizedSessionId,
+        ],
+    };
+    const cursorExpression = cursor !== undefined && cursor !== null
+        ? String(cursor)
+        : { $ifNull: ['$lastCursor', null] };
+
+    // The pipeline makes the session comparison, notification claim and normal
+    // answer progress update one atomic write. Concurrent first answers from
+    // the same opening therefore cannot both own the notification.
+    const filter = { userId, topicId, setId };
+    const pipeline = [
+        {
+            $set: {
+                userId: new mongoose.Types.ObjectId(userId),
+                topicId,
+                setId,
+                seenQuestionIds: {
+                    $setUnion: [{ $ifNull: ['$seenQuestionIds', []] }, [questionId]],
+                },
+                answeredQuestionIds: {
+                    $setUnion: [{ $ifNull: ['$answeredQuestionIds', []] }, [questionId]],
+                },
+                skippedQuestionIds: {
+                    $setDifference: [{ $ifNull: ['$skippedQuestionIds', []] }, [questionId]],
+                },
+                lastCursor: cursorExpression,
+                lastNotifiedAnswerSessionId: normalizedSessionId,
+                answerSessionNotificationClaimToken: {
+                    $cond: [
+                        sessionChangedExpression,
+                        claimToken,
+                        { $ifNull: ['$answerSessionNotificationClaimToken', null] },
+                    ],
+                },
+                answerSessionNotificationClaimedAt: {
+                    $cond: [
+                        sessionChangedExpression,
+                        now,
+                        { $ifNull: ['$answerSessionNotificationClaimedAt', null] },
+                    ],
+                },
+                createdAt: { $ifNull: ['$createdAt', now] },
+                updatedAt: now,
+            },
+        },
+    ];
+    const options = { upsert: true, new: true };
+    let progress;
+
+    try {
+        progress = await QuestionProgressV2.findOneAndUpdate(filter, pipeline, options);
+    } catch (error) {
+        if (error?.code !== 11000) throw error;
+        // Two first answers can race before the unique progress document exists.
+        // Retry without upsert; the winning write now owns the session claim.
+        progress = await QuestionProgressV2.findOneAndUpdate(
+            filter,
+            pipeline,
+            { ...options, upsert: false }
+        );
+    }
+
+    return {
+        progress,
+        shouldNotify: progress?.answerSessionNotificationClaimToken === claimToken,
+        legacyClient: false,
+        answerSessionId: normalizedSessionId,
+    };
 };
 
 const buildSetProgressSummary = (progress, activeQuestionIds) => {
@@ -506,6 +637,29 @@ router.get('/topics', async (req, res) => {
     }
 });
 
+router.get('/content-manifest', async (req, res) => {
+    try {
+        const manifest = await getContentManifest();
+        const requestedRevision = Number.parseInt(req.query.revision || '0', 10);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                ...manifest,
+                changed: !Number.isFinite(requestedRevision)
+                    || requestedRevision !== manifest.contentRevision,
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching V2 content manifest:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch V2 content manifest',
+            error: error.message,
+        });
+    }
+});
+
 router.get('/topic/:topicId/sets', async (req, res) => {
     try {
         const { topicId } = req.params;
@@ -518,7 +672,7 @@ router.get('/topic/:topicId/sets', async (req, res) => {
         }
 
         const sets = await TopicSetModel.find({ isActive: true })
-            .select('setId title format order premium icon iconType iconUrl iconKey questions translations')
+            .select('setId title format order premium icon iconType iconUrl iconKey questions translations revision updatedAt')
             .sort({ order: 1, createdAt: 1 })
             .lean();
 
@@ -569,6 +723,7 @@ router.get('/topic/:topicId/sets', async (req, res) => {
                         iconType: set.iconType || 'auto',
                         iconUrl: set.iconUrl || null,
                         iconKey: set.iconKey || null,
+                        revision: getSetContentRevision(set),
                         totalQuestions,
                         progress: buildSetProgressSummary(progress, activeQuestionIds),
                         partnerProgress: partnerProgressUserId
@@ -603,7 +758,10 @@ router.get('/topic/:topicId/sets/:setId/report', async (req, res) => {
             return res.status(400).json({ success: false, message: 'userId is required' });
         }
 
-        const user = await User.findById(userId).select('partnerId').lean();
+        const [user, set] = await Promise.all([
+            User.findById(userId).select('partnerId').lean(),
+            TopicSetModel.findOne({ setId, isActive: true }).lean(),
+        ]);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -612,15 +770,20 @@ router.get('/topic/:topicId/sets/:setId/report', async (req, res) => {
             return res.status(400).json({ success: false, message: 'User has no partner linked' });
         }
 
-        const set = await TopicSetModel.findOne({ setId, isActive: true }).lean();
         if (!set) {
             return res.status(404).json({ success: false, message: 'Question set not found' });
         }
 
         const coupleId = QuestionChatV2.generateCoupleId(userId, user.partnerId);
-        const [userAnswers, partnerAnswers] = await Promise.all([
+        const [userAnswers, partnerAnswers, chats] = await Promise.all([
             QuestionAnswerV2.find({ coupleId, topicId, setId, userId }).sort({ createdAt: -1 }).lean(),
             QuestionAnswerV2.find({ coupleId, topicId, setId, userId: user.partnerId }).sort({ createdAt: -1 }).lean(),
+            QuestionChatV2.find({
+                coupleId,
+                topicId,
+                setId,
+                status: 'active',
+            }).select('_id questionId').lean(),
         ]);
 
         const latestUserAnswers = latestAnswersByQuestion(userAnswers);
@@ -634,12 +797,6 @@ router.get('/topic/:topicId/sets/:setId/report', async (req, res) => {
             partnerId: user.partnerId,
         });
 
-        const chats = await QuestionChatV2.find({
-            coupleId,
-            topicId,
-            setId,
-            status: 'active',
-        }).select('_id questionId').lean();
         const chatIdByQuestion = new Map(
             chats.map((chat) => [chat.questionId, chat._id])
         );
@@ -713,6 +870,7 @@ router.get('/topic/:topicId/sets/:setId', async (req, res) => {
                     iconType: set.iconType || 'auto',
                     iconUrl: set.iconUrl || null,
                     iconKey: set.iconKey || null,
+                    revision: getSetContentRevision(set),
                 },
                 questions: pageQuestions.map((question, offset) => {
                     const localizedQuestion = localizedQuestionsById.get(question.questionId)
@@ -805,6 +963,7 @@ router.post('/answer', async (req, res) => {
             answer,
             answerType = 'text',
             cursor,
+            answerSessionId,
         } = req.body;
 
         if (!userId || !topicId || !setId || !questionId || answer === undefined || answer === null) {
@@ -814,13 +973,23 @@ router.post('/answer', async (req, res) => {
             });
         }
 
+        if (
+            Object.prototype.hasOwnProperty.call(req.body, 'answerSessionId')
+            && !normalizeAnswerSessionId(answerSessionId)
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: 'answerSessionId must be a string between 8 and 128 characters',
+            });
+        }
+
         const TopicSetModel = getTopicModel(topicId);
         if (!TopicSetModel) {
             return res.status(400).json({ success: false, message: 'Invalid V2 topic' });
         }
 
         const [user, set] = await Promise.all([
-            User.findById(userId).select('name partnerId').lean(),
+            User.findById(userId).select('name nickname partnerId').lean(),
             TopicSetModel.findOne({ setId, isActive: true }).lean(),
         ]);
 
@@ -841,7 +1010,9 @@ router.post('/answer', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Question not found in set' });
         }
 
-        const recipient = await User.findById(user.partnerId).select('preferredLanguage').lean();
+        const recipient = await User.findById(user.partnerId)
+            .select('preferredLanguage fcmToken')
+            .lean();
         const recipientQuestion = await getLocalizedV2Question({
             topicId,
             setId,
@@ -867,14 +1038,21 @@ router.post('/answer', async (req, res) => {
             { upsert: true, new: true, runValidators: true }
         );
 
-        const progress = await updateProgress({
+        const notificationDecision = await updateAnswerProgressAndClaimNotification({
             userId,
             topicId,
             setId,
             questionId,
-            action: 'answered',
             cursor,
+            answerSessionId,
         });
+        const { progress } = notificationDecision;
+        const responseProgress = typeof progress?.toObject === 'function'
+            ? progress.toObject()
+            : { ...(progress || {}) };
+        delete responseProgress.lastNotifiedAnswerSessionId;
+        delete responseProgress.answerSessionNotificationClaimToken;
+        delete responseProgress.answerSessionNotificationClaimedAt;
 
         const { chat, created } = await createOrUpdateQuestionChat({
             user,
@@ -887,7 +1065,24 @@ router.post('/answer', async (req, res) => {
 
         const io = getIO();
         const partnerSocketId = getSocketId(user.partnerId.toString());
+        const senderDisplayName = user.nickname || user.name || 'Your partner';
+
+        // Every answer still produces a silent realtime update so an open set
+        // summary can refresh without creating another visible notification.
         if (io && partnerSocketId) {
+            io.to(partnerSocketId).emit('questionChatV2:answerUpdated', {
+                chatId: chat._id,
+                senderName: senderDisplayName,
+                topicId,
+                setId,
+                questionId,
+                bothAnswered: chat.answerSummary?.bothAnswered || false,
+            });
+        }
+
+        if (notificationDecision.legacyClient && io && partnerSocketId) {
+            // Preserve the exact socket notification behavior for installed
+            // clients that do not send answerSessionId.
             io.to(partnerSocketId).emit('questionChatV2:notification', {
                 chatId: chat._id,
                 senderName: user.name,
@@ -897,22 +1092,65 @@ router.post('/answer', async (req, res) => {
             });
         }
 
-        try {
-            await sendPushNotification(
-                user.partnerId,
-                recipientPrompt.substring(0, 120),
-                `${user.name || 'Your partner'}: ${getAnswerPreview(answer, answerType)}`,
-                {
-                    type: 'questionChatV2',
-                    chatId: chat._id.toString(),
-                    senderId: userId,
-                    topicId,
-                    setId,
-                    questionId,
+        let notificationSent = false;
+        if (notificationDecision.shouldNotify) {
+            try {
+                if (notificationDecision.legacyClient) {
+                    notificationSent = await sendPushNotification(
+                        user.partnerId,
+                        recipientPrompt.substring(0, 120),
+                        `${user.name || 'Your partner'}: ${getAnswerPreview(answer, answerType)}`,
+                        {
+                            type: 'questionChatV2',
+                            chatId: chat._id.toString(),
+                            senderId: userId,
+                            topicId,
+                            setId,
+                            questionId,
+                        }
+                    );
+                } else {
+                    const recipientSet = localizeV2Set(
+                        set,
+                        recipient?.preferredLanguage || 'en'
+                    );
+                    const title = `${senderDisplayName} is answering ${recipientSet.title}…`;
+                    const body = 'View or answer now!';
+                    const notificationData = {
+                        type: 'questionChatV2',
+                        notificationKind: 'set_answering',
+                        chatId: chat._id.toString(),
+                        senderId: userId,
+                        topicId,
+                        setId,
+                        questionId,
+                        answerSessionId: notificationDecision.answerSessionId,
+                    };
+
+                    notificationSent = await sendPushNotification(
+                        user.partnerId,
+                        title,
+                        body,
+                        notificationData
+                    );
+
+                    // FCM is the primary visible path for new clients. Use the
+                    // socket only as a fallback when this recipient has no
+                    // registered/reachable token, preventing foreground doubles.
+                    if (!notificationSent && io && partnerSocketId) {
+                        io.to(partnerSocketId).emit('questionChatV2:notification', {
+                            ...notificationData,
+                            title,
+                            body,
+                            senderName: senderDisplayName,
+                            setTitle: recipientSet.title,
+                            bothAnswered: chat.answerSummary?.bothAnswered || false,
+                        });
+                    }
                 }
-            );
-        } catch (notifError) {
-            console.warn('[questionsV2/answer] Push notification failed:', notifError.message);
+            } catch (notifError) {
+                console.warn('[questionsV2/answer] Push notification failed:', notifError.message);
+            }
         }
 
         res.status(200).json({
@@ -920,13 +1158,19 @@ router.post('/answer', async (req, res) => {
             message: 'V2 answer saved and chat created/updated',
             data: {
                 answer: savedAnswer,
-                progress,
+                progress: responseProgress,
                 chat: {
                     chatId: chat._id,
                     created,
                     bothAnswered: chat.answerSummary?.bothAnswered || false,
                     match: chat.answerSummary?.match ?? null,
                     similarityScore: chat.answerSummary?.similarityScore ?? null,
+                },
+                notification: {
+                    legacyClient: notificationDecision.legacyClient,
+                    answerSessionId: notificationDecision.answerSessionId || null,
+                    shouldNotify: notificationDecision.shouldNotify,
+                    sent: notificationSent,
                 },
             },
         });

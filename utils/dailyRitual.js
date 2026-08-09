@@ -66,6 +66,16 @@ const addDaysToDateKey = (dateKey, days) => {
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
+export const deriveHeartState = ({ userAComplete, userBComplete }) => (
+    userAComplete && userBComplete
+        ? 'full'
+        : (userAComplete || userBComplete ? 'half' : 'empty')
+);
+
+export const shouldApplyFullHeartStreak = status => (
+    status?.heartState === 'full' && status?.streakApplied !== true
+);
+
 export const getRitualWeekDateKeys = (ritualDate) => {
     const [year, month, day] = ritualDate.split('-').map(Number);
     const date = new Date(Date.UTC(year, month - 1, day));
@@ -93,6 +103,8 @@ export const buildRitualWeekDays = ({ ritualDate, statuses = [], userId }) => {
             state = 'future';
         } else if (status?.heartState === 'full') {
             state = 'full';
+        } else if (status?.streakProtection?.applied) {
+            state = 'protected';
         } else if (date < ritualDate) {
             state = 'missed';
         } else if (status?.heartState === 'half') {
@@ -147,14 +159,11 @@ const zonedDateTimeToUtc = (dateKey, hour, timeZone) => {
     return new Date(localAsUtc - secondOffset);
 };
 
-export const getRitualWindow = ({
-    now = new Date(),
+export const getRitualWindowForDate = ({
+    ritualDate,
     timeZone = DEFAULT_RITUAL_TIMEZONE,
     resetHour = DEFAULT_RITUAL_RESET_HOUR,
-} = {}) => {
-    const localNow = getZonedParts(now, timeZone);
-    const todayKey = formatDateKey(localNow);
-    const ritualDate = localNow.hour < resetHour ? addDaysToDateKey(todayKey, -1) : todayKey;
+}) => {
     const nextRitualDate = addDaysToDateKey(ritualDate, 1);
 
     return {
@@ -163,6 +172,21 @@ export const getRitualWindow = ({
         closesAt: zonedDateTimeToUtc(nextRitualDate, resetHour, timeZone),
         nextRitualDate,
     };
+};
+
+export const getRitualWindow = ({
+    now = new Date(),
+    timeZone = DEFAULT_RITUAL_TIMEZONE,
+    resetHour = DEFAULT_RITUAL_RESET_HOUR,
+} = {}) => {
+    const localNow = getZonedParts(now, timeZone);
+    const todayKey = formatDateKey(localNow);
+    const ritualDate = localNow.hour < resetHour ? addDaysToDateKey(todayKey, -1) : todayKey;
+    return getRitualWindowForDate({
+        ritualDate,
+        timeZone,
+        resetHour,
+    });
 };
 
 export const getPreviousDateKey = (dateKey) => addDaysToDateKey(dateKey, -1);
@@ -297,6 +321,7 @@ export const reconcileExpiredRituals = async ({ coupleId, now = new Date() }) =>
         closesAt: { $lte: now },
         heartState: { $ne: 'full' },
         streakBrokenApplied: false,
+        'streakProtection.applied': { $ne: true },
     }).sort({ closesAt: 1 });
 
     if (expiredStatuses.length === 0) {
@@ -370,9 +395,11 @@ export const updateRitualStatusForCompletion = async ({ userId, challenge }) => 
         status.userBCompletedAt = new Date();
     }
 
-    status.heartState = status.userAComplete && status.userBComplete
-        ? 'full'
-        : (status.userAComplete || status.userBComplete ? 'half' : 'empty');
+    status.heartState = deriveHeartState(status);
+
+    if (status.heartState === 'full' && status.streakProtection?.applied && !status.streakProtection.fulfilledAt) {
+        status.streakProtection.fulfilledAt = new Date();
+    }
 
     await status.save();
 
@@ -440,7 +467,7 @@ export const getCoupleTodayPayload = async ({ userId, language = 'en' }) => {
     let streak = await reconcileExpiredRituals({ coupleId: couple._id });
     streak = await reconcileStreakGap({ streak, currentRitualDate: window.ritualDate });
 
-    if (status.heartState === 'full' && !status.streakApplied) {
+    if (shouldApplyFullHeartStreak(status)) {
         streak = await applyFullHeartStreak({
             coupleId: couple._id,
             ritualDate: status.ritualDate,

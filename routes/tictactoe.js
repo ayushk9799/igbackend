@@ -4,6 +4,8 @@ import TicTacToe from '../models/TicTacToe.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 import { getCoupleSubscriptionAccess } from '../services/subscriptionService.js';
+import { getActiveTicTacToePlayerIds } from '../services/ticTacToeScreenPresence.js';
+import { resolveTicTacToeRestartAssignment } from '../services/ticTacToeRematch.js';
 
 const router = express.Router();
 const FREE_TICTACTOE_GAME_LIMIT = 5;
@@ -332,11 +334,11 @@ router.get('/pending/:userId', async (req, res) => {
 /**
  * POST /api/tictactoe/:id/restart
  * Reset the current game while preserving both players and their symbols.
- * Body: { userId }
+ * Body: { userId, round?, rematchCapability? }
  */
 router.post('/:id/restart', async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { userId, rematchCapability, round } = req.body;
         const existingGame = await TicTacToe.findOne({
             _id: req.params.id,
             $or: [
@@ -349,6 +351,18 @@ router.post('/:id/restart', async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Game not found or you are not a player'
+            });
+        }
+
+        // New clients identify the round they are restarting. This makes Play
+        // Again idempotent when both players press it at nearly the same time.
+        if (
+            rematchCapability === 'hybrid-rematch-v1'
+            && (!Number.isInteger(round) || round !== existingGame.round)
+        ) {
+            return res.status(409).json({
+                success: false,
+                message: 'The next game has already started. Refreshing the board is required.'
             });
         }
 
@@ -365,6 +379,13 @@ router.post('/:id/restart', async (req, res) => {
             });
         }
 
+        const assignment = resolveTicTacToeRestartAssignment({
+            game: existingGame,
+            requesterId: userId,
+            hybridRequested: rematchCapability === 'hybrid-rematch-v1',
+            activePlayerIds: getActiveTicTacToePlayerIds(existingGame._id),
+        });
+
         const game = await TicTacToe.findOneAndUpdate(
             {
                 _id: req.params.id,
@@ -377,7 +398,9 @@ router.post('/:id/restart', async (req, res) => {
             {
                 $set: {
                     board: Array(9).fill(null),
-                    currentTurn: 'creator',
+                    currentTurn: assignment.currentTurn,
+                    creatorSymbol: assignment.creatorSymbol,
+                    partnerSymbol: assignment.partnerSymbol,
                     status: 'pending',
                     winner: null,
                     moveHistory: [],
@@ -411,7 +434,8 @@ router.post('/:id/restart', async (req, res) => {
                 status: game.status,
                 creatorSymbol: game.creatorSymbol,
                 partnerSymbol: game.partnerSymbol,
-                round: game.round
+                round: game.round,
+                assignmentReason: assignment.assignmentReason,
             }
         });
     } catch (error) {

@@ -4,6 +4,7 @@ import DailyChallenge from '../models/DailyChallenge.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 import { getRitualWeek, updateRitualStatusForCompletion } from '../utils/dailyRitual.js';
+import { buildDailyChallengeCompletionNotification } from '../services/dailyChallengeNotificationService.js';
 
 const router = express.Router();
 
@@ -111,8 +112,6 @@ router.post('/submit', async (req, res) => {
             });
         }
 
-        const wasCompleteBefore = dailyAnswers.isComplete === true;
-
         // Update the answer at the specified index (preserving type)
         const taskType = challenge.tasks[taskIndex].category;
         dailyAnswers.answers[taskIndex] = {
@@ -125,89 +124,7 @@ router.post('/submit', async (req, res) => {
         // Recalculate completed count
         dailyAnswers.completedCount = dailyAnswers.answers.filter(a => a.value !== null).length;
 
-        // Check if at least one task is complete
-        if (dailyAnswers.completedCount >= 1) {
-            dailyAnswers.isComplete = true;
-            if (!wasCompleteBefore) {
-                dailyAnswers.completedAt = new Date();
-            }
-        }
-
         await dailyAnswers.save();
-
-        let ritualResponse = null;
-
-        if (!wasCompleteBefore && dailyAnswers.isComplete) {
-            try {
-                const ritualUpdate = await updateRitualStatusForCompletion({ userId, challenge });
-                if (ritualUpdate?.status && ritualUpdate?.streak) {
-                    const userIsA = ritualUpdate.status.userA.toString() === userId.toString();
-                    const week = await getRitualWeek({
-                        coupleId: ritualUpdate.couple._id,
-                        ritualDate: ritualUpdate.status.ritualDate,
-                        userId,
-                    });
-                    ritualResponse = {
-                        heartState: ritualUpdate.status.heartState,
-                        currentStreak: ritualUpdate.streak.currentStreak || 0,
-                        longestStreak: ritualUpdate.streak.longestStreak || 0,
-                        youComplete: userIsA ? ritualUpdate.status.userAComplete : ritualUpdate.status.userBComplete,
-                        partnerComplete: userIsA ? ritualUpdate.status.userBComplete : ritualUpdate.status.userAComplete,
-                        lastFullHeartDate: ritualUpdate.streak.lastFullHeartDate,
-                        week,
-                    };
-                }
-                const senderName = user.name || 'Your partner';
-
-                if (ritualUpdate?.heartChanged && ritualUpdate.status?.heartState === 'half') {
-                    const targetId = user.partnerId?.toString();
-                    if (targetId) {
-                        await sendPushNotification(
-                            targetId,
-                            '◐ Daily Ritual half done',
-                            `${senderName} finished. Complete yours to keep the streak alive.`,
-                            {
-                                type: 'daily_ritual_half',
-                                route: 'dailyChallenge',
-                                tab: 'dailyChallenge',
-                                ritualDate: ritualUpdate.status.ritualDate,
-                                senderId: user._id,
-                                senderName,
-                            }
-                        );
-                    }
-                }
-
-                if (ritualUpdate?.heartChanged && ritualUpdate.status?.heartState === 'full') {
-                    await Promise.all([
-                        sendPushNotification(
-                            ritualUpdate.status.userA,
-                            '♥ Daily Ritual complete',
-                            'Full heart today. Your streak is safe.',
-                            {
-                                type: 'daily_ritual_full',
-                                route: 'dailyChallenge',
-                                tab: 'dailyChallenge',
-                                ritualDate: ritualUpdate.status.ritualDate,
-                            }
-                        ),
-                        sendPushNotification(
-                            ritualUpdate.status.userB,
-                            '♥ Daily Ritual complete',
-                            'Full heart today. Your streak is safe.',
-                            {
-                                type: 'daily_ritual_full',
-                                route: 'dailyChallenge',
-                                tab: 'dailyChallenge',
-                                ritualDate: ritualUpdate.status.ritualDate,
-                            }
-                        ),
-                    ]);
-                }
-            } catch (ritualError) {
-                console.error('[answers.submit] Failed to update ritual streak:', ritualError);
-            }
-        }
 
         res.status(200).json({
             success: true,
@@ -217,7 +134,7 @@ router.post('/submit', async (req, res) => {
                 completedCount: dailyAnswers.completedCount,
                 totalTasks: dailyAnswers.totalTasks,
                 isComplete: dailyAnswers.isComplete,
-                ritual: ritualResponse,
+                ritual: null,
             }
         });
     } catch (error) {
@@ -226,6 +143,150 @@ router.post('/submit', async (req, res) => {
             success: false,
             message: 'Failed to submit answer',
             error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/answers/complete
+ * Mark the user's Daily Challenge card stack complete and notify their partner once.
+ *
+ * Body: { userId, challengeId }
+ */
+router.post('/complete', async (req, res) => {
+    try {
+        const { userId, challengeId } = req.body;
+
+        if (!userId || !challengeId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Required: userId, challengeId'
+            });
+        }
+
+        const [challenge, user] = await Promise.all([
+            DailyChallenge.findById(challengeId),
+            User.findById(userId),
+        ]);
+
+        if (!challenge) {
+            return res.status(404).json({ success: false, message: 'Challenge not found' });
+        }
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (!user.partnerId) {
+            return res.status(400).json({ success: false, message: 'User has no partner linked' });
+        }
+
+        const coupleId = DailyAnswers.generateCoupleId(userId, user.partnerId);
+        const emptyAnswers = challenge.tasks.map((task) => ({
+            type: task.category,
+            answerType: 'text',
+            value: null,
+            answeredAt: null,
+        }));
+
+        let dailyAnswers;
+        try {
+            dailyAnswers = await DailyAnswers.findOneAndUpdate(
+                { challengeId, userId },
+                {
+                    $setOnInsert: {
+                        date: challenge.date,
+                        partnerId: user.partnerId,
+                        coupleId,
+                        answers: emptyAnswers,
+                        totalTasks: challenge.tasks.length,
+                        completedCount: 0,
+                    },
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
+        } catch (error) {
+            // Concurrent first-answer/completion requests can race on the unique index.
+            if (error?.code !== 11000) throw error;
+            dailyAnswers = await DailyAnswers.findOne({ challengeId, userId });
+        }
+
+        const completedAt = new Date();
+        const completedAnswers = await DailyAnswers.findOneAndUpdate(
+            { _id: dailyAnswers._id, isComplete: { $ne: true } },
+            { $set: { isComplete: true, completedAt } },
+            { new: true }
+        );
+
+        // Only the request that changes false -> true owns the ritual update and push.
+        if (!completedAnswers) {
+            return res.status(200).json({
+                success: true,
+                message: 'Daily Challenge was already complete',
+                data: {
+                    isComplete: true,
+                    alreadyComplete: true,
+                    notificationSent: false,
+                    ritual: null,
+                },
+            });
+        }
+
+        let ritualResponse = null;
+        let notificationSent = false;
+
+        try {
+            const ritualUpdate = await updateRitualStatusForCompletion({ userId, challenge });
+            if (ritualUpdate?.status && ritualUpdate?.streak) {
+                const userIsA = ritualUpdate.status.userA.toString() === userId.toString();
+                const week = await getRitualWeek({
+                    coupleId: ritualUpdate.couple._id,
+                    ritualDate: ritualUpdate.status.ritualDate,
+                    userId,
+                });
+                ritualResponse = {
+                    heartState: ritualUpdate.status.heartState,
+                    currentStreak: ritualUpdate.streak.currentStreak || 0,
+                    longestStreak: ritualUpdate.streak.longestStreak || 0,
+                    youComplete: userIsA ? ritualUpdate.status.userAComplete : ritualUpdate.status.userBComplete,
+                    partnerComplete: userIsA ? ritualUpdate.status.userBComplete : ritualUpdate.status.userAComplete,
+                    lastFullHeartDate: ritualUpdate.streak.lastFullHeartDate,
+                    week,
+                };
+
+                const senderName = user.nickname || user.name || 'Your partner';
+                const notification = buildDailyChallengeCompletionNotification({
+                    senderName,
+                    senderId: user._id,
+                    challengeId: challenge._id,
+                    ritualDate: ritualUpdate.status.ritualDate,
+                    isCoupleComplete: ritualUpdate.status.heartState === 'full',
+                });
+                notificationSent = await sendPushNotification(
+                    user.partnerId,
+                    notification.title,
+                    notification.body,
+                    notification.data
+                );
+            }
+        } catch (ritualError) {
+            console.error('[answers.complete] Failed to update ritual or notify partner:', ritualError);
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: 'Daily Challenge completed',
+            data: {
+                isComplete: true,
+                alreadyComplete: false,
+                notificationSent,
+                ritual: ritualResponse,
+            },
+        });
+    } catch (error) {
+        console.error('[answers.complete] Error completing Daily Challenge:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to complete Daily Challenge',
+            error: error.message,
         });
     }
 });

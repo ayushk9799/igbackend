@@ -1,0 +1,34 @@
+{
+  "date": "2026-08-04",
+  "title": "Keep a Straight Face",
+  "isActive": true,
+  "tasks": [
+    {
+      "taskstatement": "What completely innocent thing does your partner do that you find unfairly attractive?",
+      "category": "deep",
+      "options": []
+    },
+    {
+      "taskstatement": "Who is more likely to send a dangerous text from across the room and then act completely innocent?",
+      "category": "likelyto",
+      "options": [
+        "you",
+        "partner"
+      ]
+    },
+    {
+      "taskstatement": "How impossible would it be for us to sit beside each other all evening after agreeing not to flirt?",
+      "category": "slider",
+      "options": [],
+      "minValue": 1,
+      "maxValue": 10,
+      "minLabel": "Perfectly behaved",
+      "maxLabel": "Thirty seconds max"
+    },
+    {
+      "taskstatement": "Record exactly seven words you could whisper to make your partner lose their train of thought. No names and no explanation.",
+      "category": "voicerecord",
+      "options": []
+    }
+  ]
+}

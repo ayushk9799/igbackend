@@ -7,41 +7,31 @@ import DailyChallenge from '../models/DailyChallenge.js';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 const challengeData = {
-    date: '2026-07-31',
-    title: 'The Little Things We Love',
+    date: '2026-08-05',
+    title: 'The Tiny Clue Challenge',
     isActive: true,
     tasks: [
         {
-            taskstatement: "Who is more likely to turn an ordinary errand into a mini date?",
+            taskstatement: "Who is more likely to notice when one tiny thing in the room has moved?",
             category: 'likelyto',
             options: ['you', 'partner']
         },
         {
-            taskstatement: "Never have I ever saved a tiny reminder of one of our dates, like a receipt, ticket, or photo.",
+            taskstatement: "Never have I ever pretended to understand what my partner was talking about and waited for context to rescue me.",
             category: 'neverhaveiever',
             options: ['I have', 'Never']
         },
         {
-            taskstatement: "What's one small thing I did this month that made you feel especially loved or understood?",
-            category: 'deep',
-            options: []
-        },
-        {
-            taskstatement: 'How excited are you about making a new memory together next month?',
+            taskstatement: 'How quickly could you recognize your partner from only their footsteps?',
             category: 'slider',
             options: [],
             minValue: 1,
             maxValue: 10,
-            minLabel: 'Cozy and content',
-            maxLabel: "Let's plan it now!"
+            minLabel: 'Not a clue',
+            maxLabel: 'First two steps'
         },
         {
-            taskstatement: "Take a photo of one ordinary thing around you that somehow reminds you of us.",
-            category: 'takephoto',
-            options: []
-        },
-        {
-            taskstatement: "Record a short voice note finishing this sentence: 'One thing I want us to carry into next month is...'",
+            taskstatement: "Record a 5-second mystery sound using one thing near you. Do not reveal what made it—your partner has to guess.",
             category: 'voicerecord',
             options: []
         }

@@ -98,7 +98,30 @@ export const createQuestionSetSchema = () => {
             default: [],
         },
         translations: translationsField,
+        // Monotonic, device-facing content version. Existing documents fall
+        // back to updatedAt until they are next written through Mongoose.
+        revision: {
+            type: Number,
+            default: () => Date.now(),
+            index: true,
+        },
     }, { timestamps: true });
+
+    schema.pre('save', function stampQuestionSetRevision() {
+        if (this.isNew || this.isModified()) {
+            this.revision = Date.now();
+        }
+    });
+
+    const stampUpdateRevision = function stampUpdateRevision() {
+        const update = this.getUpdate();
+        if (!update || Array.isArray(update)) return;
+        this.set({ revision: Date.now() });
+    };
+
+    schema.pre('updateOne', stampUpdateRevision);
+    schema.pre('updateMany', stampUpdateRevision);
+    schema.pre('findOneAndUpdate', stampUpdateRevision);
 
     schema.index({ isActive: 1, order: 1 });
     schema.index({ setId: 1, isActive: 1 });

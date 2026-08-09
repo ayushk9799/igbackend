@@ -1,5 +1,11 @@
 import TicTacToe from '../../models/TicTacToe.js';
 import { getSocketId, getCoupleRoomId } from '../auth.js';
+import {
+    markTicTacToeScreenActive,
+    markTicTacToeScreenInactive,
+} from '../../services/ticTacToeScreenPresence.js';
+
+export const TICTACTOE_HYBRID_REMATCH_CAPABILITY = 'hybrid-rematch-v1';
 
 /**
  * Handle joining a TicTacToe game room
@@ -65,6 +71,7 @@ export const handleTicTacToeLeave = (socket, io, data) => {
 
     if (gameId) {
         const gameRoom = `tictactoe_${gameId}`;
+        markTicTacToeScreenInactive({ gameId, userId, socketId: socket.id });
         socket.leave(gameRoom);
 
         socket.to(gameRoom).emit('tictactoe:playerLeft', {
@@ -73,6 +80,37 @@ export const handleTicTacToeLeave = (socket, io, data) => {
         });
 
     }
+};
+
+/**
+ * Track capability-aware, visible TicTacToe screens separately from ordinary
+ * game-room membership. Navigation stacks may keep an invisible screen mounted.
+ */
+export const handleTicTacToeScreenActive = async (socket, io, data = {}) => {
+    try {
+        const { gameId, capability } = data;
+        const { userId } = socket;
+        if (!gameId || capability !== TICTACTOE_HYBRID_REMATCH_CAPABILITY) return;
+
+        const game = await TicTacToe.findById(gameId).select('creatorId partnerId');
+        if (!game) return;
+
+        const isPlayer = game.creatorId.toString() === String(userId)
+            || game.partnerId.toString() === String(userId);
+        if (!isPlayer) return;
+
+        markTicTacToeScreenActive({ gameId, userId, socketId: socket.id });
+    } catch (error) {
+        console.error('TicTacToe active-screen presence error:', error);
+    }
+};
+
+export const handleTicTacToeScreenInactive = (socket, io, data = {}) => {
+    markTicTacToeScreenInactive({
+        gameId: data.gameId,
+        userId: socket.userId,
+        socketId: socket.id,
+    });
 };
 
 /**

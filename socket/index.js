@@ -25,8 +25,11 @@ import {
     handleTicTacToeMove,
     handleTicTacToeInvite,
     handleTicTacToeComplete,
-    handleTicTacToeNewGame
+    handleTicTacToeNewGame,
+    handleTicTacToeScreenActive,
+    handleTicTacToeScreenInactive,
 } from './handlers/tictactoe.js';
+import { clearTicTacToeScreenPresenceForSocket } from '../services/ticTacToeScreenPresence.js';
 import {
     handleWordleJoin,
     handleWordleLeave,
@@ -35,6 +38,10 @@ import {
     handleWordleComplete,
     handleWordleNewGame
 } from './handlers/wordle.js';
+import {
+    handleWordSearchJoin,
+    handleWordSearchLeave,
+} from './handlers/wordSearch.js';
 import {
     handleChatJoin,
     handleChatLeave,
@@ -201,6 +208,14 @@ export const initializeSocket = (httpServer) => {
             handleTicTacToeNewGame(socket, io, data);
         });
 
+        socket.on('tictactoe:screenActive', (data) => {
+            handleTicTacToeScreenActive(socket, io, data);
+        });
+
+        socket.on('tictactoe:screenInactive', (data) => {
+            handleTicTacToeScreenInactive(socket, io, data);
+        });
+
         // ======== WORDLE EVENTS ========
         socket.on('wordle:join', (data) => {
             handleWordleJoin(socket, io, data);
@@ -224,6 +239,15 @@ export const initializeSocket = (httpServer) => {
 
         socket.on('wordle:newGame', (data) => {
             handleWordleNewGame(socket, io, data);
+        });
+
+        // ======== WORD SEARCH EVENTS ========
+        socket.on('wordsearch:join', (data, acknowledge) => {
+            handleWordSearchJoin(socket, io, data, acknowledge);
+        });
+
+        socket.on('wordsearch:leave', (data) => {
+            handleWordSearchLeave(socket, io, data);
         });
 
         // ======== CHAT EVENTS ========
@@ -288,6 +312,7 @@ export const initializeSocket = (httpServer) => {
         socket.on('web-webrtc:answer', (data) => handleWebCallSignal('web-webrtc:answer')(socket, io, data));
         socket.on('web-webrtc:ice-candidate', (data) => handleWebCallSignal('web-webrtc:ice-candidate')(socket, io, data));
         socket.on('disconnect', () => {
+            clearTicTacToeScreenPresenceForSocket(socket.id);
             handleScribbleDisconnect(socket, io);
             handleLiveChatDisconnect(socket, io);
             handleCallDisconnect(socket, io);
