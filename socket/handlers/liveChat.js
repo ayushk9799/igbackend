@@ -115,7 +115,7 @@ export const handleLiveChatJoin = async (socket, io) => {
                 session.participants.delete(userId);
                 socket.emit('liveChat:error', {
                     code: 'NORMAL_CALL_ACTIVE',
-                    message: 'End the video call before starting Live Chat.',
+                    message: 'End the video call before starting Video Chat.',
                 });
                 destroySessionIfEmpty(session);
                 return;
@@ -133,8 +133,8 @@ export const handleLiveChatJoin = async (socket, io) => {
             shouldOffer: true,
         });
     } catch (error) {
-        console.error('Live Chat join error:', error);
-        socket.emit('liveChat:error', { code: 'JOIN_FAILED', message: 'Unable to enter Live Chat.' });
+        console.error('Video Chat join error:', error);
+        socket.emit('liveChat:error', { code: 'JOIN_FAILED', message: 'Unable to enter Video Chat.' });
     }
 };
 
@@ -189,7 +189,7 @@ export const handleLiveChatMessageSet = (socket, io, data = {}) => {
 
         void sendPushNotification(
             partnerId,
-            'live chat message',
+            'Video Chat message',
             text,
             notificationData,
         );
