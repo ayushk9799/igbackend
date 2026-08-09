@@ -56,6 +56,17 @@ import {
     handleCallGetPending,
 } from './handlers/call.js';
 import {
+    handleWebCallStart,
+    handleWebCallGetPending,
+    handleWebCallAccept,
+    handleWebCallReject,
+    handleWebCallCancel,
+    handleWebCallEnd,
+    handleWebCallMediaState,
+    handleWebCallSignal,
+    handleWebCallDisconnect,
+} from './handlers/webCall.js';
+import {
     handleLiveChatJoin,
     handleLiveChatLeave,
     handleLiveChatMessageSet,
@@ -263,10 +274,24 @@ export const initializeSocket = (httpServer) => {
         socket.on('webrtc:offer', (data) => handleWebRTCSignal('webrtc:offer')(socket, io, data));
         socket.on('webrtc:answer', (data) => handleWebRTCSignal('webrtc:answer')(socket, io, data));
         socket.on('webrtc:ice-candidate', (data) => handleWebRTCSignal('webrtc:ice-candidate')(socket, io, data));
+
+        // ======== WEB-ONLY VIDEO CALL EVENTS ========
+        // These events are deliberately isolated from the existing mobile call channel.
+        socket.on('web-call:start', (data) => handleWebCallStart(socket, io, data));
+        socket.on('web-call:getPending', () => handleWebCallGetPending(socket, io));
+        socket.on('web-call:accept', (data) => handleWebCallAccept(socket, io, data));
+        socket.on('web-call:reject', (data) => handleWebCallReject(socket, io, data));
+        socket.on('web-call:cancel', (data) => handleWebCallCancel(socket, io, data));
+        socket.on('web-call:end', (data) => handleWebCallEnd(socket, io, data));
+        socket.on('web-call:media-state', (data) => handleWebCallMediaState(socket, io, data));
+        socket.on('web-webrtc:offer', (data) => handleWebCallSignal('web-webrtc:offer')(socket, io, data));
+        socket.on('web-webrtc:answer', (data) => handleWebCallSignal('web-webrtc:answer')(socket, io, data));
+        socket.on('web-webrtc:ice-candidate', (data) => handleWebCallSignal('web-webrtc:ice-candidate')(socket, io, data));
         socket.on('disconnect', () => {
             handleScribbleDisconnect(socket, io);
             handleLiveChatDisconnect(socket, io);
             handleCallDisconnect(socket, io);
+            handleWebCallDisconnect(socket, io);
         });
 
 

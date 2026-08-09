@@ -2,6 +2,7 @@ import express from 'express';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import dotenv from 'dotenv';
+import { requireAuth } from '../middleware/auth.js';
 dotenv.config();
 
 const router = express.Router();
@@ -41,6 +42,58 @@ const validateUploadInput = (fileName, fileType, folder) => (
     && ALLOWED_FILE_TYPES.has(fileType)
     && ALLOWED_FOLDERS.has(folder)
 );
+
+/**
+ * POST /api/upload/image
+ * Browser-safe image upload. The API receives the raw image bytes and writes
+ * them to S3 server-side, avoiding browser-to-S3 CORS requirements.
+ */
+router.post('/image', requireAuth, express.raw({
+    type: ['image/jpeg', 'image/png', 'image/webp'],
+    limit: '10mb'
+}), async (req, res) => {
+    try {
+        const fileType = String(req.headers['content-type'] || '').split(';')[0].trim();
+        const encodedName = String(req.headers['x-file-name'] || 'puzzle.jpg');
+        let fileName = 'puzzle.jpg';
+        try {
+            fileName = decodeURIComponent(encodedName);
+        } catch {
+            fileName = encodedName;
+        }
+
+        if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+            return res.status(400).json({ success: false, message: 'Image data is required' });
+        }
+        if (!validateUploadInput(fileName, fileType, 'puzzles')) {
+            return res.status(400).json({ success: false, message: 'Unsupported puzzle image' });
+        }
+
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 8);
+        const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const fileKey = `puzzles/${timestamp}-${randomString}-${sanitizedFileName}`;
+
+        await s3Client.send(new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: fileKey,
+            ContentType: fileType,
+            Body: req.body
+        }));
+
+        const publicUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-south-1'}.amazonaws.com/${fileKey}`;
+        return res.status(201).json({
+            success: true,
+            data: { publicUrl, fileKey }
+        });
+    } catch (error) {
+        console.error('📤 [UPLOAD] Browser image upload failed:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to upload puzzle image'
+        });
+    }
+});
 
 /**
  * POST /api/upload/presigned-url

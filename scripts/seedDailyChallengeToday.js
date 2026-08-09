@@ -7,41 +7,41 @@ import DailyChallenge from '../models/DailyChallenge.js';
 const MONGODB_URI = process.env.MONGODB_URI;
 
 const challengeData = {
-    date: '2026-06-28',
-    title: 'Daily Connection Sparks',
+    date: '2026-07-31',
+    title: 'The Little Things We Love',
     isActive: true,
     tasks: [
         {
-            taskstatement: "Who is more likely to steal glances at the other when they think they aren't looking?",
+            taskstatement: "Who is more likely to turn an ordinary errand into a mini date?",
             category: 'likelyto',
             options: ['you', 'partner']
         },
         {
-            taskstatement: "Never have I ever bragged about my partner to someone else when they weren't around.",
+            taskstatement: "Never have I ever saved a tiny reminder of one of our dates, like a receipt, ticket, or photo.",
             category: 'neverhaveiever',
             options: ['I have', 'Never']
         },
         {
-            taskstatement: "What's a small habit of mine that you hope I never change?",
+            taskstatement: "What's one small thing I did this month that made you feel especially loved or understood?",
             category: 'deep',
             options: []
         },
         {
-            taskstatement: 'How excited are you for our next date night together?',
+            taskstatement: 'How excited are you about making a new memory together next month?',
             category: 'slider',
             options: [],
             minValue: 1,
             maxValue: 10,
-            minLabel: 'Chill / Low key',
-            maxLabel: "Can't wait!"
+            minLabel: 'Cozy and content',
+            maxLabel: "Let's plan it now!"
         },
         {
-            taskstatement: "Take a photo of a cozy spot where you'd love us to cuddle right now.",
+            taskstatement: "Take a photo of one ordinary thing around you that somehow reminds you of us.",
             category: 'takephoto',
             options: []
         },
         {
-            taskstatement: 'Record a 5-second happy sigh or whisper one word that describes your mood today.',
+            taskstatement: "Record a short voice note finishing this sentence: 'One thing I want us to carry into next month is...'",
             category: 'voicerecord',
             options: []
         }
