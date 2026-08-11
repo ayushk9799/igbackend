@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    DEFAULT_WORD_BANK,
     findEntryBySelection,
     generateWordSearch,
     getSelectionCoordinates,
+    WORDS_BY_LENGTH,
     WORD_SEARCH_DIFFICULTIES,
 } from '../services/wordSearch/gameEngine.js';
 import {
@@ -11,6 +13,7 @@ import {
     createAutomaticWordSearchRematch,
     serializeWordSearchGame,
     synchronizeWordSearchTurn,
+    WORD_SEARCH_REMATCH_COUNTDOWN_MS,
 } from '../services/wordSearch/gameService.js';
 import WordSearchGame from '../models/WordSearchGame.js';
 
@@ -18,6 +21,18 @@ const makeRandom = (seed = 123456789) => () => {
     seed = (1664525 * seed + 1013904223) % 4294967296;
     return seed / 4294967296;
 };
+
+test('default word bank uses the supplied normalized vocabulary', () => {
+    assert.equal(DEFAULT_WORD_BANK.length, 3054);
+    assert.equal(new Set(DEFAULT_WORD_BANK).size, DEFAULT_WORD_BANK.length);
+    assert.ok(DEFAULT_WORD_BANK.includes('ACE'));
+    assert.ok(DEFAULT_WORD_BANK.includes('TOOTHBRUSH'));
+
+    for (const [bucket, words] of Object.entries(WORDS_BY_LENGTH)) {
+        const expectedLength = Number(bucket.replace('words', ''));
+        assert.ok(words.every(word => word.length === expectedLength));
+    }
+});
 
 test('word-search generator places every listed word inside the generated grid', () => {
     for (const difficulty of Object.keys(WORD_SEARCH_DIFFICULTIES)) {
@@ -254,6 +269,14 @@ test('automatic rematch swaps the opener and links back to the completed game', 
         assert.equal(String(createdDocument.partnerId), creatorId);
         assert.equal(String(createdDocument.currentTurn), partnerId);
         assert.equal(String(createdDocument.rematchOf), completedGameId);
+        assert.ok(
+            createdDocument.startsAt.getTime() - Date.now()
+                <= WORD_SEARCH_REMATCH_COUNTDOWN_MS,
+        );
+        assert.ok(
+            createdDocument.startsAt.getTime() - Date.now()
+                > WORD_SEARCH_REMATCH_COUNTDOWN_MS - 1_000,
+        );
         assert.equal(
             createdDocument.turnExpiresAt.getTime() - createdDocument.startsAt.getTime(),
             45_000,

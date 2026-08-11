@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const ticTacToeSchema = new mongoose.Schema({
+    // Stable, sorted pair identity. New matches reuse one document per couple.
+    // sparse keeps legacy documents readable until they are opened/migrated.
+    coupleKey: {
+        type: String,
+        index: { unique: true, sparse: true }
+    },
     // User who created/initiated the game
     creatorId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -34,12 +40,18 @@ const ticTacToeSchema = new mongoose.Schema({
     partnerSymbol: {
         type: String,
         enum: ['X', 'O'],
-        default: 'O'
+        default: 'O',
+        validate: {
+            validator(value) {
+                return !this.creatorSymbol || value !== this.creatorSymbol;
+            },
+            message: 'Tic Tac Toe players must have opposite symbols'
+        }
     },
     // Game status
     status: {
         type: String,
-        enum: ['pending', 'in_progress', 'won_creator', 'won_partner', 'draw'],
+        enum: ['pending', 'in_progress', 'won_creator', 'won_partner', 'draw', 'superseded'],
         default: 'pending'
     },
     // Winner (null if draw or game in progress)
@@ -63,6 +75,11 @@ const ticTacToeSchema = new mongoose.Schema({
     // Increments whenever either player restarts the same game document.
     // Move requests must target the current round to prevent stale moves.
     round: {
+        type: Number,
+        default: 0
+    },
+    // Monotonic authoritative-state version used to reject delayed events.
+    revision: {
         type: Number,
         default: 0
     },

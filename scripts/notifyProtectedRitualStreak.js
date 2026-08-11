@@ -65,17 +65,7 @@ try {
     }
 
     if (!applyChanges) {
-        console.log(JSON.stringify({
-            mode: 'dry-run',
-            title: TITLE,
-            body: BODY,
-            protectedCouples: couples.length,
-            recipients: recipients.length,
-            readyToSend: recipients.filter(recipient => recipient.hasToken && !recipient.alreadyNotified).length,
-            missingToken: recipients.filter(recipient => !recipient.hasToken).length,
-            alreadyNotified: recipients.filter(recipient => recipient.alreadyNotified).length,
-            rows: recipients.map(({ statusId, ...recipient }) => recipient),
-        }, null, 2));
+      
     } else {
         const results = [];
 
@@ -113,14 +103,7 @@ try {
             results.push({ ...recipient, outcome: sent ? 'sent' : 'send_failed' });
         }
 
-        console.log(JSON.stringify({
-            mode: 'apply',
-            sent: results.filter(result => result.outcome === 'sent').length,
-            missingToken: results.filter(result => result.outcome === 'missing_fcm_token').length,
-            failed: results.filter(result => result.outcome === 'send_failed').length,
-            alreadyNotified: results.filter(result => result.outcome === 'already_notified').length,
-            rows: results.map(({ statusId, ...result }) => result),
-        }, null, 2));
+       
     }
 } finally {
     await mongoose.disconnect();

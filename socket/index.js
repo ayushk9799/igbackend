@@ -51,6 +51,11 @@ import {
     handleChatReaction
 } from './handlers/chat.js';
 import {
+    handleQuestionChatV2Join,
+    handleQuestionChatV2Leave,
+    handleQuestionChatV2Typing,
+} from './handlers/questionChatV2.js';
+import {
     handleCallStart,
     handleCallAccept,
     handleCallReject,
@@ -192,8 +197,8 @@ export const initializeSocket = (httpServer) => {
             handleTicTacToeLeave(socket, io, data);
         });
 
-        socket.on('tictactoe:move', (data) => {
-            handleTicTacToeMove(socket, io, data);
+        socket.on('tictactoe:move', (data, acknowledge) => {
+            handleTicTacToeMove(socket, io, data, acknowledge);
         });
 
         socket.on('tictactoe:invite', (data) => {
@@ -273,6 +278,18 @@ export const initializeSocket = (httpServer) => {
 
         socket.on('chat:reaction', (data) => {
             handleChatReaction(socket, io, data);
+        });
+
+        socket.on('questionChatV2:join', (data) => {
+            handleQuestionChatV2Join(socket, io, data);
+        });
+
+        socket.on('questionChatV2:leave', (data) => {
+            handleQuestionChatV2Leave(socket, io, data);
+        });
+
+        socket.on('questionChatV2:typing', (data) => {
+            handleQuestionChatV2Typing(socket, io, data);
         });
 
         // ======== EPHEMERAL LIVE CHAT EVENTS ========

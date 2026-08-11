@@ -1076,6 +1076,7 @@ router.post('/answer', async (req, res) => {
                 topicId,
                 setId,
                 questionId,
+                answeredCount: responseProgress.answeredQuestionIds?.length || 0,
                 bothAnswered: chat.answerSummary?.bothAnswered || false,
             });
         }
@@ -1088,6 +1089,7 @@ router.post('/answer', async (req, res) => {
                 senderName: user.name,
                 preview: getAnswerPreview(answer, answerType),
                 questionText: recipientPrompt.substring(0, 120),
+                answeredCount: responseProgress.answeredQuestionIds?.length || 0,
                 bothAnswered: chat.answerSummary?.bothAnswered || false,
             });
         }
@@ -1124,6 +1126,7 @@ router.post('/answer', async (req, res) => {
                         topicId,
                         setId,
                         questionId,
+                        answeredCount: String(responseProgress.answeredQuestionIds?.length || 0),
                         answerSessionId: notificationDecision.answerSessionId,
                     };
 

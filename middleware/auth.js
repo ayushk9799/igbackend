@@ -28,6 +28,21 @@ export const createSessionToken = (user) => {
     );
 };
 
+export const verifySessionToken = token => {
+    const secret = getSessionSecret();
+    if (!secret) throw new Error('APP_JWT_SECRET is not configured');
+
+    const payload = jwt.verify(token, secret, {
+        algorithms: ['HS256'],
+        issuer: 'penguin-api',
+        audience: 'penguin-mobile',
+    });
+    if (payload.type !== 'app_session' || !payload.sub) {
+        throw new Error('Invalid session token');
+    }
+    return payload;
+};
+
 export const requireAuth = (req, res, next) => {
     const secret = getSessionSecret();
     if (!secret) {
@@ -41,12 +56,7 @@ export const requireAuth = (req, res, next) => {
     }
 
     try {
-        const payload = jwt.verify(token, secret, {
-            algorithms: ['HS256'],
-            issuer: 'penguin-api',
-            audience: 'penguin-mobile',
-        });
-        if (payload.type !== 'app_session' || !payload.sub) throw new Error('Invalid session token');
+        const payload = verifySessionToken(token);
         req.auth = { userId: String(payload.sub), email: payload.email || null };
         next();
     } catch {

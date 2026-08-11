@@ -137,7 +137,6 @@ await mongoose.connect(mongoUri);
 try {
     if (!applyChanges) {
         const plan = await buildPlan(null);
-        console.log(JSON.stringify({ mode: 'dry-run', rows: serializePlan(plan) }, null, 2));
     } else {
         const session = await mongoose.startSession();
         let applied = [];
@@ -210,7 +209,6 @@ try {
             await session.endSession();
         }
 
-        console.log(JSON.stringify({ mode: 'apply', applied: serializePlan(applied) }, null, 2));
     }
 } finally {
     await mongoose.disconnect();

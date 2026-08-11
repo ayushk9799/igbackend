@@ -13,7 +13,7 @@ export class WordSearchError extends Error {
 const idOf = value => String(value?._id || value || '');
 
 export const WORD_SEARCH_TURN_DURATION_MS = 45_000;
-export const WORD_SEARCH_REMATCH_COUNTDOWN_MS = 3_000;
+export const WORD_SEARCH_REMATCH_COUNTDOWN_MS = 6_000;
 
 const applyTurnClock = (game, now = new Date()) => {
     if (game?.mode !== 'duel' || game?.status !== 'active') {

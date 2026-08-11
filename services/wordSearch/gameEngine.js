@@ -1,3 +1,5 @@
+import { WORD_SEARCH_WORD_BANK } from './wordBank.js';
+
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export const WORD_SEARCH_DIFFICULTIES = Object.freeze({
@@ -17,12 +19,9 @@ const DIRECTION_VECTORS = Object.freeze({
     NE: [-1, 1],
 });
 
-export const DEFAULT_WORD_BANK = Object.freeze([
-    'ADORE', 'ALWAYS', 'AMOUR', 'BLISS', 'BOND', 'CUDDLE', 'DATE', 'DREAM',
-    'FOREVER', 'GIGGLE', 'HEART', 'HONEY', 'HUGS', 'JOY', 'KIND', 'KISS',
-    'LAUGH', 'LOVE', 'LOYAL', 'LUCKY', 'MEMORY', 'PARTNER', 'PEACE', 'ROMANCE',
-    'SMILE', 'SOUL', 'SPARK', 'SWEET', 'TEAM', 'TRUST', 'UNITY', 'WARMTH',
-]);
+export { WORDS_BY_LENGTH, WORD_SEARCH_WORD_BANK } from './wordBank.js';
+
+export const DEFAULT_WORD_BANK = WORD_SEARCH_WORD_BANK;
 
 const randomIndex = (length, random) => Math.floor(random() * length);
 
@@ -187,4 +186,3 @@ export const findEntryBySelection = (entries, start, end, gridSize) => {
         || (sameCoordinate(entry.start, end) && sameCoordinate(entry.end, start))
     )) || null;
 };
-

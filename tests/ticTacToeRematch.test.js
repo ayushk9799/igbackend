@@ -17,7 +17,7 @@ const completedGame = {
     status: 'draw',
 };
 
-test('completed hybrid rematch alternates X when both players are active', () => {
+test('completed hybrid rematch gives X to the player who starts the round', () => {
     const result = resolveTicTacToeRestartAssignment({
         game: completedGame,
         requesterId: 'creator',
@@ -26,14 +26,14 @@ test('completed hybrid rematch alternates X when both players are active', () =>
     });
 
     assert.deepEqual(result, {
-        creatorSymbol: 'O',
-        partnerSymbol: 'X',
-        currentTurn: 'partner',
-        assignmentReason: 'alternated_both_active',
+        creatorSymbol: 'X',
+        partnerSymbol: 'O',
+        currentTurn: 'creator',
+        assignmentReason: 'requester_started_round',
     });
 });
 
-test('a second active rematch alternates X back to the creator', () => {
+test('partner receives X when partner starts the next round', () => {
     const result = resolveTicTacToeRestartAssignment({
         game: {
             ...completedGame,
@@ -46,9 +46,9 @@ test('a second active rematch alternates X back to the creator', () => {
         activePlayerIds: new Set(['creator', 'partner']),
     });
 
-    assert.equal(result.creatorSymbol, 'X');
-    assert.equal(result.partnerSymbol, 'O');
-    assert.equal(result.currentTurn, 'creator');
+    assert.equal(result.creatorSymbol, 'O');
+    assert.equal(result.partnerSymbol, 'X');
+    assert.equal(result.currentTurn, 'partner');
 });
 
 test('completed hybrid rematch gives X to the only active requester', () => {
@@ -62,7 +62,7 @@ test('completed hybrid rematch gives X to the only active requester', () => {
     assert.equal(result.creatorSymbol, 'O');
     assert.equal(result.partnerSymbol, 'X');
     assert.equal(result.currentTurn, 'partner');
-    assert.equal(result.assignmentReason, 'requester_started_async');
+    assert.equal(result.assignmentReason, 'requester_started_round');
 });
 
 test('legacy and mid-game restarts preserve symbols', () => {
@@ -98,6 +98,23 @@ test('legacy and mid-game restarts preserve symbols', () => {
     assert.equal(swappedMidGame.creatorSymbol, 'O');
     assert.equal(swappedMidGame.partnerSymbol, 'X');
     assert.equal(swappedMidGame.currentTurn, 'partner');
+});
+
+test('restart repairs a legacy game where both players were X', () => {
+    const result = resolveTicTacToeRestartAssignment({
+        game: {
+            ...completedGame,
+            creatorSymbol: 'X',
+            partnerSymbol: 'X',
+            status: 'in_progress',
+        },
+        requesterId: 'partner',
+        hybridRequested: true,
+    });
+
+    assert.equal(result.creatorSymbol, 'X');
+    assert.equal(result.partnerSymbol, 'O');
+    assert.equal(result.currentTurn, 'creator');
 });
 
 test('presence tracks distinct players and clears inactive sockets', () => {

@@ -1,3 +1,5 @@
+import { getCanonicalTicTacToeSymbols } from './ticTacToeState.js';
+
 const COMPLETED_STATUSES = new Set(['won_creator', 'won_partner', 'draw']);
 
 const normalizeId = value => value == null ? '' : String(value);
@@ -11,24 +13,18 @@ export const resolveTicTacToeRestartAssignment = ({
     const creatorId = normalizeId(game.creatorId);
     const partnerId = normalizeId(game.partnerId);
     const requester = normalizeId(requesterId);
-    const normalizedActiveIds = new Set([...activePlayerIds].map(normalizeId));
+    // Retained in the signature for compatibility with older callers. Round
+    // ownership no longer depends on ephemeral process-local presence.
+    void activePlayerIds;
 
-    let creatorSymbol = game.creatorSymbol;
-    let partnerSymbol = game.partnerSymbol;
+    let { creatorSymbol, partnerSymbol } = getCanonicalTicTacToeSymbols(game);
     let assignmentReason = 'preserved';
 
     if (hybridRequested && COMPLETED_STATUSES.has(game.status)) {
-        const bothPlayersActive = normalizedActiveIds.has(creatorId)
-            && normalizedActiveIds.has(partnerId);
-
-        if (bothPlayersActive) {
-            creatorSymbol = game.creatorSymbol === 'X' ? 'O' : 'X';
-            partnerSymbol = creatorSymbol === 'X' ? 'O' : 'X';
-            assignmentReason = 'alternated_both_active';
-        } else if (requester === creatorId || requester === partnerId) {
+        if (requester === creatorId || requester === partnerId) {
             creatorSymbol = requester === creatorId ? 'X' : 'O';
             partnerSymbol = requester === partnerId ? 'X' : 'O';
-            assignmentReason = 'requester_started_async';
+            assignmentReason = 'requester_started_round';
         }
     }
 

@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import { verifySessionToken } from '../middleware/auth.js';
 
 // Track every active socket for each user.
 // A user may temporarily have multiple sockets during reconnects or may be
@@ -13,10 +14,17 @@ export const connectedUsers = new Map();
  */
 export const socketAuth = async (socket, next) => {
     try {
-        const { userId } = socket.handshake.auth;
+        const { token, userId: claimedUserId } = socket.handshake.auth;
 
-        if (!userId) {
-            return next(new Error('Authentication error: userId required'));
+        // New clients authenticate cryptographically. Keep the userId fallback
+        // during the mobile rollout so already-installed app versions can
+        // still connect until the version gate retires this compatibility path.
+        const userId = token
+            ? String(verifySessionToken(token).sub)
+            : claimedUserId ? String(claimedUserId) : null;
+        if (!userId) return next(new Error('Authentication error: credentials required'));
+        if (token && claimedUserId && String(claimedUserId) !== userId) {
+            return next(new Error('Authentication error: user mismatch'));
         }
 
         // Verify user exists in database
