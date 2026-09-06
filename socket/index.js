@@ -25,8 +25,11 @@ import {
     handleTicTacToeMove,
     handleTicTacToeInvite,
     handleTicTacToeComplete,
-    handleTicTacToeNewGame
+    handleTicTacToeNewGame,
+    handleTicTacToeScreenActive,
+    handleTicTacToeScreenInactive,
 } from './handlers/tictactoe.js';
+import { clearTicTacToeScreenPresenceForSocket } from '../services/ticTacToeScreenPresence.js';
 import {
     handleWordleJoin,
     handleWordleLeave,
@@ -36,6 +39,10 @@ import {
     handleWordleNewGame
 } from './handlers/wordle.js';
 import {
+    handleWordSearchJoin,
+    handleWordSearchLeave,
+} from './handlers/wordSearch.js';
+import {
     handleChatJoin,
     handleChatLeave,
     handleChatMessage,
@@ -43,6 +50,11 @@ import {
     handleChatRead,
     handleChatReaction
 } from './handlers/chat.js';
+import {
+    handleQuestionChatV2Join,
+    handleQuestionChatV2Leave,
+    handleQuestionChatV2Typing,
+} from './handlers/questionChatV2.js';
 import {
     handleCallStart,
     handleCallAccept,
@@ -185,8 +197,8 @@ export const initializeSocket = (httpServer) => {
             handleTicTacToeLeave(socket, io, data);
         });
 
-        socket.on('tictactoe:move', (data) => {
-            handleTicTacToeMove(socket, io, data);
+        socket.on('tictactoe:move', (data, acknowledge) => {
+            handleTicTacToeMove(socket, io, data, acknowledge);
         });
 
         socket.on('tictactoe:invite', (data) => {
@@ -199,6 +211,14 @@ export const initializeSocket = (httpServer) => {
 
         socket.on('tictactoe:newGame', (data) => {
             handleTicTacToeNewGame(socket, io, data);
+        });
+
+        socket.on('tictactoe:screenActive', (data) => {
+            handleTicTacToeScreenActive(socket, io, data);
+        });
+
+        socket.on('tictactoe:screenInactive', (data) => {
+            handleTicTacToeScreenInactive(socket, io, data);
         });
 
         // ======== WORDLE EVENTS ========
@@ -226,6 +246,15 @@ export const initializeSocket = (httpServer) => {
             handleWordleNewGame(socket, io, data);
         });
 
+        // ======== WORD SEARCH EVENTS ========
+        socket.on('wordsearch:join', (data, acknowledge) => {
+            handleWordSearchJoin(socket, io, data, acknowledge);
+        });
+
+        socket.on('wordsearch:leave', (data) => {
+            handleWordSearchLeave(socket, io, data);
+        });
+
         // ======== CHAT EVENTS ========
         socket.on('chat:join', (data) => {
             handleChatJoin(socket, io, data);
@@ -249,6 +278,18 @@ export const initializeSocket = (httpServer) => {
 
         socket.on('chat:reaction', (data) => {
             handleChatReaction(socket, io, data);
+        });
+
+        socket.on('questionChatV2:join', (data) => {
+            handleQuestionChatV2Join(socket, io, data);
+        });
+
+        socket.on('questionChatV2:leave', (data) => {
+            handleQuestionChatV2Leave(socket, io, data);
+        });
+
+        socket.on('questionChatV2:typing', (data) => {
+            handleQuestionChatV2Typing(socket, io, data);
         });
 
         // ======== EPHEMERAL LIVE CHAT EVENTS ========
@@ -288,6 +329,7 @@ export const initializeSocket = (httpServer) => {
         socket.on('web-webrtc:answer', (data) => handleWebCallSignal('web-webrtc:answer')(socket, io, data));
         socket.on('web-webrtc:ice-candidate', (data) => handleWebCallSignal('web-webrtc:ice-candidate')(socket, io, data));
         socket.on('disconnect', () => {
+            clearTicTacToeScreenPresenceForSocket(socket.id);
             handleScribbleDisconnect(socket, io);
             handleLiveChatDisconnect(socket, io);
             handleCallDisconnect(socket, io);

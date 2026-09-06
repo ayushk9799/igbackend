@@ -62,6 +62,36 @@ const coupleDailyRitualStatusSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    // Administrative continuity credit for a ritual that users could not
+    // complete because the challenge was unavailable. This preserves the
+    // streak without manufacturing DailyAnswers or completion timestamps.
+    streakProtection: {
+        applied: {
+            type: Boolean,
+            default: false,
+        },
+        reason: {
+            type: String,
+            trim: true,
+            default: null,
+        },
+        appliedAt: {
+            type: Date,
+            default: null,
+        },
+        fulfilledAt: {
+            type: Date,
+            default: null,
+        },
+        notifiedUserIds: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+        }],
+        notificationLastAttemptAt: {
+            type: Date,
+            default: null,
+        },
+    },
 }, { timestamps: true });
 
 coupleDailyRitualStatusSchema.index({ coupleId: 1, ritualDate: 1 }, { unique: true });

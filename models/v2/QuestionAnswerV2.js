@@ -60,6 +60,7 @@ const questionAnswerV2Schema = new mongoose.Schema({
 questionAnswerV2Schema.index({ userId: 1, topicId: 1, setId: 1, questionId: 1 });
 questionAnswerV2Schema.index({ partnerId: 1, topicId: 1, setId: 1, questionId: 1 });
 questionAnswerV2Schema.index({ coupleId: 1, topicId: 1, setId: 1, questionId: 1 });
+questionAnswerV2Schema.index({ coupleId: 1, topicId: 1, setId: 1, userId: 1, updatedAt: -1 });
 
 const QuestionAnswerV2 = mongoose.model('QuestionAnswerV2', questionAnswerV2Schema);
 export default QuestionAnswerV2;

@@ -1,5 +1,6 @@
 import User from '../../models/User.js';
 import { isUserOnline, getCoupleRoomId } from '../auth.js';
+import { sendPushNotification } from '../../utils/pushNotification.js';
 
 /**
  * Handle request for partner's online status
@@ -59,6 +60,16 @@ export const handleNudge = async (socket, io, data) => {
         });
 
         socket.emit('nudge:sent', { success: true });
+
+        // Word Search nudges must also reach a partner whose socket is offline.
+        if (type === 'wordsearch') {
+            void sendPushNotification(
+                partnerId,
+                '🔎 Ready for Word Search?',
+                `${userName || 'Your partner'} wants to play with you.`,
+                { type: 'wordsearch' },
+            ).catch(() => {});
+        }
 
     } catch (error) {
         console.error('Nudge error:', error);

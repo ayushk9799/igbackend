@@ -77,6 +77,16 @@ const getPartnerIdFromCouple = (couple, userId) => {
     return null;
 };
 
+const notifyPartnerAboutMemory = async (partnerId, userId, memory) => {
+    const creator = await User.findById(userId).select('name nickname').lean();
+    const senderName = creator?.nickname || creator?.name || 'Your partner';
+    const notificationSent = await sendMemoryNotification(partnerId, senderName, memory);
+
+    if (!notificationSent) {
+        console.warn('📷 [MEMORIES] Timeline saved, but partner notification was not delivered');
+    }
+};
+
 const buildCursorQuery = (cursorData) => {
     if (!cursorData) return {};
 
@@ -105,6 +115,7 @@ router.post('/', async (req, res) => {
             capturedAt,
             capturedAtSource = 'upload_time',
             caption = '',
+            notifyPartnerAsync = false,
         } = req.body;
 
         const safeEntryType = normalizeEntryType(entryType);
@@ -156,12 +167,16 @@ router.post('/', async (req, res) => {
 
         const partnerId = getPartnerIdFromCouple(couple, userId);
         if (partnerId) {
-            const creator = await User.findById(userId).select('name nickname').lean();
-            const senderName = creator?.nickname || creator?.name || 'Your partner';
-            const notificationSent = await sendMemoryNotification(partnerId, senderName, memory);
-
-            if (!notificationSent) {
-                console.warn('📷 [MEMORIES] Timeline saved, but partner notification was not delivered');
+            const notification = notifyPartnerAboutMemory(partnerId, userId, memory);
+            if (notifyPartnerAsync === true) {
+                // New clients do not keep the save button blocked on FCM. The
+                // promise is still observed so a delivery failure is logged.
+                notification.catch((error) => {
+                    console.error('📷 [MEMORIES] Partner notification failed:', error);
+                });
+            } else {
+                // Preserve response timing/behaviour for already shipped apps.
+                await notification;
             }
         }
 

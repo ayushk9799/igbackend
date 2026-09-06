@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { getIO } from '../socket/index.js';
 import { getSocketId } from '../socket/auth.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
+import { shouldSendImmediateAnswerNotification } from '../services/dailyChallengeNotificationService.js';
 
 const router = express.Router();
 
@@ -76,33 +77,37 @@ router.post('/answer', async (req, res) => {
         const answerers = new Set(chat.messages.filter(m => m.messageType === 'answer').map(m => m.senderId.toString()));
         const bothAnswered = answerers.has(userId.toString()) && answerers.has(user.partnerId.toString());
 
-        const io = getIO();
-        const partnerSocketId = getSocketId(user.partnerId.toString());
-        if (io && partnerSocketId) {
-            io.to(partnerSocketId).emit('chat:notification', {
-                chatId: chat._id,
-                senderName: user.name,
-                preview: getAnswerPreview(answer, answerType),
-                questionText: chat.questionText?.substring(0, 120),
-                isAnswer: true,
-                bothAnswered
-            });
-        }
-
-        try {
-            await sendPushNotification(
-                user.partnerId,
-                chat.questionText?.substring(0, 120) || 'New answer',
-                `${user.name}: ${getAnswerPreview(answer, answerType)}`,
-                {
-                    type: 'chat',
+        // Daily Challenge answers are bundled into one notification when the
+        // user explicitly completes their side of the card stack.
+        if (shouldSendImmediateAnswerNotification(questionSource)) {
+            const io = getIO();
+            const partnerSocketId = getSocketId(user.partnerId.toString());
+            if (io && partnerSocketId) {
+                io.to(partnerSocketId).emit('chat:notification', {
                     chatId: chat._id,
-                    senderId: userId,
-                    isAnswer: true
-                }
-            );
-        } catch (notifError) {
-            console.warn('⚠️ [chat/answer] Push notification failed:', notifError.message);
+                    senderName: user.name,
+                    preview: getAnswerPreview(answer, answerType),
+                    questionText: chat.questionText?.substring(0, 120),
+                    isAnswer: true,
+                    bothAnswered
+                });
+            }
+
+            try {
+                await sendPushNotification(
+                    user.partnerId,
+                    chat.questionText?.substring(0, 120) || 'New answer',
+                    `${user.name}: ${getAnswerPreview(answer, answerType)}`,
+                    {
+                        type: 'chat',
+                        chatId: chat._id,
+                        senderId: userId,
+                        isAnswer: true
+                    }
+                );
+            } catch (notifError) {
+                console.warn('⚠️ [chat/answer] Push notification failed:', notifError.message);
+            }
         }
 
         res.status(200).json({

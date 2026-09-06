@@ -1,5 +1,13 @@
 import TicTacToe from '../../models/TicTacToe.js';
 import { getSocketId, getCoupleRoomId } from '../auth.js';
+import {
+    markTicTacToeScreenActive,
+    markTicTacToeScreenInactive,
+} from '../../services/ticTacToeScreenPresence.js';
+import { serializeTicTacToeState } from '../../services/ticTacToeState.js';
+import { commitTicTacToeMove, TicTacToeMoveError } from '../../services/ticTacToeMove.js';
+
+export const TICTACTOE_HYBRID_REMATCH_CAPABILITY = 'hybrid-rematch-v1';
 
 /**
  * Handle joining a TicTacToe game room
@@ -42,12 +50,13 @@ export const handleTicTacToeJoin = async (socket, io, data) => {
             timestamp: new Date().toISOString()
         });
 
-        socket.emit('tictactoe:joined', {
-            gameId,
-            board: game.board,
-            currentTurn: game.currentTurn,
-            status: game.status
-        });
+        socket.emit(
+            'tictactoe:stateChanged',
+            serializeTicTacToeState(game, {
+                eventType: 'joined',
+                viewerPlayerId: String(userId),
+            })
+        );
 
 
     } catch (error) {
@@ -65,6 +74,7 @@ export const handleTicTacToeLeave = (socket, io, data) => {
 
     if (gameId) {
         const gameRoom = `tictactoe_${gameId}`;
+        markTicTacToeScreenInactive({ gameId, userId, socketId: socket.id });
         socket.leave(gameRoom);
 
         socket.to(gameRoom).emit('tictactoe:playerLeft', {
@@ -76,67 +86,108 @@ export const handleTicTacToeLeave = (socket, io, data) => {
 };
 
 /**
- * Handle real-time move broadcast
- * Called after a move is made via REST API
+ * Track capability-aware, visible TicTacToe screens separately from ordinary
+ * game-room membership. Navigation stacks may keep an invisible screen mounted.
  */
-export const handleTicTacToeMove = async (socket, io, data) => {
+export const handleTicTacToeScreenActive = async (socket, io, data = {}) => {
     try {
-        const { gameId, position, gameComplete } = data;
-        const { userId, userName } = socket;
+        const { gameId, capability } = data;
+        const { userId } = socket;
+        if (!gameId || capability !== TICTACTOE_HYBRID_REMATCH_CAPABILITY) return;
 
-        if (!gameId) {
-            socket.emit('tictactoe:error', { message: 'gameId is required' });
-            return;
-        }
-
-        const game = await TicTacToe.findById(gameId);
-        if (!game) {
-            socket.emit('tictactoe:error', { message: 'Game not found' });
-            return;
-        }
+        const game = await TicTacToe.findById(gameId).select('creatorId partnerId');
+        if (!game) return;
 
         const isPlayer = game.creatorId.toString() === String(userId)
             || game.partnerId.toString() === String(userId);
-        if (!isPlayer) {
-            socket.emit('tictactoe:error', { message: 'Not a player in this game' });
+        if (!isPlayer) return;
+
+        markTicTacToeScreenActive({ gameId, userId, socketId: socket.id });
+    } catch (error) {
+        console.error('TicTacToe active-screen presence error:', error);
+    }
+};
+
+export const handleTicTacToeScreenInactive = (socket, io, data = {}) => {
+    markTicTacToeScreenInactive({
+        gameId: data.gameId,
+        userId: socket.userId,
+        socketId: socket.id,
+    });
+};
+
+/**
+ * Handle real-time move broadcast
+ * Called after a move is made via REST API
+ */
+export const handleTicTacToeMove = async (socket, io, data = {}, acknowledge) => {
+    try {
+        const { gameId, position, round, revision } = data;
+        const { userId } = socket;
+
+        if (!gameId) {
+            acknowledge?.({ success: false, status: 400, message: 'gameId is required' });
             return;
         }
 
-        // Broadcast to game room (excluding sender)
-        const gameRoom = `tictactoe_${gameId}`;
-        socket.to(gameRoom).emit('tictactoe:moveReceived', {
-            gameId,
-            playerId: userId,
-            playerName: userName,
-            position,
-            board: game.board,
-            currentTurn: game.currentTurn,
-            status: game.status,
-            winner: game.winner,
-            round: game.round,
-            gameComplete,
-            timestamp: new Date().toISOString()
-        });
+        // Older clients persist through REST and then use this event only as a
+        // broadcast trigger. Do not apply their move twice during rollout.
+        if (!Number.isInteger(revision)) {
+            const legacyGame = await TicTacToe.findById(gameId);
+            if (!legacyGame) return;
+            const isPlayer = legacyGame.creatorId.toString() === String(userId)
+                || legacyGame.partnerId.toString() === String(userId);
+            if (!isPlayer) return;
+            const legacySnapshot = serializeTicTacToeState(legacyGame, {
+                eventType: 'move',
+                lastMove: { position, playerId: String(userId) },
+            });
+            socket.to(`tictactoe_${gameId}`).emit('tictactoe:moveReceived', legacySnapshot);
+            const legacyPartnerId = legacyGame.creatorId.toString() === String(userId)
+                ? legacyGame.partnerId.toString()
+                : legacyGame.creatorId.toString();
+            const legacyCoupleRoom = getCoupleRoomId(String(userId), legacyPartnerId);
+            if (legacyCoupleRoom) socket.to(legacyCoupleRoom).emit('tictactoe:update', legacySnapshot);
+            acknowledge?.({
+                success: true,
+                data: { ...legacySnapshot, viewerPlayerId: String(userId) },
+            });
+            return;
+        }
 
-        // Also broadcast to couple room for notifications
+        const { game, snapshot } = await commitTicTacToeMove({
+            gameId,
+            userId,
+            position,
+            round,
+            revision,
+        });
         const partnerId = game.creatorId.toString() === String(userId)
             ? game.partnerId.toString()
             : game.creatorId.toString();
-
-        const coupleRoom = getCoupleRoomId(userId, partnerId);
+        const coupleRoom = getCoupleRoomId(String(userId), partnerId);
         if (coupleRoom) {
-            socket.to(coupleRoom).emit('tictactoe:update', {
-                gameId,
-                board: game.board,
-                status: game.status,
-                currentTurn: game.currentTurn,
-                round: game.round,
-            });
+            io.to(coupleRoom).emit('tictactoe:stateChanged', snapshot);
         }
+        acknowledge?.({
+            success: true,
+            data: { ...snapshot, viewerPlayerId: String(userId) },
+        });
 
     } catch (error) {
+        if (error instanceof TicTacToeMoveError) {
+            acknowledge?.({
+                success: false,
+                status: error.status,
+                message: error.message,
+                data: error.data
+                    ? { ...error.data, viewerPlayerId: String(socket.userId) }
+                    : null,
+            });
+            return;
+        }
         console.error('TicTacToe move broadcast error:', error);
-        socket.emit('tictactoe:error', { message: 'Failed to broadcast move' });
+        acknowledge?.({ success: false, status: 500, message: 'Failed to make move' });
     }
 };
 
@@ -177,17 +228,18 @@ export const handleTicTacToeInvite = async (socket, io, data) => {
  */
 export const handleTicTacToeComplete = async (socket, io, data) => {
     try {
-        const { gameId, status, winnerId, winnerName } = data;
+        const { gameId } = data;
+        const game = await TicTacToe.findById(gameId);
+        if (!game) return;
+        const isPlayer = game.creatorId.toString() === String(socket.userId)
+            || game.partnerId.toString() === String(socket.userId);
+        if (!isPlayer) return;
 
-        // Broadcast to game room (excluding sender - they already updated from REST response)
         const gameRoom = `tictactoe_${gameId}`;
-        socket.to(gameRoom).emit('tictactoe:gameComplete', {
-            gameId,
-            status,
-            winnerId,
-            winnerName,
-            timestamp: new Date().toISOString()
-        });
+        socket.to(gameRoom).emit(
+            'tictactoe:stateChanged',
+            serializeTicTacToeState(game, { eventType: 'completed' })
+        );
 
     } catch (error) {
         console.error('TicTacToe complete error:', error);
