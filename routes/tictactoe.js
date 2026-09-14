@@ -20,6 +20,21 @@ const router = express.Router();
 const FREE_TICTACTOE_GAME_LIMIT = 5;
 const COMPLETED_STATUSES = ['won_creator', 'won_partner', 'draw'];
 
+const getRequestUserId = (req) => {
+    if (req.auth?.userId) {
+        return String(req.auth.userId);
+    }
+    const legacyUserId = req.params?.userId
+        || req.body?.userId
+        || req.body?.creatorId
+        || req.query?.userId;
+    if (legacyUserId) {
+        req.auth = { userId: String(legacyUserId), legacy: true };
+        return req.auth.userId;
+    }
+    return null;
+};
+
 const authenticateTicTacToeRequest = (req, res, next) => {
     if (req.headers.authorization?.startsWith('Bearer ')) {
         requireAuth(req, res, next);
@@ -31,7 +46,7 @@ const authenticateTicTacToeRequest = (req, res, next) => {
     // always use the signed session token.
     const legacyUserId = req.body?.userId
         || req.body?.creatorId
-        || req.params?.userId;
+        || req.query?.userId;
     req.auth = legacyUserId
         ? { userId: String(legacyUserId), legacy: true }
         : null;
@@ -39,6 +54,13 @@ const authenticateTicTacToeRequest = (req, res, next) => {
 };
 
 router.use(authenticateTicTacToeRequest);
+
+router.param('userId', (req, res, next, userId) => {
+    if (!req.auth && userId) {
+        req.auth = { userId: String(userId), legacy: true };
+    }
+    next();
+});
 
 const emitAuthoritativeState = (game, eventType = 'updated', extra = {}) => {
     const io = getIO();
@@ -56,12 +78,13 @@ const emitAuthoritativeState = (game, eventType = 'updated', extra = {}) => {
 const serializeForViewer = (game, viewerPlayerId, extra = {}) => (
     serializeTicTacToeState(game, {
         ...extra,
-        viewerPlayerId: String(viewerPlayerId),
+        ...(viewerPlayerId ? { viewerPlayerId: String(viewerPlayerId) } : {}),
     })
 );
 
 const rejectWrongUser = (req, res, requestedUserId) => {
-    if (requestedUserId && String(requestedUserId) !== String(req.auth.userId)) {
+    const authUserId = getRequestUserId(req);
+    if (requestedUserId && authUserId && String(requestedUserId) !== String(authUserId)) {
         res.status(403).json({ success: false, message: 'You cannot access another player’s game' });
         return true;
     }
@@ -77,12 +100,16 @@ const findCoupleGames = (userId, partnerId, status) => TicTacToe.find({
 }).sort({ createdAt: -1 });
 
 const getCompletedTicTacToeGameCount = async (userId) => {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        return 0;
+    }
+    const userObjectId = new mongoose.Types.ObjectId(userId);
     const [result] = await TicTacToe.aggregate([
         {
             $match: {
                 $or: [
-                    { creatorId: new mongoose.Types.ObjectId(userId) },
-                    { partnerId: new mongoose.Types.ObjectId(userId) }
+                    { creatorId: userObjectId },
+                    { partnerId: userObjectId }
                 ]
             }
         },
@@ -245,14 +272,20 @@ router.post('/open', async (req, res) => {
 router.post('/create', async (req, res) => {
     try {
         const { firstMove } = req.body;
-        const creatorId = String(req.auth.userId);
+        const creatorId = getRequestUserId(req);
+        if (!creatorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
         const authenticatedCreator = await User.findById(creatorId).select('partnerId name');
         const partnerId = authenticatedCreator?.partnerId?.toString();
 
-        if (!creatorId || !partnerId) {
+        if (!partnerId) {
             return res.status(400).json({
                 success: false,
-                message: 'creatorId and partnerId are required'
+                message: 'partnerId is required'
             });
         }
 
@@ -447,13 +480,14 @@ router.get('/:id', async (req, res) => {
             });
         }
 
-        if (req.auth?.userId && !isTicTacToePlayer(game, req.auth.userId)) {
+        const viewerUserId = getRequestUserId(req);
+        if (viewerUserId && !isTicTacToePlayer(game, viewerUserId)) {
             return res.status(403).json({ success: false, message: 'You are not a player in this game' });
         }
 
         res.status(200).json({
             success: true,
-            data: serializeForViewer(game, req.auth.userId)
+            data: serializeForViewer(game, viewerUserId)
         });
 
     } catch (error) {
@@ -510,7 +544,10 @@ router.get('/pending/:userId', async (req, res) => {
 router.post('/:id/restart', async (req, res) => {
     try {
         const { rematchCapability, round, revision } = req.body;
-        const userId = String(req.auth.userId);
+        const userId = getRequestUserId(req);
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
         const existingGame = await TicTacToe.findOne({
             _id: req.params.id,
             $or: [
@@ -639,7 +676,10 @@ router.post('/:id/restart', async (req, res) => {
 router.post('/:id/move', async (req, res) => {
     try {
         const { position, round, revision } = req.body;
-        const userId = String(req.auth.userId);
+        const userId = getRequestUserId(req);
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
         const { game, snapshot } = await commitTicTacToeMove({
             gameId: req.params.id,
             userId,
@@ -659,11 +699,12 @@ router.post('/:id/move', async (req, res) => {
 
     } catch (error) {
         if (error instanceof TicTacToeMoveError) {
+            const fallbackViewerId = getRequestUserId(req);
             return res.status(error.status).json({
                 success: false,
                 message: error.message,
                 data: error.data
-                    ? { ...error.data, viewerPlayerId: String(req.auth.userId) }
+                    ? { ...error.data, viewerPlayerId: fallbackViewerId ? String(fallbackViewerId) : null }
                     : null,
             });
         }
@@ -726,7 +767,10 @@ router.get('/history/:userId', async (req, res) => {
  */
 router.post('/:id/notify', async (req, res) => {
     try {
-        const userId = String(req.auth.userId);
+        const userId = getRequestUserId(req);
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
         const game = await TicTacToe.findById(req.params.id)
             .populate('creatorId', 'name')
             .populate('partnerId', 'name');
