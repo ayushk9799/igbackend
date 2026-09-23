@@ -66,6 +66,7 @@ import {
     handleCallDiagnostic,
     handleCallDisconnect,
     handleCallGetPending,
+    handleCallRinging,
 } from './handlers/call.js';
 import {
     handleWebCallStart,
@@ -306,6 +307,7 @@ export const initializeSocket = (httpServer) => {
         // ======== VIDEO CALL EVENTS ========
         socket.on('call:start', (data) => handleCallStart(socket, io, data));
         socket.on('call:getPending', () => handleCallGetPending(socket));
+        socket.on('call:ringing', (data) => handleCallRinging(socket, io, data));
         socket.on('call:accept', (data) => handleCallAccept(socket, io, data));
         socket.on('call:reject', (data) => handleCallReject(socket, io, data));
         socket.on('call:cancel', (data) => handleCallCancel(socket, io, data));
