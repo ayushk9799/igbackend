@@ -28,7 +28,7 @@ const getUnreadCount = (chat, userId) => {
 
 router.get('/', async (req, res) => {
     try {
-        const { userId } = req.query;
+        const { userId, hasUserMessages } = req.query;
         const language = getRequestLanguage(req);
 
         if (!userId) {
@@ -47,6 +47,22 @@ router.get('/', async (req, res) => {
                 $or: [{ partner1: userId }, { partner2: userId }],
             };
 
+        // When hasUserMessages is requested, only return chats where user messages were sent
+        if (hasUserMessages === 'true' || hasUserMessages === true) {
+            const coupleChatIds = await QuestionChatV2.find(query).distinct('_id');
+            const chatIdsWithUserMessages = coupleChatIds.length > 0
+                ? await QuestionChatMessageV2.distinct('chatId', {
+                    chatId: { $in: coupleChatIds },
+                    messageType: { $ne: 'answer' },
+                })
+                : [];
+
+            query.$or = [
+                { hasUserMessages: true },
+                { _id: { $in: chatIdsWithUserMessages } },
+            ];
+        }
+
         const chats = await QuestionChatV2.find(query)
             .sort({ lastMessageAt: -1, createdAt: -1 })
             .populate('partner1', 'name nickname avatar')
@@ -62,6 +78,8 @@ router.get('/', async (req, res) => {
             data: {
                 chats: localizedChats.map((chat) => ({
                     ...chat,
+                    hasUserMessages: Boolean(chat.hasUserMessages),
+                    userMessageCount: Number(chat.userMessageCount || 0),
                     partner: getChatPartner(chat, userId),
                     unreadCount: getUnreadCount(chat, userId),
                 })),
@@ -244,6 +262,10 @@ router.post('/:chatId/messages', async (req, res) => {
         chat.lastMessageAt = new Date();
         chat.messageCount += 1;
         chat[unreadField] += 1;
+        if (messageType !== 'answer') {
+            chat.hasUserMessages = true;
+            chat.userMessageCount = (chat.userMessageCount || 0) + 1;
+        }
         await chat.save();
 
         const recipientId = isPartner1 ? chat.partner2 : chat.partner1;

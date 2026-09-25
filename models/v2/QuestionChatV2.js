@@ -101,6 +101,15 @@ const questionChatV2Schema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    hasUserMessages: {
+        type: Boolean,
+        default: false,
+        index: true,
+    },
+    userMessageCount: {
+        type: Number,
+        default: 0,
+    },
 }, { timestamps: true });
 
 questionChatV2Schema.index(
