@@ -19,6 +19,7 @@ const wordSearchGameSchema = new mongoose.Schema({
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
     creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    duelPairKey: { type: String, default: null },
     gridSize: { type: Number, required: true },
     grid: { type: [String], required: true },
     words: { type: [wordEntrySchema], required: true },
@@ -52,6 +53,10 @@ wordSearchGameSchema.index({ partnerId: 1, status: 1, createdAt: -1 });
 wordSearchGameSchema.index(
     { creatorId: 1, mode: 1 },
     { unique: true, partialFilterExpression: { status: 'active', mode: 'single' } },
+);
+wordSearchGameSchema.index(
+    { duelPairKey: 1 },
+    { unique: true, partialFilterExpression: { status: 'active', mode: 'duel', duelPairKey: { $type: 'string' } } },
 );
 wordSearchGameSchema.index(
     { rematchOf: 1 },

@@ -26,6 +26,37 @@ const populateGame = game => game.populate([
     { path: 'winner', select: 'name nickname avatar' },
 ]);
 
+const activeGameFilter = ({ creatorId, partnerId, mode }) => mode === 'single'
+    ? { creatorId, mode: 'single', status: 'active' }
+    : {
+        mode: 'duel',
+        status: 'active',
+        $or: [
+            { creatorId, partnerId },
+            { creatorId: partnerId, partnerId: creatorId },
+        ],
+    };
+
+const endActiveGamesForFreshPuzzle = async filter => {
+    // The conditional update also invalidates a word claim loaded just before
+    // the board was ended by advancing its optimistic-concurrency version.
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+        const game = await WordSearchGame.findOneAndUpdate(
+            filter,
+            {
+                $set: { status: 'abandoned', completedAt: new Date(), turnExpiresAt: null },
+                $inc: { __v: 1 },
+            },
+            { new: true },
+        );
+        if (!game) return;
+        scheduleWordSearchTurn(game);
+        await populateGame(game);
+        emitWordSearchUpdate(game);
+    }
+    throw new WordSearchError('STALE_GAME', 'Could not replace the active puzzle; please try again', 409);
+};
+
 export const emitWordSearchUpdate = (game, eventName = 'wordsearch:updated', metadata = {}) => {
     const io = getIO();
     if (!io || !game) return;
@@ -65,6 +96,7 @@ router.post('/create', async (req, res) => {
             partnerId = null,
             mode = 'single',
             difficulty = 'medium',
+            forceNew = false,
         } = req.body || {};
 
         if (!mongoose.isValidObjectId(creatorId)) {
@@ -79,15 +111,6 @@ router.post('/create', async (req, res) => {
 
         const creator = await User.findById(creatorId).select('name nickname partnerId');
         if (!creator) return res.status(404).json({ success: false, message: 'Creator not found' });
-
-        const linkedPartnerId = idOf(creator.partnerId);
-        if (mode === 'single' && linkedPartnerId && isUserOnline(linkedPartnerId)) {
-            return res.status(409).json({
-                success: false,
-                code: 'PARTNER_ONLINE',
-                message: 'Your partner is online. Start a together game instead.',
-            });
-        }
 
         if (mode === 'duel') {
             if (!mongoose.isValidObjectId(partnerId) || String(partnerId) === String(creatorId)) {
@@ -105,16 +128,10 @@ router.post('/create', async (req, res) => {
             }
         }
 
-        const activeFilter = mode === 'single'
-            ? { creatorId, mode: 'single', status: 'active' }
-            : {
-                mode: 'duel',
-                status: 'active',
-                $or: [
-                    { creatorId, partnerId },
-                    { creatorId: partnerId, partnerId: creatorId },
-                ],
-            };
+        const activeFilter = activeGameFilter({ creatorId, partnerId, mode });
+        if (forceNew === true) {
+            await endActiveGamesForFreshPuzzle(activeFilter);
+        }
         let existing = await WordSearchGame.findOne(activeFilter).sort({ createdAt: -1 });
         if (existing) {
             existing = await refreshWordSearchTurn(existing);
@@ -150,12 +167,12 @@ router.post('/create', async (req, res) => {
         return undefined;
     } catch (error) {
         if (error?.code === 11000) {
-            const existing = await WordSearchGame.findOne({
-                creatorId: req.body?.creatorId,
-                mode: 'single',
-                status: 'active',
-            }).sort({ createdAt: -1 });
+            const { creatorId, partnerId = null, mode = 'single' } = req.body || {};
+            let existing = await WordSearchGame.findOne(
+                activeGameFilter({ creatorId, partnerId, mode }),
+            ).sort({ createdAt: -1 });
             if (existing) {
+                existing = await refreshWordSearchTurn(existing);
                 await populateGame(existing);
                 return res.json({ success: true, data: serializeWordSearchGame(existing), isExisting: true });
             }

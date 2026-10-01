@@ -100,8 +100,20 @@ const notifyPartnerAboutMemory = async (partnerId, userId, memory) => {
     }
 };
 
-const buildCursorQuery = (cursorData) => {
+const buildCursorQuery = (cursorData, sort = 'asc') => {
     if (!cursorData) return {};
+
+    if (sort === 'desc') {
+        return {
+            $or: [
+                { capturedAt: { $lt: cursorData.capturedAt } },
+                {
+                    capturedAt: cursorData.capturedAt,
+                    _id: { $lt: cursorData.id },
+                },
+            ],
+        };
+    }
 
     return {
         $or: [
@@ -236,14 +248,19 @@ router.get('/', async (req, res) => {
             });
         }
 
+        const sort = req.query.sort === 'desc' ? 'desc' : 'asc';
         const query = {
             coupleId: couple._id,
             deletedAt: null,
-            ...buildCursorQuery(cursorData),
+            ...buildCursorQuery(cursorData, sort),
         };
 
+        const mongoSort = sort === 'desc'
+            ? { capturedAt: -1, _id: -1 }
+            : { capturedAt: 1, _id: 1 };
+
         const memories = await Memory.find(query)
-            .sort({ capturedAt: 1, _id: 1 })
+            .sort(mongoSort)
             .limit(limit + 1)
             .lean();
 
@@ -271,6 +288,7 @@ router.get('/', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
     try {
+        const { id } = req.params;
         const {
             userId,
             title,

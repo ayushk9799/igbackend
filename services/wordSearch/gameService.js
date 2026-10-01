@@ -12,6 +12,10 @@ export class WordSearchError extends Error {
 
 const idOf = value => String(value?._id || value || '');
 
+export const getWordSearchDuelPairKey = (firstUserId, secondUserId) => (
+    [idOf(firstUserId), idOf(secondUserId)].sort().join(':')
+);
+
 export const WORD_SEARCH_TURN_DURATION_MS = 45_000;
 export const WORD_SEARCH_REMATCH_COUNTDOWN_MS = 6_000;
 
@@ -101,12 +105,16 @@ export const createWordSearchGame = async ({
     startsAt,
     rematchOf = null,
 }) => {
+    // This covers both normal duels and automatic rematches before either can
+    // insert a board without the active-pair uniqueness rule in place.
+    if (mode === 'duel') await WordSearchGame.init();
     const generated = generateWordSearch({ difficulty });
     const now = new Date();
     const roundStartsAt = startsAt ? new Date(startsAt) : now;
     return WordSearchGame.create({
         creatorId,
         partnerId: mode === 'duel' ? partnerId : null,
+        duelPairKey: mode === 'duel' ? getWordSearchDuelPairKey(creatorId, partnerId) : null,
         mode,
         difficulty,
         gridSize: generated.gridSize,

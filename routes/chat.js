@@ -32,7 +32,8 @@ router.post('/answer', async (req, res) => {
             questionText,
             questionCategory,
             answer,
-            answerType
+            answerType,
+            challengeTitle
         } = req.body;
 
         // Validation
@@ -70,7 +71,8 @@ router.post('/answer', async (req, res) => {
             questionText,
             questionCategory,
             answer,
-            answerType
+            answerType,
+            challengeTitle
         });
 
         // Check if both partners have answered (at least one 'answer' type message from each)

@@ -11,6 +11,7 @@ import {
 import {
     claimWordSearchSelection,
     createAutomaticWordSearchRematch,
+    getWordSearchDuelPairKey,
     serializeWordSearchGame,
     synchronizeWordSearchTurn,
     WORD_SEARCH_REMATCH_COUNTDOWN_MS,
@@ -32,6 +33,22 @@ test('default word bank uses the supplied normalized vocabulary', () => {
         const expectedLength = Number(bucket.replace('words', ''));
         assert.ok(words.every(word => word.length === expectedLength));
     }
+});
+
+test('duel pair key and active index are independent of player order', () => {
+    const first = '507f1f77bcf86cd799439011';
+    const second = '507f191e810c19729de860ea';
+    const expected = [first, second].sort().join(':');
+    assert.equal(getWordSearchDuelPairKey(first, second), expected);
+    assert.equal(getWordSearchDuelPairKey(second, first), expected);
+
+    const duelIndex = WordSearchGame.schema.indexes().find(([fields]) => fields.duelPairKey === 1);
+    assert.equal(duelIndex?.[1].unique, true);
+    assert.deepEqual(duelIndex?.[1].partialFilterExpression, {
+        status: 'active',
+        mode: 'duel',
+        duelPairKey: { $type: 'string' },
+    });
 });
 
 test('word-search generator places every listed word inside the generated grid', () => {
@@ -245,10 +262,12 @@ test('automatic rematch swaps the opener and links back to the completed game', 
     const originalFindOne = WordSearchGame.findOne;
     const originalCreate = WordSearchGame.create;
     const originalUpdateOne = WordSearchGame.updateOne;
+    const originalInit = WordSearchGame.init;
     let createdDocument;
 
     try {
         WordSearchGame.findOne = async () => null;
+        WordSearchGame.init = async () => WordSearchGame;
         WordSearchGame.create = async document => {
             createdDocument = document;
             return { _id: rematchId, ...document };
@@ -268,6 +287,10 @@ test('automatic rematch swaps the opener and links back to the completed game', 
         assert.equal(String(createdDocument.creatorId), partnerId);
         assert.equal(String(createdDocument.partnerId), creatorId);
         assert.equal(String(createdDocument.currentTurn), partnerId);
+        assert.equal(
+            createdDocument.duelPairKey,
+            getWordSearchDuelPairKey(creatorId, partnerId),
+        );
         assert.equal(String(createdDocument.rematchOf), completedGameId);
         assert.ok(
             createdDocument.startsAt.getTime() - Date.now()
@@ -285,5 +308,6 @@ test('automatic rematch swaps the opener and links back to the completed game', 
         WordSearchGame.findOne = originalFindOne;
         WordSearchGame.create = originalCreate;
         WordSearchGame.updateOne = originalUpdateOne;
+        WordSearchGame.init = originalInit;
     }
 });

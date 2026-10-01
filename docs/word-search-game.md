@@ -7,14 +7,16 @@ and hard boards can also contain words in reverse.
 ## Rules
 
 - Single player: one player finds every word. The score is the number found.
-- Duel: the creator starts. A valid word scores one point and passes the turn.
-- Opening Word Search automatically resumes or creates the board. Live presence
-  chooses a duel for an online partner and solo while the partner is offline;
-  there is no separate mode/start screen. Difficulty lives in Settings.
+- Duel: the creator starts. Each player has a 45-second turn and may find as
+  many words as possible during that turn. Correct words score one point.
+- Opening Word Search automatically resumes or creates the board. The saved
+  mode preference is used when possible; an offline partner causes a duel
+  preference to fall back to solo. Solo remains available when a partner is
+  online. Mode and difficulty can be changed in Game Options for a new board.
 - An offline partner can be nudged from the setup or active-game UI. The nudge
   is delivered by socket and push notification.
-- A duel turn changes only after a new hidden word is found. Wrong guesses,
-  already-found words, and invalid gestures keep the turn with the same player.
+- A duel turn changes when its timer expires. Correct words, wrong guesses,
+  already-found words, and invalid gestures do not reset the timer.
 - The server accepts either endpoint order, so words can be selected forwards or
   backwards.
 - When every listed word is found, the higher score wins. Equal scores are a draw.
@@ -50,8 +52,9 @@ The find operation checks, in order:
    A miss is rejected without changing the score or current turn.
 
 Mongoose optimistic concurrency protects the complete mutation: word claim,
-score increment, history append, next turn, and winner calculation. Concurrent
-claims cannot both score from the same version of the game.
+score increment, history append, and winner calculation. Concurrent claims
+cannot both score from the same version of the game. A unique active duel pair
+key prevents concurrent create requests from producing separate boards.
 
 ## REST API
 
@@ -64,13 +67,16 @@ Body:
   "creatorId": "...",
   "partnerId": "...",
   "mode": "single",
-  "difficulty": "medium"
+  "difficulty": "medium",
+  "forceNew": false
 }
 ```
 
 `partnerId` is required for `duel` and must be the creator's linked partner.
 If the same player/couple already has an active game in that mode, the endpoint
-returns it with `isExisting: true`.
+returns it with `isExisting: true`. `forceNew: true` ends any active game in
+the requested mode before creating a new board. The client first ends its
+currently displayed active board.
 
 ### `GET /api/word-search/active/:userId`
 

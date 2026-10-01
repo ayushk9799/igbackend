@@ -37,10 +37,13 @@ const chatSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         // Not required because DailyChallenge tasks have embedded _id
     },
-    // For DailyChallenge - reference to challenge and task index
+    // For DailyChallenge - reference to challenge, date, and task index
     challengeId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'DailyChallenge'
+    },
+    date: {
+        type: String, // YYYY-MM-DD for daily challenge
     },
     taskIndex: {
         type: Number
@@ -90,6 +93,15 @@ const chatSchema = new mongoose.Schema({
             type: String,
             enum: ['text', 'photo', 'video', 'voice'],
         },
+        taskIndex: {
+            type: Number,
+        },
+        questionText: {
+            type: String,
+        },
+        questionCategory: {
+            type: String,
+        },
         isRead: { type: Boolean, default: false },
         readAt: { type: Date },
         reactions: [{
@@ -103,6 +115,7 @@ const chatSchema = new mongoose.Schema({
 
 // Indexes for efficient queries
 chatSchema.index({ coupleId: 1, questionId: 1 });
+chatSchema.index({ coupleId: 1, challengeId: 1 });
 chatSchema.index({ coupleId: 1, challengeId: 1, taskIndex: 1 });
 chatSchema.index({ partner1: 1, status: 1, lastMessageAt: -1 });
 chatSchema.index({ partner2: 1, status: 1, lastMessageAt: -1 });
@@ -144,7 +157,8 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
         questionText,
         questionCategory,
         answer,
-        answerType = 'text'
+        answerType = 'text',
+        challengeTitle,
     } = params;
 
     const coupleId = this.generateCoupleId(userId, partnerId);
@@ -153,7 +167,11 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
 
     // Build query based on source
     let query = { coupleId };
-    if (challengeId && taskIndex !== undefined) {
+    if (questionSource === 'dailychallenge' && challengeId) {
+        // Group all tasks for a single daily challenge into ONE conversation
+        query.questionSource = 'dailychallenge';
+        query.challengeId = challengeId;
+    } else if (challengeId && taskIndex !== undefined) {
         query.challengeId = challengeId;
         query.taskIndex = taskIndex;
     } else if (questionId) {
@@ -164,6 +182,10 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
 
     if (!chat) {
         // Create new chat
+        const title = questionSource === 'dailychallenge'
+            ? (challengeTitle || 'Daily Ritual')
+            : questionText;
+
         chat = new this({
             coupleId,
             partner1: p1,
@@ -171,9 +193,9 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
             questionSource,
             questionId: challengeId ? undefined : questionId,
             challengeId: challengeId || undefined,
-            taskIndex: taskIndex !== undefined ? taskIndex : undefined,
-            questionText,
-            questionCategory,
+            taskIndex: questionSource === 'dailychallenge' ? undefined : (taskIndex !== undefined ? taskIndex : undefined),
+            questionText: title,
+            questionCategory: questionSource === 'dailychallenge' ? 'dailychallenge' : questionCategory,
             lastMessageAt: new Date(),
             lastMessagePreview: answerType === 'photo' ? '📷 Photo' : answerType === 'video' ? '🎥 Video' : answerType === 'voice' ? '🎙️ Voice Message' : answer,
             messageCount: 1,
@@ -182,18 +204,39 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
                 content: answer,
                 messageType: 'answer',
                 answerType: answerType,
+                taskIndex: taskIndex !== undefined ? taskIndex : undefined,
+                questionText,
+                questionCategory,
                 createdAt: new Date()
             }]
         });
     } else {
-        // Push the new answer to the embedded messages array
-        chat.messages.push({
-            senderId: userId,
-            content: answer,
-            messageType: 'answer',
-            answerType: answerType,
-            createdAt: new Date()
-        });
+        // If daily challenge, check if an answer for this user & taskIndex exists
+        const existingAnswerIndex = (questionSource === 'dailychallenge' && taskIndex !== undefined)
+            ? chat.messages.findIndex(m => m.messageType === 'answer' && m.senderId?.toString() === userId.toString() && m.taskIndex === taskIndex)
+            : -1;
+
+        if (existingAnswerIndex >= 0) {
+            chat.messages[existingAnswerIndex].content = answer;
+            chat.messages[existingAnswerIndex].answerType = answerType;
+            chat.messages[existingAnswerIndex].createdAt = new Date();
+        } else {
+            chat.messages.push({
+                senderId: userId,
+                content: answer,
+                messageType: 'answer',
+                answerType: answerType,
+                taskIndex: taskIndex !== undefined ? taskIndex : undefined,
+                questionText,
+                questionCategory,
+                createdAt: new Date()
+            });
+            chat.messageCount += 1;
+        }
+
+        if (challengeTitle && questionSource === 'dailychallenge' && (!chat.questionText || chat.questionText === 'Daily Ritual')) {
+            chat.questionText = challengeTitle;
+        }
 
         // Update metadata
         chat.lastMessageAt = new Date();
@@ -202,9 +245,7 @@ chatSchema.statics.findOrCreateForQuestion = async function (params) {
         // Update unread count for the other partner
         const isPartner1Now = userId.toString() === chat.partner1.toString();
         const unreadField = isPartner1Now ? 'partner2Unread' : 'partner1Unread';
-        chat[unreadField] += 1;
-        chat.messageCount += 1;
-
+        chat[unreadField] = (chat[unreadField] || 0) + 1;
     }
 
     await chat.save();
@@ -235,6 +276,7 @@ chatSchema.statics.getChatsForUser = async function (userId, partnerId) {
         .sort({ lastMessageAt: -1, createdAt: -1 })
         .populate('partner1', 'name nickname avatar')
         .populate('partner2', 'name nickname avatar')
+        .populate('challengeId', 'date title')
         .populate('messages.senderId', 'name nickname avatar')
         .lean();
 
@@ -243,6 +285,7 @@ chatSchema.statics.getChatsForUser = async function (userId, partnerId) {
         const isPartner1 = chat.partner1?._id?.toString() === userId.toString();
         return {
             ...chat,
+            date: chat.date || chat.challengeId?.date || null,
             latestMessage: chat.messages?.[0] || null,
             unreadCount: isPartner1 ? chat.partner1Unread : chat.partner2Unread,
             partner: isPartner1 ? chat.partner2 : chat.partner1
@@ -277,6 +320,7 @@ chatSchema.statics.getChatChangesForUser = async function (userId, partnerId, si
         .sort({ lastMessageAt: -1, createdAt: -1 })
         .populate('partner1', 'name nickname avatar')
         .populate('partner2', 'name nickname avatar')
+        .populate('challengeId', 'date title')
         .populate('messages.senderId', 'name nickname avatar')
         .lean();
 
@@ -284,6 +328,7 @@ chatSchema.statics.getChatChangesForUser = async function (userId, partnerId, si
         const isPartner1 = chat.partner1?._id?.toString() === userId.toString();
         return {
             ...chat,
+            date: chat.date || chat.challengeId?.date || null,
             latestMessage: chat.messages?.[0] || null,
             unreadCount: isPartner1 ? chat.partner1Unread : chat.partner2Unread,
             partner: isPartner1 ? chat.partner2 : chat.partner1
