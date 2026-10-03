@@ -33,7 +33,7 @@ import subscriptionRoutes from './routes/subscriptions.js';
 import appConfigRoutes from './routes/appConfig.js';
 import scribbleRoutes from './routes/scribble.js';
 import couplePhotoRoutes from './routes/couplePhoto.js';
-import wordSearchRoutes from './routes/wordSearch.js';
+import wordSearchRoutes, { legacyWordSearchRoutes } from './routes/wordSearch.js';
 import initializeSocket from './socket/index.js';
 import { restoreWordSearchTurnTimers } from './services/wordSearch/turnTimer.js';
 
@@ -113,7 +113,8 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/app-config', appConfigRoutes);
 app.use('/api/scribbles', scribbleRoutes);
 app.use('/api/couple-photo', couplePhotoRoutes);
-app.use('/api/word-search', wordSearchRoutes);
+app.use('/api/word-search', legacyWordSearchRoutes);
+app.use('/api/v2/word-search', wordSearchRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);

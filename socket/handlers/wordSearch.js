@@ -9,7 +9,7 @@ export const handleWordSearchJoin = async (socket, io, data = {}, acknowledge) =
         if (!game) throw new Error('Game not found');
         if (!isWordSearchPlayer(game, socket.userId)) throw new Error('Not a player in this game');
 
-        game = await refreshWordSearchTurn(game);
+        game = await refreshWordSearchTurn(game, { legacyClient: socket.handshake?.auth?.wordSearchVersion !== 2 });
 
         socket.join(`wordsearch_${gameId}`);
         const payload = { success: true, game: serializeWordSearchGame(game) };

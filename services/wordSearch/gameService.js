@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import WordSearchGame from '../../models/WordSearchGame.js';
+import { hasLegacyWordSearchClient, isUserOnline } from '../../socket/auth.js';
 import { findEntryBySelection, generateWordSearch, getSelectionCoordinates } from './gameEngine.js';
 
 export class WordSearchError extends Error {
@@ -19,12 +20,59 @@ export const getWordSearchDuelPairKey = (firstUserId, secondUserId) => (
 export const WORD_SEARCH_TURN_DURATION_MS = 45_000;
 export const WORD_SEARCH_REMATCH_COUNTDOWN_MS = 6_000;
 
-const applyTurnClock = (game, now = new Date()) => {
+const applyTurnClock = (game, now = new Date(), { legacyClient = false } = {}) => {
     if (game?.mode !== 'duel' || game?.status !== 'active') {
         return { changed: false, advanced: false, turnsElapsed: 0 };
     }
 
     const nowMs = now.getTime();
+    let downgraded = false;
+    if (game.protocolVersion === 2 && (legacyClient || [game.creatorId, game.partnerId].some(player => hasLegacyWordSearchClient(idOf(player))))) {
+        game.protocolVersion = 1;
+        downgraded = true;
+    }
+    if (game.protocolVersion === 2) {
+        const offlinePlayerIds = [game.creatorId, game.partnerId].filter(player => !isUserOnline(idOf(player)));
+        if (offlinePlayerIds.length) {
+            const presenceChanged = offlinePlayerIds.map(idOf).join(':') !== (game.offlinePlayerIds || []).map(idOf).join(':');
+            const alreadyPaused = Boolean(game.turnPausedAt);
+            if (!alreadyPaused) {
+                const startsAtMs = game.startsAt ? new Date(game.startsAt).getTime() : nowMs;
+                const expiry = game.turnExpiresAt ? new Date(game.turnExpiresAt).getTime() : Number.NaN;
+                game.turnPausedAt = now;
+                game.startRemainingMs = Math.max(0, startsAtMs - nowMs);
+                game.turnRemainingMs = Number.isFinite(expiry)
+                    ? Math.max(0, Math.min(WORD_SEARCH_TURN_DURATION_MS, expiry - Math.max(nowMs, startsAtMs)))
+                    : WORD_SEARCH_TURN_DURATION_MS;
+                game.turnExpiresAt = null;
+            }
+            game.offlinePlayerIds = offlinePlayerIds;
+            return { changed: !alreadyPaused || presenceChanged, advanced: false, turnsElapsed: 0, reason: 'player_offline' };
+        }
+        if (game.turnPausedAt) {
+            const remaining = game.turnRemainingMs ?? WORD_SEARCH_TURN_DURATION_MS;
+            const startDelay = game.startRemainingMs || 0;
+            if (startDelay) game.startsAt = new Date(nowMs + startDelay);
+            game.turnStartedAt = new Date(nowMs + startDelay - (WORD_SEARCH_TURN_DURATION_MS - remaining));
+            game.turnExpiresAt = new Date(nowMs + startDelay + remaining);
+            game.turnPausedAt = null;
+            game.turnRemainingMs = null;
+            game.startRemainingMs = null;
+            game.offlinePlayerIds = [];
+            return { changed: true, advanced: false, turnsElapsed: 0, reason: 'players_reconnected' };
+        }
+    } else if (game.turnPausedAt) {
+        const remaining = game.turnRemainingMs ?? WORD_SEARCH_TURN_DURATION_MS;
+        const startDelay = game.startRemainingMs || 0;
+        if (startDelay) game.startsAt = new Date(nowMs + startDelay);
+        game.turnStartedAt = new Date(nowMs + startDelay - (WORD_SEARCH_TURN_DURATION_MS - remaining));
+        game.turnExpiresAt = new Date(nowMs + startDelay + remaining);
+        game.turnPausedAt = null;
+        game.turnRemainingMs = null;
+        game.startRemainingMs = null;
+        game.offlinePlayerIds = [];
+        downgraded = true;
+    }
     const expiresAtMs = game.turnExpiresAt ? new Date(game.turnExpiresAt).getTime() : Number.NaN;
     if (!Number.isFinite(expiresAtMs)) {
         game.turnStartedAt = now;
@@ -32,7 +80,7 @@ const applyTurnClock = (game, now = new Date()) => {
         return { changed: true, advanced: false, turnsElapsed: 0 };
     }
     if (expiresAtMs > nowMs) {
-        return { changed: false, advanced: false, turnsElapsed: 0 };
+        return { changed: downgraded, advanced: false, turnsElapsed: 0, ...(downgraded ? { reason: 'legacy_compatibility' } : {}) };
     }
 
     const turnsElapsed = Math.floor((nowMs - expiresAtMs) / WORD_SEARCH_TURN_DURATION_MS) + 1;
@@ -64,6 +112,7 @@ export const serializeWordSearchGame = (game) => {
     return {
         _id: source._id,
         mode: source.mode,
+        protocolVersion: source.protocolVersion === 2 ? 2 : 1,
         difficulty: source.difficulty,
         creatorId: source.creatorId,
         partnerId: source.partnerId,
@@ -73,6 +122,10 @@ export const serializeWordSearchGame = (game) => {
         startsAt: source.startsAt,
         turnStartedAt: source.turnStartedAt,
         turnExpiresAt: source.turnExpiresAt,
+        turnPausedAt: source.turnPausedAt,
+        turnRemainingMs: source.turnRemainingMs,
+        startRemainingMs: source.startRemainingMs,
+        offlinePlayerIds: source.offlinePlayerIds || [],
         turnDurationSeconds: WORD_SEARCH_TURN_DURATION_MS / 1000,
         creatorScore: source.creatorScore,
         partnerScore: source.partnerScore,
@@ -100,23 +153,25 @@ export const createWordSearchGame = async ({
     creatorId,
     partnerId = null,
     mode = 'single',
-    difficulty = 'medium',
+    difficulty = 'easy',
+    protocolVersion = 2,
     firstPlayerId,
     startsAt,
     rematchOf = null,
 }) => {
-    // This covers both normal duels and automatic rematches before either can
-    // insert a board without the active-pair uniqueness rule in place.
+    // Enforce one active board per couple before inserting a duel.
     if (mode === 'duel') await WordSearchGame.init();
     const generated = generateWordSearch({ difficulty });
     const now = new Date();
     const roundStartsAt = startsAt ? new Date(startsAt) : now;
-    return WordSearchGame.create({
+    const document = {
         creatorId,
         partnerId: mode === 'duel' ? partnerId : null,
         duelPairKey: mode === 'duel' ? getWordSearchDuelPairKey(creatorId, partnerId) : null,
         mode,
+        protocolVersion,
         difficulty,
+        status: 'active',
         gridSize: generated.gridSize,
         grid: generated.grid,
         words: generated.entries,
@@ -127,11 +182,13 @@ export const createWordSearchGame = async ({
             ? new Date(roundStartsAt.getTime() + WORD_SEARCH_TURN_DURATION_MS)
             : null,
         rematchOf,
-    });
+    };
+    applyTurnClock(document, now);
+    return WordSearchGame.create(document);
 };
 
 export const createAutomaticWordSearchRematch = async (completedGame) => {
-    if (!completedGame || completedGame.mode !== 'duel' || completedGame.status !== 'completed') {
+    if (!completedGame || completedGame.mode !== 'duel' || completedGame.status !== 'completed' || completedGame.protocolVersion === 2) {
         return null;
     }
 
@@ -156,6 +213,7 @@ export const createAutomaticWordSearchRematch = async (completedGame) => {
             creatorId: previousPartnerId,
             partnerId: previousCreatorId,
             mode: 'duel',
+            protocolVersion: 1,
             difficulty: completedGame.difficulty,
             firstPlayerId: previousPartnerId,
             startsAt,
@@ -164,6 +222,21 @@ export const createAutomaticWordSearchRematch = async (completedGame) => {
     } catch (error) {
         if (error?.code !== 11000) throw error;
         rematch = await WordSearchGame.findOne({ rematchOf: completedGameId });
+        if (!rematch) {
+            // A partner may explicitly start a board before the automatic
+            // rematch inserts. Reuse it so released clients do not get stuck.
+            rematch = await WordSearchGame.findOne({
+                mode: 'duel', status: 'active',
+                $or: [
+                    { creatorId: previousCreatorId, partnerId: previousPartnerId },
+                    { creatorId: previousPartnerId, partnerId: previousCreatorId },
+                ],
+            });
+            if (rematch) {
+                const result = await synchronizeWordSearchTurn({ gameId: idOf(rematch._id), legacyClient: true });
+                rematch = result.game;
+            }
+        }
         if (!rematch) throw error;
     }
 
@@ -174,12 +247,12 @@ export const createAutomaticWordSearchRematch = async (completedGame) => {
     return rematch;
 };
 
-export const synchronizeWordSearchTurn = async ({ gameId, now = new Date() }) => {
+export const synchronizeWordSearchTurn = async ({ gameId, now = new Date(), legacyClient = false }) => {
     for (let attempt = 0; attempt < 3; attempt += 1) {
         const game = await WordSearchGame.findById(gameId);
         if (!game) throw new WordSearchError('GAME_NOT_FOUND', 'Game not found', 404);
 
-        const clockResult = applyTurnClock(game, now);
+        const clockResult = applyTurnClock(game, now, { legacyClient });
         if (!clockResult.changed) return { game, ...clockResult };
 
         try {
@@ -193,7 +266,7 @@ export const synchronizeWordSearchTurn = async ({ gameId, now = new Date() }) =>
     throw new WordSearchError('STALE_GAME', 'The game changed; please try again', 409);
 };
 
-export const claimWordSearchSelection = async ({ gameId, userId, start, end }) => {
+export const claimWordSearchSelection = async ({ gameId, userId, start, end, legacyClient = false }) => {
     if (!mongoose.isValidObjectId(gameId) || !mongoose.isValidObjectId(userId)) {
         throw new WordSearchError('INVALID_REQUEST', 'Invalid game or user ID');
     }
@@ -207,11 +280,7 @@ export const claimWordSearchSelection = async ({ gameId, userId, start, end }) =
         if (game.status !== 'active') {
             throw new WordSearchError('GAME_COMPLETE', 'This game is already complete', 409);
         }
-        if (game.startsAt && new Date(game.startsAt).getTime() > Date.now()) {
-            throw new WordSearchError('GAME_NOT_STARTED', 'The rematch countdown is still running', 409);
-        }
-
-        const clockResult = applyTurnClock(game, new Date());
+        const clockResult = applyTurnClock(game, new Date(), { legacyClient });
         if (clockResult.changed) {
             try {
                 await game.save();
@@ -221,6 +290,13 @@ export const claimWordSearchSelection = async ({ gameId, userId, start, end }) =
                 continue;
             }
         }
+        if (game.turnPausedAt) {
+            throw new WordSearchError('GAME_PAUSED', 'Game paused while a player is offline', 409);
+        }
+        if (game.startsAt && new Date(game.startsAt).getTime() > Date.now()) {
+            throw new WordSearchError('GAME_NOT_STARTED', 'The game countdown is still running', 409);
+        }
+
         if (game.mode === 'duel' && idOf(game.currentTurn) !== String(userId)) {
             throw new WordSearchError('NOT_YOUR_TURN', 'Wait for your partner’s turn to end', 409);
         }

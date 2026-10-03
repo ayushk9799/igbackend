@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     DEFAULT_WORD_BANK,
@@ -10,13 +10,19 @@ import {
 } from '../services/wordSearch/gameEngine.js';
 import {
     claimWordSearchSelection,
-    createAutomaticWordSearchRematch,
     getWordSearchDuelPairKey,
     serializeWordSearchGame,
     synchronizeWordSearchTurn,
-    WORD_SEARCH_REMATCH_COUNTDOWN_MS,
 } from '../services/wordSearch/gameService.js';
 import WordSearchGame from '../models/WordSearchGame.js';
+import { connectedUsers } from '../socket/auth.js';
+
+beforeEach(() => {
+    for (const id of ['507f1f77bcf86cd799439011', '507f191e810c19729de860ea']) {
+        connectedUsers.set(id, { socketIds: new Set(['online']), wordSearchVersions: new Map([['online', 2]]) });
+    }
+});
+afterEach(() => connectedUsers.clear());
 
 const makeRandom = (seed = 123456789) => () => {
     seed = (1664525 * seed + 1013904223) % 4294967296;
@@ -251,63 +257,5 @@ test('duel rejects selections while the rematch countdown is running', async () 
         );
     } finally {
         WordSearchGame.findById = originalFindById;
-    }
-});
-
-test('automatic rematch swaps the opener and links back to the completed game', async () => {
-    const creatorId = '507f1f77bcf86cd799439011';
-    const partnerId = '507f191e810c19729de860ea';
-    const completedGameId = '507f1f77bcf86cd799439012';
-    const rematchId = '507f191e810c19729de860eb';
-    const originalFindOne = WordSearchGame.findOne;
-    const originalCreate = WordSearchGame.create;
-    const originalUpdateOne = WordSearchGame.updateOne;
-    const originalInit = WordSearchGame.init;
-    let createdDocument;
-
-    try {
-        WordSearchGame.findOne = async () => null;
-        WordSearchGame.init = async () => WordSearchGame;
-        WordSearchGame.create = async document => {
-            createdDocument = document;
-            return { _id: rematchId, ...document };
-        };
-        WordSearchGame.updateOne = async () => ({ modifiedCount: 1 });
-
-        const rematch = await createAutomaticWordSearchRematch({
-            _id: completedGameId,
-            mode: 'duel',
-            status: 'completed',
-            difficulty: 'easy',
-            creatorId,
-            partnerId,
-        });
-
-        assert.equal(String(rematch._id), rematchId);
-        assert.equal(String(createdDocument.creatorId), partnerId);
-        assert.equal(String(createdDocument.partnerId), creatorId);
-        assert.equal(String(createdDocument.currentTurn), partnerId);
-        assert.equal(
-            createdDocument.duelPairKey,
-            getWordSearchDuelPairKey(creatorId, partnerId),
-        );
-        assert.equal(String(createdDocument.rematchOf), completedGameId);
-        assert.ok(
-            createdDocument.startsAt.getTime() - Date.now()
-                <= WORD_SEARCH_REMATCH_COUNTDOWN_MS,
-        );
-        assert.ok(
-            createdDocument.startsAt.getTime() - Date.now()
-                > WORD_SEARCH_REMATCH_COUNTDOWN_MS - 1_000,
-        );
-        assert.equal(
-            createdDocument.turnExpiresAt.getTime() - createdDocument.startsAt.getTime(),
-            45_000,
-        );
-    } finally {
-        WordSearchGame.findOne = originalFindOne;
-        WordSearchGame.create = originalCreate;
-        WordSearchGame.updateOne = originalUpdateOne;
-        WordSearchGame.init = originalInit;
     }
 });

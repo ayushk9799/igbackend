@@ -28,6 +28,7 @@ import {
 } from '../utils/localization.js';
 import { getLocalizedV2Question } from '../services/questionsV2/localizedContentService.js';
 import { calculateQuestionProgress } from '../services/questionsV2/progressMath.js';
+import { getCoupleQuestionStats } from '../services/questionsV2/coupleStats.js';
 import {
     buildContentManifest,
     getSetContentRevision,
@@ -557,31 +558,36 @@ router.get('/topics', async (req, res) => {
         const language = getRequestLanguage(req);
         const metadata = await ensureTopicQuestionMetadata();
         const doneCountByTopic = new Map();
+        let coupleStats = null;
 
         if (userId) {
             if (!mongoose.isValidObjectId(userId)) {
                 return res.status(400).json({ success: false, message: 'Invalid userId' });
             }
 
-            const progressRows = await QuestionProgressV2.aggregate([
-                {
-                    $match: {
-                        userId: new mongoose.Types.ObjectId(userId),
-                    },
-                },
-                {
-                    $project: {
-                        topicId: 1,
-                        setId: 1,
-                        doneQuestionIds: {
-                            $setUnion: [
-                                { $ifNull: ['$answeredQuestionIds', []] },
-                                { $ifNull: ['$skippedQuestionIds', []] },
-                            ],
+            const [progressRows, stats] = await Promise.all([
+                QuestionProgressV2.aggregate([
+                    {
+                        $match: {
+                            userId: new mongoose.Types.ObjectId(userId),
                         },
                     },
-                },
+                    {
+                        $project: {
+                            topicId: 1,
+                            setId: 1,
+                            doneQuestionIds: {
+                                $setUnion: [
+                                    { $ifNull: ['$answeredQuestionIds', []] },
+                                    { $ifNull: ['$skippedQuestionIds', []] },
+                                ],
+                            },
+                        },
+                    },
+                ]),
+                getCoupleQuestionStats(userId),
             ]);
+            coupleStats = stats;
 
             for (const row of progressRows) {
                 const activeQuestionKeys = metadata.get(row.topicId)?.activeQuestionKeys;
@@ -605,6 +611,7 @@ router.get('/topics', async (req, res) => {
         res.status(200).json({
             success: true,
             data: {
+                coupleStats,
                 topics: TOPICS_V2
                     .filter((topic) => topic.isActive)
                     .map((topic) => {

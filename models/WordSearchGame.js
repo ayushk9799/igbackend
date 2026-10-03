@@ -16,7 +16,9 @@ const wordEntrySchema = new mongoose.Schema({
 
 const wordSearchGameSchema = new mongoose.Schema({
     mode: { type: String, enum: ['single', 'duel'], required: true },
-    difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+    // Missing on saved games from the released app: preserve legacy rules.
+    protocolVersion: { type: Number, enum: [1, 2], default: 1 },
+    difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'easy' },
     creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     partnerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     duelPairKey: { type: String, default: null },
@@ -27,6 +29,10 @@ const wordSearchGameSchema = new mongoose.Schema({
     startsAt: { type: Date, default: null },
     turnStartedAt: { type: Date, default: null },
     turnExpiresAt: { type: Date, default: null },
+    turnPausedAt: { type: Date, default: null },
+    turnRemainingMs: { type: Number, default: null, min: 0 },
+    startRemainingMs: { type: Number, default: null, min: 0 },
+    offlinePlayerIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     creatorScore: { type: Number, default: 0, min: 0 },
     partnerScore: { type: Number, default: 0, min: 0 },
     status: { type: String, enum: ['active', 'completed', 'abandoned'], default: 'active' },

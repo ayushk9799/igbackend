@@ -8,6 +8,16 @@ import { verifySessionToken } from '../middleware/auth.js';
 // Format: { userId: { socketIds: Set<string>, partnerId, userId } }
 export const connectedUsers = new Map();
 
+// A shared duel uses legacy rules if any connected device needs them.
+export const hasLegacyWordSearchClient = userId => {
+    const entry = connectedUsers.get(String(userId));
+    return Boolean(entry?.socketIds?.size && [...entry.socketIds].some(id => entry.wordSearchVersions?.get(id) !== 2));
+};
+export const supportsModernWordSearch = userId => {
+    const entry = connectedUsers.get(String(userId));
+    return Boolean(entry?.socketIds?.size && !hasLegacyWordSearchClient(userId));
+};
+
 /**
  * Socket authentication middleware
  * Validates userId exists in database
@@ -59,16 +69,27 @@ export const getCoupleRoomId = (userId, partnerId) => {
 /**
  * Handle user connection - join couple room and track presence
  */
-export const handleConnection = async (socket, io) => {
+export const handleConnection = async (socket, io, { onPresenceChange = async () => {} } = {}) => {
     const { userId, partnerId, userName } = socket;
     const normalizedUserId = String(userId);
+    const notifyPresenceChange = async () => {
+        try {
+            await onPresenceChange(normalizedUserId);
+        } catch (error) {
+            console.error('❌ Failed to refresh games after presence change:', error);
+        }
+    };
 
+    const previouslyLegacy = hasLegacyWordSearchClient(normalizedUserId);
     const existingUser = connectedUsers.get(normalizedUserId);
     const wasOffline = !existingUser || existingUser.socketIds.size === 0;
     const socketIds = existingUser?.socketIds || new Set();
     socketIds.add(socket.id);
+    const wordSearchVersions = existingUser?.wordSearchVersions || new Map();
+    wordSearchVersions.set(socket.id, socket.handshake?.auth?.wordSearchVersion === 2 ? 2 : 1);
     connectedUsers.set(normalizedUserId, {
         socketIds,
+        wordSearchVersions,
         partnerId,
         userId: normalizedUserId,
     });
@@ -99,9 +120,12 @@ export const handleConnection = async (socket, io) => {
             return;
         }
 
+        const wasLegacy = hasLegacyWordSearchClient(normalizedUserId);
         currentUser.socketIds.delete(socket.id);
+        currentUser.wordSearchVersions?.delete(socket.id);
         if (currentUser.socketIds.size > 0) {
             connectedUsers.set(normalizedUserId, currentUser);
+            if (wasLegacy !== hasLegacyWordSearchClient(normalizedUserId)) await notifyPresenceChange();
             return;
         }
 
@@ -112,18 +136,20 @@ export const handleConnection = async (socket, io) => {
         connectedUsers.delete(normalizedUserId);
         const lastSeen = new Date();
 
-        await User.findByIdAndUpdate(normalizedUserId, {
-            isOnline: false,
-            lastSeen,
-        });
-
         if (disconnectRoomId) {
             io.to(disconnectRoomId).emit('presence:offline', {
                 userId: normalizedUserId,
                 lastSeen: lastSeen.toISOString(),
             });
         }
+        await Promise.all([
+            notifyPresenceChange(),
+            User.findByIdAndUpdate(normalizedUserId, { isOnline: false, lastSeen }),
+        ]);
     });
+
+    // Notify games after registering disconnect handling and before DB awaits.
+    if (wasOffline || previouslyLegacy !== hasLegacyWordSearchClient(normalizedUserId)) void notifyPresenceChange();
 
     // Keep the persisted status for last-seen/fallback purposes. Live presence
     // is determined by connectedUsers, not by this asynchronously written flag.

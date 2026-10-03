@@ -30,6 +30,7 @@ import {
     handleTicTacToeScreenInactive,
 } from './handlers/tictactoe.js';
 import { clearTicTacToeScreenPresenceForSocket } from '../services/ticTacToeScreenPresence.js';
+import { refreshWordSearchPresence } from '../services/wordSearch/turnTimer.js';
 import {
     handleWordleJoin,
     handleWordleLeave,
@@ -340,7 +341,7 @@ export const initializeSocket = (httpServer) => {
 
 
         // ======== NOW DO ASYNC SETUP (after handlers are ready) ========
-        handleConnection(socket, io)
+        handleConnection(socket, io, { onPresenceChange: refreshWordSearchPresence })
             .then(() => {
             })
             .catch((error) => {

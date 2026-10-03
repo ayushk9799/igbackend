@@ -69,7 +69,7 @@ const randomBetween = (min, max, random) => min + randomIndex((max - min) + 1, r
  * function makes generation deterministic in tests.
  */
 export const generateWordSearch = ({
-    difficulty = 'medium',
+    difficulty = 'easy',
     words = DEFAULT_WORD_BANK,
     random = Math.random,
 } = {}) => {
