@@ -34,8 +34,10 @@ import appConfigRoutes from './routes/appConfig.js';
 import scribbleRoutes from './routes/scribble.js';
 import couplePhotoRoutes from './routes/couplePhoto.js';
 import wordSearchRoutes, { legacyWordSearchRoutes } from './routes/wordSearch.js';
+import letterRoutes from './routes/letters.js';
 import initializeSocket from './socket/index.js';
 import { restoreWordSearchTurnTimers } from './services/wordSearch/turnTimer.js';
+import { startLetterDeliveryLoop } from './services/letters/delivery.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -66,6 +68,8 @@ if (!MONGODB_URI) {
                 // Active games also restore lazily when either player opens the board.
                 console.error('❌ Word-search turn timer restoration failed:', error);
             }
+            // Letters that came due while the server was down land on the first sweep.
+            startLetterDeliveryLoop();
         })
         .catch((err) => console.error('❌ MongoDB connection error:', err));
 }
@@ -115,6 +119,7 @@ app.use('/api/scribbles', scribbleRoutes);
 app.use('/api/couple-photo', couplePhotoRoutes);
 app.use('/api/word-search', legacyWordSearchRoutes);
 app.use('/api/v2/word-search', wordSearchRoutes);
+app.use('/api/letters', letterRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);
