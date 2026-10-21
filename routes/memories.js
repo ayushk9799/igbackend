@@ -4,8 +4,21 @@ import Couple from '../models/Couple.js';
 import Memory from '../models/Memory.js';
 import User from '../models/User.js';
 import { sendMemoryNotification } from '../utils/pushNotification.js';
+import { getIO } from '../socket/index.js';
+import { getCoupleRoomId } from '../socket/auth.js';
 
 const router = express.Router();
+
+const emitMemorySocketEvent = (userId, partnerId, event, data) => {
+    try {
+        const roomId = getCoupleRoomId(String(userId), String(partnerId));
+        if (roomId) {
+            getIO()?.to(roomId).emit(event, data);
+        }
+    } catch (error) {
+        console.warn(`📷 [MEMORIES] Failed to emit ${event} socket event:`, error.message);
+    }
+};
 
 const MAX_LIMIT = 30;
 const DEFAULT_LIMIT = 20;
@@ -87,8 +100,20 @@ const notifyPartnerAboutMemory = async (partnerId, userId, memory) => {
     }
 };
 
-const buildCursorQuery = (cursorData) => {
+const buildCursorQuery = (cursorData, sort = 'asc') => {
     if (!cursorData) return {};
+
+    if (sort === 'desc') {
+        return {
+            $or: [
+                { capturedAt: { $lt: cursorData.capturedAt } },
+                {
+                    capturedAt: cursorData.capturedAt,
+                    _id: { $lt: cursorData.id },
+                },
+            ],
+        };
+    }
 
     return {
         $or: [
@@ -167,6 +192,7 @@ router.post('/', async (req, res) => {
 
         const partnerId = getPartnerIdFromCouple(couple, userId);
         if (partnerId) {
+            emitMemorySocketEvent(userId, partnerId, 'memory:created', memory);
             const notification = notifyPartnerAboutMemory(partnerId, userId, memory);
             if (notifyPartnerAsync === true) {
                 // New clients do not keep the save button blocked on FCM. The
@@ -222,14 +248,19 @@ router.get('/', async (req, res) => {
             });
         }
 
+        const sort = req.query.sort === 'desc' ? 'desc' : 'asc';
         const query = {
             coupleId: couple._id,
             deletedAt: null,
-            ...buildCursorQuery(cursorData),
+            ...buildCursorQuery(cursorData, sort),
         };
 
+        const mongoSort = sort === 'desc'
+            ? { capturedAt: -1, _id: -1 }
+            : { capturedAt: 1, _id: 1 };
+
         const memories = await Memory.find(query)
-            .sort({ capturedAt: 1, _id: 1 })
+            .sort(mongoSort)
             .limit(limit + 1)
             .lean();
 
@@ -258,7 +289,18 @@ router.get('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId, title, caption, capturedAt, iconKey } = req.body;
+        const {
+            userId,
+            title,
+            caption,
+            capturedAt,
+            iconKey,
+            entryType,
+            imageUrl,
+            fileKey,
+            width,
+            height,
+        } = req.body;
 
         if (!isValidObjectId(id)) {
             return res.status(400).json({
@@ -295,6 +337,26 @@ router.patch('/:id', async (req, res) => {
             updates.caption = trimCaption(caption);
         }
 
+        if (entryType !== undefined) {
+            updates.entryType = normalizeEntryType(entryType);
+        }
+
+        if (imageUrl !== undefined) {
+            updates.imageUrl = imageUrl;
+        }
+
+        if (fileKey !== undefined) {
+            updates.fileKey = fileKey;
+        }
+
+        if (width !== undefined) {
+            updates.width = Number(width) > 0 ? Number(width) : undefined;
+        }
+
+        if (height !== undefined) {
+            updates.height = Number(height) > 0 ? Number(height) : undefined;
+        }
+
         if (capturedAt !== undefined) {
             const parsedCapturedAt = parseDate(capturedAt);
             if (!parsedCapturedAt) {
@@ -319,6 +381,11 @@ router.patch('/:id', async (req, res) => {
                 success: false,
                 message: 'Memory not found',
             });
+        }
+
+        const partnerId = getPartnerIdFromCouple(couple, userId);
+        if (partnerId) {
+            emitMemorySocketEvent(userId, partnerId, 'memory:updated', memory);
         }
 
         res.status(200).json({
@@ -373,6 +440,11 @@ router.delete('/:id', async (req, res) => {
                 success: false,
                 message: 'Memory not found',
             });
+        }
+
+        const partnerId = getPartnerIdFromCouple(couple, userId);
+        if (partnerId) {
+            emitMemorySocketEvent(userId, partnerId, 'memory:deleted', { memoryId: memory._id });
         }
 
         res.status(200).json({

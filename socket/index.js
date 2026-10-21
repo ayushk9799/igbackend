@@ -30,6 +30,7 @@ import {
     handleTicTacToeScreenInactive,
 } from './handlers/tictactoe.js';
 import { clearTicTacToeScreenPresenceForSocket } from '../services/ticTacToeScreenPresence.js';
+import { refreshWordSearchPresence } from '../services/wordSearch/turnTimer.js';
 import {
     handleWordleJoin,
     handleWordleLeave,
@@ -66,6 +67,7 @@ import {
     handleCallDiagnostic,
     handleCallDisconnect,
     handleCallGetPending,
+    handleCallRinging,
 } from './handlers/call.js';
 import {
     handleWebCallStart,
@@ -306,6 +308,7 @@ export const initializeSocket = (httpServer) => {
         // ======== VIDEO CALL EVENTS ========
         socket.on('call:start', (data) => handleCallStart(socket, io, data));
         socket.on('call:getPending', () => handleCallGetPending(socket));
+        socket.on('call:ringing', (data) => handleCallRinging(socket, io, data));
         socket.on('call:accept', (data) => handleCallAccept(socket, io, data));
         socket.on('call:reject', (data) => handleCallReject(socket, io, data));
         socket.on('call:cancel', (data) => handleCallCancel(socket, io, data));
@@ -338,7 +341,7 @@ export const initializeSocket = (httpServer) => {
 
 
         // ======== NOW DO ASYNC SETUP (after handlers are ready) ========
-        handleConnection(socket, io)
+        handleConnection(socket, io, { onPresenceChange: refreshWordSearchPresence })
             .then(() => {
             })
             .catch((error) => {

@@ -39,7 +39,7 @@ export const scheduleWordSearchTurn = (game) => {
     clearScheduledTurn(gameId);
 
     const expiresAtMs = game?.turnExpiresAt ? new Date(game.turnExpiresAt).getTime() : Number.NaN;
-    if (game.mode !== 'duel' || game.status !== 'active' || !Number.isFinite(expiresAtMs)) return;
+    if (game.mode !== 'duel' || game.status !== 'active' || game.turnPausedAt || !Number.isFinite(expiresAtMs)) return;
 
     const delay = Math.max(0, expiresAtMs - Date.now()) + 20;
     const timer = setTimeout(async () => {
@@ -48,7 +48,7 @@ export const scheduleWordSearchTurn = (game) => {
             const result = await synchronizeWordSearchTurn({ gameId });
             if (result.changed) {
                 emitTurnUpdate(result.game, {
-                    reason: result.advanced ? 'turn_timeout' : 'turn_clock_started',
+                    reason: result.reason || (result.advanced ? 'turn_timeout' : 'turn_clock_started'),
                     previousTurn: result.previousTurn,
                     turnsElapsed: result.turnsElapsed,
                 });
@@ -62,17 +62,17 @@ export const scheduleWordSearchTurn = (game) => {
     turnTimers.set(gameId, timer);
 };
 
-export const refreshWordSearchTurn = async (game) => {
+export const refreshWordSearchTurn = async (game, { legacyClient = false } = {}) => {
     if (!game) return null;
     if (game.mode !== 'duel' || game.status !== 'active') {
         scheduleWordSearchTurn(game);
         return game;
     }
 
-    const result = await synchronizeWordSearchTurn({ gameId: idOf(game._id) });
+    const result = await synchronizeWordSearchTurn({ gameId: idOf(game._id), legacyClient });
     if (result.changed) {
         emitTurnUpdate(result.game, {
-            reason: result.advanced ? 'turn_timeout' : 'turn_clock_started',
+            reason: result.reason || (result.advanced ? 'turn_timeout' : 'turn_clock_started'),
             previousTurn: result.previousTurn,
             turnsElapsed: result.turnsElapsed,
         });
@@ -84,4 +84,14 @@ export const refreshWordSearchTurn = async (game) => {
 export const restoreWordSearchTurnTimers = async () => {
     const activeGames = await WordSearchGame.find({ mode: 'duel', status: 'active' });
     await Promise.all(activeGames.map(game => refreshWordSearchTurn(game)));
+};
+
+// Called on first connection / last disconnection, including multiple devices.
+export const refreshWordSearchPresence = async (userId) => {
+    const games = await WordSearchGame.find({
+        mode: 'duel',
+        status: 'active',
+        $or: [{ creatorId: userId }, { partnerId: userId }],
+    });
+    await Promise.all(games.map(game => refreshWordSearchTurn(game)));
 };

@@ -7,6 +7,7 @@ import {
     MEDIA_SESSION_TYPE,
     releaseMediaSession,
 } from '../mediaSessionRegistry.js';
+import { getIceServers } from '../../utils/iceServers.js';
 
 const MAX_MESSAGE_LENGTH = 500;
 const liveChatSessions = new Map();
@@ -115,7 +116,7 @@ export const handleLiveChatJoin = async (socket, io) => {
                 session.participants.delete(userId);
                 socket.emit('liveChat:error', {
                     code: 'NORMAL_CALL_ACTIVE',
-                    message: 'End the video call before starting Live Chat.',
+                    message: 'End the video call before starting Video Chat.',
                 });
                 destroySessionIfEmpty(session);
                 return;
@@ -123,18 +124,20 @@ export const handleLiveChatJoin = async (socket, io) => {
             session.mediaClaimed = true;
         }
 
+        const iceServers = await getIceServers();
         socket.join(sessionRoom(session.sessionId));
         socket.data.liveChatSessionId = session.sessionId;
-        socket.emit('liveChat:joined', buildSnapshot(session, userId));
+        socket.emit('liveChat:joined', { ...buildSnapshot(session, userId), iceServers });
         socket.to(sessionRoom(session.sessionId)).emit('liveChat:partnerJoined', {
             sessionId: session.sessionId,
             userId,
             participantCount: session.participants.size,
             shouldOffer: true,
+            iceServers,
         });
     } catch (error) {
-        console.error('Live Chat join error:', error);
-        socket.emit('liveChat:error', { code: 'JOIN_FAILED', message: 'Unable to enter Live Chat.' });
+        console.error('Video Chat join error:', error);
+        socket.emit('liveChat:error', { code: 'JOIN_FAILED', message: 'Unable to enter Video Chat.' });
     }
 };
 
@@ -189,7 +192,7 @@ export const handleLiveChatMessageSet = (socket, io, data = {}) => {
 
         void sendPushNotification(
             partnerId,
-            'live chat message',
+            'Video Chat message',
             text,
             notificationData,
         );

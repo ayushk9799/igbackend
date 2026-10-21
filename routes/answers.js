@@ -2,6 +2,7 @@ import express from 'express';
 import DailyAnswers from '../models/DailyAnswers.js';
 import DailyChallenge from '../models/DailyChallenge.js';
 import User from '../models/User.js';
+import Chat from '../models/Chat.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
 import { getRitualWeek, updateRitualStatusForCompletion } from '../utils/dailyRitual.js';
 import { buildDailyChallengeCompletionNotification } from '../services/dailyChallengeNotificationService.js';
@@ -438,18 +439,58 @@ router.get('/couple/:date', async (req, res) => {
 
         const coupleId = DailyAnswers.generateCoupleId(userId, user.partnerId);
 
-        const coupleAnswers = await DailyAnswers.find({ coupleId, date })
-            .populate('userId', 'name avatar');
+        const [coupleAnswers, challenge] = await Promise.all([
+            DailyAnswers.find({ coupleId, date }).populate('userId', 'name avatar'),
+            DailyChallenge.findOne({ date, isActive: true }),
+        ]);
 
         const userAnswers = coupleAnswers.find(a => a.userId._id.toString() === userId);
         const partnerAnswers = coupleAnswers.find(a => a.userId._id.toString() !== userId);
 
+        let chat = null;
+        if (challenge) {
+            chat = await Chat.findOne({
+                coupleId,
+                questionSource: 'dailychallenge',
+                challengeId: challenge._id
+            }).populate('messages.senderId', 'name avatar');
+
+            if (!chat) {
+                try {
+                    const [p1, p2] = [userId.toString(), user.partnerId.toString()].sort();
+                    chat = await Chat.create({
+                        coupleId,
+                        partner1: p1,
+                        partner2: p2,
+                        questionSource: 'dailychallenge',
+                        challengeId: challenge._id,
+                        date: challenge.date || date,
+                        questionText: challenge.title || 'Daily Ritual',
+                        questionCategory: 'dailychallenge',
+                        lastMessageAt: new Date(),
+                        lastMessagePreview: challenge.title || 'Daily Ritual',
+                        messages: [],
+                        messageCount: 0,
+                    });
+                } catch (createErr) {
+                    // In case of race condition
+                    chat = await Chat.findOne({
+                        coupleId,
+                        questionSource: 'dailychallenge',
+                        challengeId: challenge._id
+                    }).populate('messages.senderId', 'name avatar');
+                }
+            }
+        }
+
         res.status(200).json({
             success: true,
             data: {
+                challenge: challenge || null,
                 user: userAnswers || null,
                 partner: partnerAnswers || null,
-                bothComplete: !!(userAnswers?.isComplete && partnerAnswers?.isComplete)
+                bothComplete: !!(userAnswers?.isComplete && partnerAnswers?.isComplete),
+                chat: chat || null
             }
         });
     } catch (error) {

@@ -8,10 +8,28 @@ import {
     MEDIA_SESSION_TYPE,
     releaseMediaSession,
 } from '../mediaSessionRegistry.js';
+import { getIceServers } from '../../utils/iceServers.js';
 
 const RING_TIMEOUT_MS = 30_000;
 const ACTIVE_STATUSES = new Set(['ringing', 'accepted', 'connecting', 'connected']);
 const activeCalls = new Map();
+
+// Periodic sweep for stale calls older than 2 hours
+setInterval(() => {
+    const now = Date.now();
+    for (const [callId, call] of activeCalls.entries()) {
+        const age = now - new Date(call.createdAt).getTime();
+        if (age > 2 * 60 * 60 * 1000) {
+            clearRingTimer(call);
+            activeCalls.delete(callId);
+            releaseMediaSession({
+                coupleId: call.coupleId,
+                type: MEDIA_SESSION_TYPE.CALL,
+                sessionId: call.callId,
+            });
+        }
+    }
+}, 15 * 60 * 1000).unref();
 
 const sanitizeMediaState = (data = {}) => ({
     microphoneEnabled: data.microphoneEnabled === true,
@@ -27,6 +45,7 @@ const publicCall = (call) => ({
     status: call.status,
     createdAt: call.createdAt,
     partnerMediaState: call.mediaStates?.[call.callerId] || sanitizeMediaState(),
+    iceServers: call.iceServers || [],
 });
 
 const isParticipant = (call, userId) => (
@@ -115,6 +134,8 @@ export const handleCallStart = async (socket, io, data = {}) => {
         }
         claimedMediaSession = { coupleId, callId };
 
+        const iceServers = await getIceServers();
+
         const call = {
             callId,
             coupleId,
@@ -125,6 +146,7 @@ export const handleCallStart = async (socket, io, data = {}) => {
             status: 'ringing',
             createdAt: new Date().toISOString(),
             ringTimer: null,
+            iceServers,
             mediaStates: {
                 [callerId]: sanitizeMediaState(data),
             },
@@ -225,6 +247,12 @@ export const handleCallCancel = (socket, io, data = {}) => {
     const call = activeCalls.get(data.callId);
     if (!isParticipant(call, socket.userId) || call.callerId !== socket.userId || call.status !== 'ringing') return;
     endCall(socket, call, 'call:cancelled', 'cancelled', 'caller_cancelled');
+};
+
+export const handleCallRinging = (socket, io, data = {}) => {
+    const call = activeCalls.get(data.callId);
+    if (!isParticipant(call, socket.userId) || call.calleeId !== socket.userId || call.status !== 'ringing') return;
+    emitToCallPartner(socket, call, 'call:ringing', { callId: call.callId });
 };
 
 export const handleCallEnd = (socket, io, data = {}) => {
@@ -347,6 +375,7 @@ export const handleCallDisconnect = (socket, io) => {
 
 export default {
     handleCallStart,
+    handleCallRinging,
     handleCallAccept,
     handleCallReject,
     handleCallCancel,
