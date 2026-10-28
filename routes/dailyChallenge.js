@@ -3,7 +3,7 @@ import DailyChallenge from '../models/DailyChallenge.js';
 import DailyAnswers from '../models/DailyAnswers.js';
 import User from '../models/User.js';
 import { sendPushNotification } from '../utils/pushNotification.js';
-import { getCoupleTodayPayload } from '../utils/dailyRitual.js';
+import { getCoupleTodayPayload, getDailyRitualTestDate } from '../utils/dailyRitual.js';
 import { getRequestLanguage, localizeDailyChallenge } from '../utils/localization.js';
 
 const router = express.Router();
@@ -55,7 +55,7 @@ router.get('/', async (req, res) => {
 router.get('/today', async (req, res) => {
     try {
         const language = getRequestLanguage(req);
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+        const today = getDailyRitualTestDate() || new Date().toISOString().split('T')[0];
 
         const challenge = await DailyChallenge.findOne({
             date: today,

@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Couple from '../models/Couple.js';
-import Letter from '../models/Letter.js';
+import Letter, { LETTER_PAPER_IDS, LETTER_TEXT_SIZE_IDS } from '../models/Letter.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getCouplePremiumStatus } from '../utils/couplePremium.js';
@@ -14,6 +14,7 @@ import {
     getBird,
     haversineKm,
     normalizeLetterBody,
+    parseLetterLocation,
     serializeLetter,
     toCityPoint,
 } from '../services/letters/letterRules.js';
@@ -22,6 +23,7 @@ import {
     notifyLetterRead,
     notifyLetterRecalled,
     notifyLetterSent,
+    notifyLocationNudge,
 } from '../services/letters/letterEvents.js';
 
 const router = express.Router();
@@ -34,6 +36,7 @@ export const letterDeps = {
     notifyLetterSent,
     notifyLetterRead,
     notifyLetterRecalled,
+    notifyLocationNudge,
     now: () => new Date(),
 };
 
@@ -80,6 +83,40 @@ const loadLetterForViewer = async (letterId, userId, couple) => {
     return letter;
 };
 
+const LOCATION_FIELDS = 'location locationSharingEnabled';
+
+const loadCouplePoints = async (userId, partnerId) => {
+    const [user, partner] = await Promise.all([
+        User.findById(userId).select(LOCATION_FIELDS).lean(),
+        User.findById(partnerId).select(LOCATION_FIELDS).lean(),
+    ]);
+    return { user, partner };
+};
+
+// A bird sent before both partners had a location flies a decorative path. Once the missing
+// end is known, give the birds still in the air the real route. The spot a letter was sent
+// from never changes.
+const backfillDecorativeRoutes = async (couple, userId, partnerId) => {
+    const pending = await Letter.find({ coupleId: couple._id, status: 'flying', 'route.isDecorative': true })
+        .select('senderId route')
+        .lean();
+    if (!pending.length) return;
+    const { user, partner } = await loadCouplePoints(userId, partnerId);
+    const updates = pending
+        .map((letter) => {
+            const sentByMe = idOf(letter.senderId) === String(userId);
+            const route = buildLetterRoute(
+                sentByMe ? user : partner,
+                sentByMe ? partner : user,
+                letter.route?.from || null,
+                letter.route?.to || null,
+            );
+            return route.isDecorative ? null : { updateOne: { filter: { _id: letter._id }, update: { $set: { route } } } };
+        })
+        .filter(Boolean);
+    if (updates.length) await Letter.bulkWrite(updates);
+};
+
 const parseLimit = (value) => {
     const limit = Number.parseInt(value, 10);
     if (!Number.isFinite(limit) || limit < 1) return DEFAULT_LIMIT;
@@ -107,29 +144,45 @@ router.get('/birds', handle(async (req, res) => {
 router.get('/map', handle(async (req, res) => {
     const userId = req.auth.userId;
     const { partnerId } = await loadCoupleContext(userId);
-    const [user, partner] = await Promise.all([
-        User.findById(userId).select('location locationSharingEnabled').lean(),
-        User.findById(partnerId).select('location locationSharingEnabled').lean(),
-    ]);
+    const { user, partner } = await loadCouplePoints(userId, partnerId);
     const you = toCityPoint(user);
     const partnerPoint = toCityPoint(partner);
+    // Tells the app which location card to show.
+    const reason = !you ? 'you_not_sharing' : !partnerPoint ? 'partner_not_sharing' : 'ok';
     res.json({
         success: true,
         data: {
             you,
             partner: partnerPoint,
             distanceKm: you && partnerPoint ? Math.round(haversineKm(you, partnerPoint)) : null,
+            reason,
         },
     });
 }));
 
+// Ask the partner to share their city. Every request attempts a notification.
+router.post('/nudge-location', handle(async (req, res) => {
+    const userId = req.auth.userId;
+    const { partnerId } = await loadCoupleContext(userId);
+    const now = letterDeps.now();
+    try {
+        const accepted = await letterDeps.notifyLocationNudge({ senderId: userId, recipientId: partnerId });
+        if (accepted !== true) throw new Error('Push provider did not accept the location reminder');
+    } catch (error) {
+        console.warn('💌 [LETTERS] Location reminder failed:', error.message);
+        throw new LetterError(503, 'nudge_failed', 'Could not send the reminder. Please try again.');
+    }
+    res.json({ success: true, data: { nudgedAt: now.toISOString() } });
+}));
+
 router.get('/', handle(async (req, res) => {
     const userId = req.auth.userId;
-    const { couple } = await loadCoupleContext(userId);
+    const { couple, partnerId } = await loadCoupleContext(userId);
     const now = letterDeps.now();
 
     // Deliver anything already due so the list never shows a late bird.
     await letterDeps.deliverDueLetters({ now, filter: { coupleId: couple._id } });
+    await backfillDecorativeRoutes(couple, userId, partnerId);
 
     const status = LIST_STATUSES.has(req.query.status) ? req.query.status : null;
     const limit = parseLimit(req.query.limit);
@@ -178,10 +231,15 @@ router.post('/', handle(async (req, res) => {
     const body = normalizeLetterBody(req.body?.body);
     const bird = getBird(req.body?.bird);
     if (!bird) throw new LetterError(400, 'invalid_bird', 'Pick a bird to carry your letter');
+    // Unknown or missing styles just fall back to the defaults instead of failing the send.
+    const paper = LETTER_PAPER_IDS.includes(req.body?.paper) ? req.body.paper : null;
+    const textSize = LETTER_TEXT_SIZE_IDS.includes(req.body?.textSize) ? req.body.textSize : null;
 
     const { couple, partnerId } = await loadCoupleContext(userId);
     const [sender, recipient] = await Promise.all([User.findById(userId), User.findById(partnerId)]);
     if (!sender || !recipient) throw new LetterError(404, 'user_not_found', 'User not found');
+    // Where the sender's phone was when they pressed Send: the bird starts here.
+    const sentFrom = parseLetterLocation(req.body?.location);
 
     if (bird.premium) {
         const premium = await letterDeps.getCouplePremiumStatus(sender);
@@ -202,11 +260,21 @@ router.post('/', handle(async (req, res) => {
         recipientId: partnerId,
         body,
         bird: bird.id,
+        paper,
+        textSize,
         status: 'flying',
         sentAt,
         deliverAt: computeDeliverAt(bird.id, sentAt),
-        route: buildLetterRoute(sender, recipient),
+        route: buildLetterRoute(sender, recipient, sentFrom),
     });
+
+    // Also keep it as the sender's location, so the map shows them where they really are.
+    if (sentFrom) {
+        runInBackground(() => User.updateOne(
+            { _id: userId },
+            { $set: { location: sentFrom, locationSharingEnabled: true, locationUpdatedAt: sentAt } },
+        ), 'Save sender location');
+    }
 
     runInBackground(() => letterDeps.notifyLetterSent(letter), 'Sent notification');
 

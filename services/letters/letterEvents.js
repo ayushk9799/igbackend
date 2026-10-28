@@ -99,3 +99,14 @@ export const notifyLetterRead = async (letter) => {
 export const notifyLetterRecalled = (letter) => {
     emitLetterEvent(letter, 'recalled');
 };
+
+export const buildLocationNudgeNotification = ({ senderName }) => ({
+    title: '🕊️ Watch your birds fly',
+    body: `${senderName} wants to see the birds carrying your letters on the map. Turn on your location in Letters.`,
+    data: { type: 'letter', event: 'location_nudge', route: 'letters', tab: 'letters' },
+});
+
+export const notifyLocationNudge = async ({ senderId, recipientId }) => {
+    const senderName = await getDisplayName(senderId);
+    return pushTo(recipientId, buildLocationNudgeNotification({ senderName }));
+};

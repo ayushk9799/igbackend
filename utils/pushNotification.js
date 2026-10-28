@@ -21,6 +21,24 @@ try {
     console.error('❌ Firebase initialization error:', error.message);
 }
 
+// Firebase says a token is dead when the app was uninstalled or the token was
+// replaced. Drop it so we stop sending to it; the app saves a fresh one the
+// next time the user opens it.
+const DEAD_TOKEN_CODES = new Set([
+    'messaging/registration-token-not-registered',
+    'messaging/invalid-registration-token',
+]);
+
+const clearDeadFcmToken = async (userId, error) => {
+    if (!userId || !DEAD_TOKEN_CODES.has(error?.code || error?.errorInfo?.code)) return;
+    try {
+        await User.updateOne({ _id: userId }, { $unset: { fcmToken: 1 } });
+        console.warn(`🧹 Cleared dead FCM token for user ${userId}`);
+    } catch (cleanupError) {
+        console.error('❌ Failed to clear dead FCM token:', cleanupError.message);
+    }
+};
+
 /**
  * Send a silent push notification to trigger widget update
  * @param {string} userId - Target user's ID
@@ -63,6 +81,7 @@ export const sendSilentPush = async (userId, data = {}) => {
 
     } catch (error) {
         console.error('❌ Push notification error:', error);
+        await clearDeadFcmToken(userId, error);
         return false;
     }
 };
@@ -154,6 +173,7 @@ export const sendScribbleNotification = async (userId, senderName, scribble = {}
 
     } catch (error) {
         console.error('❌ Push notification error:', error);
+        await clearDeadFcmToken(userId, error);
         return false;
     }
 };
@@ -207,6 +227,7 @@ export const sendPuzzleNotification = async (userId, senderName, puzzleId = null
 
     } catch (error) {
         console.error('❌ Push notification error:', error);
+        await clearDeadFcmToken(userId, error);
         return false;
     }
 };
@@ -262,6 +283,7 @@ export const sendMoodNotification = async (userId, senderName, mood) => {
 
     } catch (error) {
         console.error('❌ Push notification error:', error);
+        await clearDeadFcmToken(userId, error);
         return false;
     }
 };
@@ -332,6 +354,7 @@ export const sendMemoryNotification = async (userId, senderName, memory = {}) =>
 
     } catch (error) {
         console.error('❌ Push notification error:', error);
+        await clearDeadFcmToken(userId, error);
         return false;
     }
 };
@@ -393,6 +416,7 @@ export const sendPushNotification = async (userId, title, body, data = {}) => {
 
     } catch (error) {
         console.error('❌ Push notification error:', error);
+        await clearDeadFcmToken(userId, error);
         return false;
     }
 };

@@ -152,6 +152,11 @@ const userSchema = new mongoose.Schema({
     locationUpdatedAt: {
         type: Date,
     },
+    // Last time this user asked their partner to share a city for Letters.
+    lettersLocationNudgedAt: {
+        type: Date,
+        default: null,
+    },
     widgetStatus: {
         scribble: {
             intentEnabled: { type: Boolean, default: false },

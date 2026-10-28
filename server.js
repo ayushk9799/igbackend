@@ -35,6 +35,7 @@ import scribbleRoutes from './routes/scribble.js';
 import couplePhotoRoutes from './routes/couplePhoto.js';
 import wordSearchRoutes, { legacyWordSearchRoutes } from './routes/wordSearch.js';
 import letterRoutes from './routes/letters.js';
+import gameRequestRoutes from './routes/gameRequests.js';
 import initializeSocket from './socket/index.js';
 import { restoreWordSearchTurnTimers } from './services/wordSearch/turnTimer.js';
 import { startLetterDeliveryLoop } from './services/letters/delivery.js';
@@ -120,6 +121,7 @@ app.use('/api/couple-photo', couplePhotoRoutes);
 app.use('/api/word-search', legacyWordSearchRoutes);
 app.use('/api/v2/word-search', wordSearchRoutes);
 app.use('/api/letters', letterRoutes);
+app.use('/api/game-requests', gameRequestRoutes);
 
 // Initialize Socket.io
 const io = initializeSocket(httpServer);

@@ -9,6 +9,15 @@ import { localizeDailyChallenge } from './localization.js';
 const DEFAULT_RITUAL_TIMEZONE = 'UTC';
 const DEFAULT_RITUAL_RESET_HOUR = 5;
 
+// Local testing only. Leave unset to use each couple's normal ritual date.
+export const getDailyRitualTestDate = () => {
+    if (process.env.NODE_ENV === 'production') return null;
+    const value = String(process.env.DAILY_RITUAL_TEST_DATE || '').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const date = new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+};
+
 const dateFormatterCache = new Map();
 
 const isValidTimeZone = (timeZone) => {
@@ -181,7 +190,8 @@ export const getRitualWindow = ({
 } = {}) => {
     const localNow = getZonedParts(now, timeZone);
     const todayKey = formatDateKey(localNow);
-    const ritualDate = localNow.hour < resetHour ? addDaysToDateKey(todayKey, -1) : todayKey;
+    const ritualDate = getDailyRitualTestDate()
+        || (localNow.hour < resetHour ? addDaysToDateKey(todayKey, -1) : todayKey);
     return getRitualWindowForDate({
         ritualDate,
         timeZone,

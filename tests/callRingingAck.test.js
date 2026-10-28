@@ -69,3 +69,33 @@ test('callee emits call:ringing and caller receives it', async (t) => {
     // Clean up call
     handleCallCancel(callerSocket, io, { callId });
 });
+
+test('relay-only policy and Cloudflare credentials reach both call participants', async t => {
+    const names = ['WEBRTC_ICE_TRANSPORT_POLICY', 'CLOUDFLARE_TURN_KEY_ID', 'CLOUDFLARE_TURN_API_TOKEN'];
+    const saved = names.map(name => process.env[name]);
+    const originalFetch = globalThis.fetch;
+    const originalFindById = User.findById;
+    process.env.WEBRTC_ICE_TRANSPORT_POLICY = 'relay';
+    process.env.CLOUDFLARE_TURN_KEY_ID = 'test-key';
+    process.env.CLOUDFLARE_TURN_API_TOKEN = 'test-token';
+    const turn = { urls: 'turn:turn.cloudflare.com:3478?transport=udp', username: 'test-user', credential: 'test-credential' };
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ iceServers: [turn] }) });
+    User.findById = id => ({ select: async () => ({ partnerId: String(id) === 'relay-caller' ? 'relay-callee' : 'relay-caller', name: 'Test' }) });
+    t.after(() => {
+        names.forEach((name, i) => { if (saved[i] === undefined) delete process.env[name]; else process.env[name] = saved[i]; });
+        globalThis.fetch = originalFetch;
+        User.findById = originalFindById;
+    });
+    const incoming = [];
+    const socket = createSocket('relay-caller', 'relay-callee', { emit: (event, payload) => incoming.push({ event, payload }) });
+    const io = { to: () => ({ emit() {} }) };
+    await handleCallStart(socket, io, { mediaType: 'video' });
+    const outgoing = socket.emitted.find(item => item.event === 'call:outgoing');
+    assert.ok(outgoing);
+    t.after(() => handleCallCancel(socket, io, { callId: outgoing.payload.callId }));
+    const callee = incoming.find(item => item.event === 'call:incoming');
+    for (const payload of [outgoing.payload, callee?.payload]) {
+        assert.equal(payload?.iceTransportPolicy, 'relay');
+        assert.deepEqual(payload?.iceServers, [turn]);
+    }
+});

@@ -90,18 +90,22 @@ test('letter text must be non-empty and at most 1000 characters', () => {
     assert.equal(normalizeLetterBody('x'.repeat(1000)).length, 1000);
 });
 
-test('routes use city-level points and fall back to a decorative path', () => {
+test('routes use exact points and fall back to a decorative path', () => {
     const delhi = { locationSharingEnabled: true, location: { latitude: 28.61394, longitude: 77.20902 } };
     const bengaluru = { locationSharingEnabled: true, location: { latitude: 12.97159, longitude: 77.59456 } };
 
     const route = buildLetterRoute(delhi, bengaluru);
-    assert.deepEqual(route.from, { latitude: 28.6, longitude: 77.2 });
-    assert.deepEqual(route.to, { latitude: 13, longitude: 77.6 });
+    assert.deepEqual(route.from, { latitude: 28.61394, longitude: 77.20902 });
+    assert.deepEqual(route.to, { latitude: 12.97159, longitude: 77.59456 });
     assert.equal(route.isDecorative, false);
     assert.ok(route.distanceKm > 1700 && route.distanceKm < 1800);
 
     const hidden = buildLetterRoute(delhi, { ...bengaluru, locationSharingEnabled: false });
-    assert.deepEqual(hidden, { from: null, to: null, distanceKm: null, isDecorative: true });
+    assert.deepEqual(hidden, { from: { latitude: 28.61394, longitude: 77.20902 }, to: null, distanceKm: null, isDecorative: true });
+
+    // The spot the phone sent with the letter wins over the saved location.
+    const sentFrom = { latitude: 28.5355, longitude: 77.391 };
+    assert.deepEqual(buildLetterRoute(delhi, bengaluru, sentFrom).from, sentFrom);
 });
 
 test('the recipient cannot read a letter before it lands', () => {
@@ -176,6 +180,37 @@ test('POST / sends a pigeon letter that lands in 12 hours and notifies the partn
     assert.equal(saved.deliverAt.getTime(), NOW.getTime() + 12 * HOUR_MS);
     assert.equal(res.body.data.letter.status, 'flying');
     assert.equal(notified, saved);
+});
+
+test('POST / keeps the paper and text size the letter was written with', async () => {
+    const handler = getHandler('POST', '/');
+    const send = async (body) => {
+        const res = makeResponse();
+        let saved = null;
+        await withStubs([
+            [Couple, 'findByPartner', async () => couple],
+            [User, 'findById', async (id) => ({ _id: id, locationSharingEnabled: false })],
+            [Letter, 'countDocuments', async () => 0],
+            [Letter, 'create', async (doc) => { saved = { _id: new mongoose.Types.ObjectId(), ...doc }; return saved; }],
+            [letterDeps, 'now', () => NOW],
+            [letterDeps, 'notifyLetterSent', async () => {}],
+        ], async () => {
+            await handler({ auth: { userId: senderId }, body: { body: 'Hi', bird: 'pigeon', ...body } }, res);
+            await flush();
+        });
+        return { saved, letter: res.body.data.letter };
+    };
+
+    const styled = await send({ paper: 'blush', textSize: 'large' });
+    assert.equal(styled.saved.paper, 'blush');
+    assert.equal(styled.saved.textSize, 'large');
+    assert.equal(styled.letter.paper, 'blush');
+    assert.equal(styled.letter.textSize, 'large');
+
+    // Unknown values fall back to the app's defaults instead of failing the send.
+    const unknown = await send({ paper: 'neon', textSize: 'huge' });
+    assert.equal(unknown.saved.paper, null);
+    assert.equal(unknown.saved.textSize, null);
 });
 
 test('POST / limits how many birds one sender can have in the sky', async () => {
@@ -298,12 +333,192 @@ test('GET /map returns each rounded city, and null for a partner who hides locat
     ], async () => {
         const shared = makeResponse();
         await handler({ auth: { userId: senderId } }, shared);
-        assert.deepEqual(shared.body.data.you, { latitude: 28.6, longitude: 77.2 });
-        assert.deepEqual(shared.body.data.partner, { latitude: 13, longitude: 77.6 });
+        assert.deepEqual(shared.body.data.you, { latitude: 28.61394, longitude: 77.20902 });
+        assert.deepEqual(shared.body.data.partner, { latitude: 12.97159, longitude: 77.59456 });
+        assert.equal(shared.body.data.reason, 'ok');
 
         users[recipientId].locationSharingEnabled = false;
         const hidden = makeResponse();
         await handler({ auth: { userId: senderId } }, hidden);
-        assert.deepEqual(hidden.body.data, { you: { latitude: 28.6, longitude: 77.2 }, partner: null, distanceKm: null });
+        assert.deepEqual(hidden.body.data, { you: { latitude: 28.61394, longitude: 77.20902 }, partner: null, distanceKm: null, reason: 'partner_not_sharing' });
     });
 });
+
+test('GET /map says when you are the one not sharing', async () => {
+    const handler = getHandler('GET', '/map');
+    const users = {
+        [senderId]: { locationSharingEnabled: false },
+        [recipientId]: { locationSharingEnabled: true, location: { latitude: 12.97, longitude: 77.59 } },
+    };
+    const findById = (id) => ({ select: () => ({ lean: async () => users[String(id)] }) });
+
+    await withStubs([
+        [Couple, 'findByPartner', async () => couple],
+        [User, 'findById', findById],
+    ], async () => {
+        const res = makeResponse();
+        await handler({ auth: { userId: senderId } }, res);
+        assert.equal(res.body.data.reason, 'you_not_sharing');
+        assert.equal(res.body.data.you, null);
+    });
+});
+
+const pendingFind = (letters) => () => ({ select: () => ({ lean: async () => letters }) });
+
+test('GET / completes routes for birds in the air, keeping the spot each was sent from', async () => {
+    const handler = getHandler('GET', '/');
+    const sentFrom = { latitude: 28.5355, longitude: 77.391 };
+    const users = {
+        [senderId]: { locationSharingEnabled: true, location: { latitude: 28.61, longitude: 77.21 } },
+        [recipientId]: { locationSharingEnabled: true, location: { latitude: 12.97, longitude: 77.59 } },
+    };
+    const findById = (id) => ({ select: () => ({ lean: async () => users[String(id)] }) });
+    const mine = { _id: 'a', senderId, route: { from: sentFrom, to: null, isDecorative: true } };
+    const theirs = { _id: 'b', senderId: recipientId, route: { from: null, to: null, isDecorative: true } };
+    let writes = null;
+    let listCalls = 0;
+
+    await withStubs([
+        [Couple, 'findByPartner', async () => couple],
+        [User, 'findById', findById],
+        [Letter, 'find', (...args) => {
+            listCalls += 1;
+            return listCalls === 1 ? pendingFind([mine, theirs])() : { sort: () => ({ limit: async () => [] }) };
+        }],
+        [Letter, 'bulkWrite', async (ops) => { writes = ops; }],
+        [Letter, 'countDocuments', async () => 0],
+        [letterDeps, 'deliverDueLetters', async () => {}],
+        [letterDeps, 'now', () => NOW],
+    ], async () => {
+        await handler({ auth: { userId: senderId }, query: {} }, makeResponse());
+    });
+
+    assert.equal(writes.length, 2);
+    const mineRoute = writes.find((op) => op.updateOne.filter._id === 'a').updateOne.update.$set.route;
+    const theirRoute = writes.find((op) => op.updateOne.filter._id === 'b').updateOne.update.$set.route;
+    assert.deepEqual(mineRoute.from, sentFrom);
+    assert.deepEqual(mineRoute.to, { latitude: 12.97, longitude: 77.59 });
+    assert.equal(mineRoute.isDecorative, false);
+    assert.deepEqual(theirRoute.from, { latitude: 12.97, longitude: 77.59 });
+    assert.deepEqual(theirRoute.to, { latitude: 28.61, longitude: 77.21 });
+});
+
+test('GET / leaves decorative routes alone while a partner still has no location', async () => {
+    const handler = getHandler('GET', '/');
+    const users = {
+        [senderId]: { locationSharingEnabled: true, location: { latitude: 28.61, longitude: 77.21 } },
+        [recipientId]: { locationSharingEnabled: false },
+    };
+    const findById = (id) => ({ select: () => ({ lean: async () => users[String(id)] }) });
+    let wrote = false;
+    let listCalls = 0;
+
+    await withStubs([
+        [Couple, 'findByPartner', async () => couple],
+        [User, 'findById', findById],
+        [Letter, 'find', () => {
+            listCalls += 1;
+            return listCalls === 1
+                ? pendingFind([{ _id: 'a', senderId, route: { from: null, to: null, isDecorative: true } }])()
+                : { sort: () => ({ limit: async () => [] }) };
+        }],
+        [Letter, 'bulkWrite', async () => { wrote = true; }],
+        [Letter, 'countDocuments', async () => 0],
+        [letterDeps, 'deliverDueLetters', async () => {}],
+        [letterDeps, 'now', () => NOW],
+    ], async () => {
+        await handler({ auth: { userId: senderId }, query: {} }, makeResponse());
+    });
+
+    assert.equal(wrote, false);
+});
+
+test('POST / starts the bird where the phone was and saves that as the sender location', async () => {
+    const handler = getHandler('POST', '/');
+    const sentFrom = { latitude: 28.5355, longitude: 77.391 };
+    let saved = null;
+    let userUpdate = null;
+
+    await withStubs([
+        [Couple, 'findByPartner', async () => couple],
+        [User, 'findById', async (id) => (String(id) === recipientId
+            ? { _id: id, locationSharingEnabled: true, location: { latitude: 12.97, longitude: 77.59 } }
+            : { _id: id, locationSharingEnabled: false })],
+        [User, 'updateOne', async (filter, update) => { userUpdate = { filter, update }; }],
+        [Letter, 'countDocuments', async () => 0],
+        [Letter, 'create', async (doc) => { saved = { _id: new mongoose.Types.ObjectId(), ...doc }; return saved; }],
+        [letterDeps, 'now', () => NOW],
+        [letterDeps, 'notifyLetterSent', async () => {}],
+    ], async () => {
+        await handler({ auth: { userId: senderId }, body: { body: 'Hi', bird: 'pigeon', location: sentFrom } }, makeResponse());
+        await flush();
+    });
+
+    assert.deepEqual(saved.route.from, sentFrom);
+    assert.deepEqual(saved.route.to, { latitude: 12.97, longitude: 77.59 });
+    assert.equal(saved.route.isDecorative, false);
+    assert.deepEqual(userUpdate.update.$set.location, sentFrom);
+    assert.equal(userUpdate.update.$set.locationSharingEnabled, true);
+});
+
+test('POST /nudge-location sends on every request with no daily cooldown', async () => {
+    const handler = getHandler('POST', '/nudge-location');
+    const nudges = [];
+    await withStubs([
+        [Couple, 'findByPartner', async () => couple],
+        [User, 'findById', () => ({ select: () => ({ lean: async () => ({ locationSharingEnabled: false }) }) })],
+        [User, 'findOneAndUpdate', async () => { throw new Error('Must not reserve a cooldown'); }],
+        [letterDeps, 'now', () => NOW],
+        [letterDeps, 'notifyLocationNudge', async (args) => { nudges.push(args); return true; }],
+    ], async () => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const res = makeResponse();
+            await handler({ auth: { userId: senderId } }, res);
+            assert.equal(res.statusCode, 200);
+        }
+        assert.equal(nudges.length, 3);
+        nudges.forEach(nudge => assert.equal(String(nudge.recipientId), recipientId));
+    });
+});
+
+test('POST /nudge-location sends even when the saved partner location already exists', async () => {
+    const handler = getHandler('POST', '/nudge-location');
+    let sent = false;
+    await withStubs([
+        [Couple, 'findByPartner', async () => couple],
+        [User, 'findById', () => ({ select: () => ({ lean: async () => ({ locationSharingEnabled: true, location: { latitude: 12.97, longitude: 77.59 } }) }) })],
+        [letterDeps, 'notifyLocationNudge', async () => { sent = true; return true; }],
+    ], async () => {
+        const res = makeResponse();
+        await handler({ auth: { userId: senderId } }, res);
+        assert.equal(res.statusCode, 200);
+        assert.equal(sent, true);
+    });
+});
+
+for (const failure of ['not accepted', 'throws']) {
+    test(`a location reminder that ${failure} reports failure and allows retry`, async () => {
+        const handler = getHandler('POST', '/nudge-location');
+        let attempts = 0;
+        await withStubs([
+            [Couple, 'findByPartner', async () => couple],
+            [User, 'findById', () => ({ select: () => ({ lean: async () => ({ locationSharingEnabled: false }) }) })],
+            [letterDeps, 'now', () => NOW],
+            [letterDeps, 'notifyLocationNudge', async () => {
+                attempts += 1;
+                if (attempts > 1) return true;
+                if (failure === 'throws') throw new Error('Push unavailable');
+                return false;
+            }],
+        ], async () => {
+            const first = makeResponse();
+            await handler({ auth: { userId: senderId } }, first);
+            assert.equal(first.statusCode, 503);
+            assert.equal(first.body.code, 'nudge_failed');
+            const retry = makeResponse();
+            await handler({ auth: { userId: senderId } }, retry);
+            assert.equal(retry.statusCode, 200);
+            assert.equal(attempts, 2);
+        });
+    });
+}

@@ -58,6 +58,7 @@ import {
 } from './handlers/questionChatV2.js';
 import {
     handleCallStart,
+    handleCallConnected,
     handleCallAccept,
     handleCallReject,
     handleCallCancel,
@@ -306,6 +307,7 @@ export const initializeSocket = (httpServer) => {
         socket.on('liveChat:webrtc:iceCandidate', (data) => handleLiveChatSignal('liveChat:webrtc:iceCandidate')(socket, io, data));
 
         // ======== VIDEO CALL EVENTS ========
+        socket.on('call:connected', (data) => handleCallConnected(socket, io, data));
         socket.on('call:start', (data) => handleCallStart(socket, io, data));
         socket.on('call:getPending', () => handleCallGetPending(socket));
         socket.on('call:ringing', (data) => handleCallRinging(socket, io, data));

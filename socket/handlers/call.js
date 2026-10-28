@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import callUsageService, { eligibleCallClient } from '../../services/callUsageService.js';
 import CallDiagnostic from '../../models/CallDiagnostic.js';
 import User from '../../models/User.js';
 import { getCoupleRoomId, isUserOnline } from '../auth.js';
@@ -8,7 +9,7 @@ import {
     MEDIA_SESSION_TYPE,
     releaseMediaSession,
 } from '../mediaSessionRegistry.js';
-import { getIceServers } from '../../utils/iceServers.js';
+import { getIceConfiguration } from '../../utils/iceServers.js';
 
 const RING_TIMEOUT_MS = 30_000;
 const ACTIVE_STATUSES = new Set(['ringing', 'accepted', 'connecting', 'connected']);
@@ -21,6 +22,7 @@ setInterval(() => {
         const age = now - new Date(call.createdAt).getTime();
         if (age > 2 * 60 * 60 * 1000) {
             clearRingTimer(call);
+            void callUsageService.finish(call, 'stale').catch(console.error);
             activeCalls.delete(callId);
             releaseMediaSession({
                 coupleId: call.coupleId,
@@ -46,6 +48,7 @@ const publicCall = (call) => ({
     createdAt: call.createdAt,
     partnerMediaState: call.mediaStates?.[call.callerId] || sanitizeMediaState(),
     iceServers: call.iceServers || [],
+    iceTransportPolicy: call.iceTransportPolicy || 'all',
 });
 
 const isParticipant = (call, userId) => (
@@ -79,6 +82,7 @@ const findActiveCoupleCall = (firstId, secondId) => {
 
 const endCall = (socket, call, event, status, reason) => {
     clearRingTimer(call);
+    void callUsageService.finish(call, reason).catch(console.error);
     call.status = status;
     call.endedAt = new Date().toISOString();
     activeCalls.delete(call.callId);
@@ -90,6 +94,24 @@ const endCall = (socket, call, event, status, reason) => {
     emitToCallPartner(socket, call, event, { reason, endedBy: socket.userId });
     socket.emit(event, { callId: call.callId, reason, endedBy: socket.userId });
 };
+
+const connectedPartnerClient = (io, userId) => {
+    const sockets = [...(io.sockets?.sockets?.values?.() || [])]
+        .filter(socket => String(socket.userId) === String(userId));
+    // Any unknown/older connected device preserves the legacy-pair behavior.
+    const clients = sockets.map(socket => socket.handshake?.auth || {});
+    if (!clients.length) return null;
+    return clients.every(client => eligibleCallClient(client))
+        ? clients.sort((a, b) => Number(a.buildNumber || 0) - Number(b.buildNumber || 0))[0] : null;
+};
+const exhaustedCall = async (call) => {
+    const quota = await callUsageService.check(call);
+    return quota.enabled && !quota.premium && quota.remainingMs <= 0 ? quota : null;
+};
+const quotaRejection = quota => ({
+    code: 'CALL_FREE_LIMIT_REACHED', message: 'Your free call time is used. Upgrade to Premium to keep calling.',
+    callLimit: quota.callLimit,
+});
 
 export const handleCallStart = async (socket, io, data = {}) => {
     let claimedMediaSession = null;
@@ -117,6 +139,17 @@ export const handleCallStart = async (socket, io, data = {}) => {
 
         const callId = crypto.randomUUID();
         const coupleId = getCoupleRoomId(callerId, calleeId);
+        const preflight = await exhaustedCall({
+            callId, coupleId, callerId, calleeId,
+            clients: {
+                [callerId]: { ...socket.handshake?.auth, ...data },
+                [calleeId]: connectedPartnerClient(io, calleeId),
+            },
+        });
+        if (preflight) {
+            socket.emit('call:error', quotaRejection(preflight));
+            return;
+        }
         const claim = claimMediaSession({
             coupleId,
             type: MEDIA_SESSION_TYPE.CALL,
@@ -134,7 +167,7 @@ export const handleCallStart = async (socket, io, data = {}) => {
         }
         claimedMediaSession = { coupleId, callId };
 
-        const iceServers = await getIceServers();
+        const { iceServers, iceTransportPolicy } = await getIceConfiguration();
 
         const call = {
             callId,
@@ -147,6 +180,9 @@ export const handleCallStart = async (socket, io, data = {}) => {
             createdAt: new Date().toISOString(),
             ringTimer: null,
             iceServers,
+            iceTransportPolicy,
+            clients: { [callerId]: { ...socket.handshake?.auth, ...data } },
+            connectedUsers: new Set(),
             mediaStates: {
                 [callerId]: sanitizeMediaState(data),
             },
@@ -193,7 +229,7 @@ export const handleCallStart = async (socket, io, data = {}) => {
             });
         }
         console.error('Call start error:', error);
-        socket.emit('call:error', { code: 'START_FAILED', message: 'Unable to start the call.' });
+        socket.emit('call:error', { code: error.code === 'TURN_UNAVAILABLE' ? error.code : 'START_FAILED', message: error.code === 'TURN_UNAVAILABLE' ? error.message : 'Unable to start the call.' });
     }
 };
 
@@ -207,13 +243,32 @@ export const handleCallGetPending = (socket) => {
     }
 };
 
-export const handleCallAccept = (socket, io, data = {}) => {
+export const handleCallAccept = async (socket, io, data = {}) => {
     const call = activeCalls.get(data.callId);
-    if (!isParticipant(call, socket.userId) || call.calleeId !== socket.userId || call.status !== 'ringing') {
+    if (!isParticipant(call, socket.userId) || call.calleeId !== socket.userId || call.status !== 'ringing' || call.accepting) {
         socket.emit('call:error', { callId: data.callId, code: 'INVALID_ACCEPT', message: 'This call can no longer be accepted.' });
         return;
     }
 
+    call.accepting = true;
+    call.clients[call.calleeId] = { ...socket.handshake?.auth, ...data };
+    try {
+        const quota = await exhaustedCall(call);
+        if (!activeCalls.has(call.callId) || call.status !== 'ringing') return;
+        if (quota) {
+            const payload = { callId: call.callId, ...quotaRejection(quota) };
+            socket.emit('call:error', payload);
+            emitToCallPartner(socket, call, 'call:error', payload);
+            endCall(socket, call, 'call:ended', 'ended', 'free_limit_reached');
+            return;
+        }
+    } catch (error) {
+        console.error('Call quota check failed:', error.message);
+        endCall(socket, call, 'call:ended', 'ended', 'usage_unavailable');
+        return;
+    } finally {
+        call.accepting = false;
+    }
     clearRingTimer(call);
     call.status = 'accepted';
     call.mediaStates[socket.userId] = sanitizeMediaState(data);
@@ -226,6 +281,27 @@ export const handleCallAccept = (socket, io, data = {}) => {
         acceptedBy: socket.userId,
         partnerMediaState: call.mediaStates[call.callerId] || sanitizeMediaState(),
     });
+};
+
+export const handleCallConnected = async (socket, io, data = {}) => {
+    const call = activeCalls.get(data.callId);
+    if (!isParticipant(call, socket.userId) || !['accepted', 'connecting', 'connected'].includes(call.status)) return;
+    call.connectedUsers.add(String(socket.userId));
+    if (call.connectedUsers.size !== 2 || call.usageStartPromise) return;
+    call.status = 'connected';
+    const emit = (event, payload) => io.to(call.coupleId).emit(event, payload);
+    call.usageStartPromise = callUsageService.begin(call, emit, () => {
+        if (!activeCalls.has(call.callId)) return;
+        // Limit event closes media and opens Premium on supported clients.
+        endCall(socket, call, 'call:ended', 'ended', 'free_limit_reached');
+    });
+    try { await call.usageStartPromise; }
+    catch (error) {
+        console.error('Call allowance initialization failed:', error.message);
+        call.usageStartPromise = null;
+        // Never silently grant unlimited time after a gated policy failed to load.
+        endCall(socket, call, 'call:ended', 'ended', 'usage_unavailable');
+    }
 };
 
 export const handleCallMediaState = (socket, io, data = {}) => {
@@ -268,7 +344,7 @@ export const handleWebRTCSignal = (event) => (socket, io, data = {}) => {
         return;
     }
 
-    call.status = 'connecting';
+    if (call.status !== 'connected') call.status = 'connecting';
     const payload = { fromUserId: socket.userId };
     if (event === 'webrtc:offer') payload.description = data.description;
     if (event === 'webrtc:answer') payload.description = data.description;
@@ -360,6 +436,7 @@ export const handleCallDisconnect = (socket, io) => {
     for (const call of activeCalls.values()) {
         if (!isParticipant(call, socket.userId)) continue;
         clearRingTimer(call);
+        void callUsageService.finish(call, 'socket_disconnected').catch(console.error);
         activeCalls.delete(call.callId);
         releaseMediaSession({
             coupleId: call.coupleId,

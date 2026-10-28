@@ -3,6 +3,10 @@ import mongoose from 'mongoose';
 export const LETTER_BIRD_IDS = Object.freeze(['penguin', 'pigeon', 'swallow', 'falcon']);
 export const LETTER_STATUSES = Object.freeze(['flying', 'delivered', 'recalled']);
 export const LETTER_BODY_MAX_LENGTH = 1000;
+// How the letter looked when it was written, so it reads the same when opened. Mirrors the app's
+// paper and text-size choices; older letters have none and get the app's defaults.
+export const LETTER_PAPER_IDS = Object.freeze(['cream', 'white', 'blush', 'parchment']);
+export const LETTER_TEXT_SIZE_IDS = Object.freeze(['small', 'medium', 'large']);
 
 // City-level points only (rounded before saving), never exact positions.
 const routePointSchema = new mongoose.Schema({
@@ -36,6 +40,16 @@ const letterSchema = new mongoose.Schema({
         type: String,
         enum: LETTER_BIRD_IDS,
         required: true,
+    },
+    paper: {
+        type: String,
+        enum: [...LETTER_PAPER_IDS, null],
+        default: null,
+    },
+    textSize: {
+        type: String,
+        enum: [...LETTER_TEXT_SIZE_IDS, null],
+        default: null,
     },
     status: {
         type: String,

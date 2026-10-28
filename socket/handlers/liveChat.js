@@ -7,7 +7,7 @@ import {
     MEDIA_SESSION_TYPE,
     releaseMediaSession,
 } from '../mediaSessionRegistry.js';
-import { getIceServers } from '../../utils/iceServers.js';
+import { getIceConfiguration } from '../../utils/iceServers.js';
 
 const MAX_MESSAGE_LENGTH = 500;
 const liveChatSessions = new Map();
@@ -78,6 +78,7 @@ export const handleLiveChatJoin = async (socket, io) => {
             return;
         }
 
+        const { iceServers, iceTransportPolicy } = await getIceConfiguration();
         const coupleId = getCoupleRoomId(userId, partnerId);
         let session = liveChatSessions.get(coupleId);
         if (!session) {
@@ -124,20 +125,20 @@ export const handleLiveChatJoin = async (socket, io) => {
             session.mediaClaimed = true;
         }
 
-        const iceServers = await getIceServers();
         socket.join(sessionRoom(session.sessionId));
         socket.data.liveChatSessionId = session.sessionId;
-        socket.emit('liveChat:joined', { ...buildSnapshot(session, userId), iceServers });
+        socket.emit('liveChat:joined', { ...buildSnapshot(session, userId), iceServers, iceTransportPolicy });
         socket.to(sessionRoom(session.sessionId)).emit('liveChat:partnerJoined', {
             sessionId: session.sessionId,
             userId,
             participantCount: session.participants.size,
             shouldOffer: true,
             iceServers,
+            iceTransportPolicy,
         });
     } catch (error) {
         console.error('Video Chat join error:', error);
-        socket.emit('liveChat:error', { code: 'JOIN_FAILED', message: 'Unable to enter Video Chat.' });
+        socket.emit('liveChat:error', { code: error.code === 'TURN_UNAVAILABLE' ? error.code : 'JOIN_FAILED', message: error.code === 'TURN_UNAVAILABLE' ? error.message : 'Unable to enter Video Chat.' });
     }
 };
 

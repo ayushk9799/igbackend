@@ -39,16 +39,26 @@ export const normalizeLetterBody = (value) => {
     return body;
 };
 
-// One decimal place is roughly 11 km: enough to place a city, not a home.
-export const roundCoordinate = (value) => Math.round(Number(value) * 10) / 10;
+const isValidPoint = (latitude, longitude) => (
+    Number.isFinite(latitude) && Number.isFinite(longitude)
+    && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180
+);
+
+// The exact spot a phone sent with a letter, or null when it sent none (or nonsense).
+export const parseLetterLocation = (value) => {
+    const latitude = Number(value?.latitude);
+    const longitude = Number(value?.longitude);
+    return value && isValidPoint(latitude, longitude) ? { latitude, longitude } : null;
+};
 
 export const toCityPoint = (user) => {
     const latitude = Number(user?.location?.latitude);
     const longitude = Number(user?.location?.longitude);
-    if (!user?.locationSharingEnabled || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    if (!user?.locationSharingEnabled || !isValidPoint(latitude, longitude)) {
         return null;
     }
-    return { latitude: roundCoordinate(latitude), longitude: roundCoordinate(longitude) };
+    // Exact, so each partner and each bird sit where they really are.
+    return { latitude, longitude };
 };
 
 export const haversineKm = (from, to) => {
@@ -61,11 +71,14 @@ export const haversineKm = (from, to) => {
     return 2 * earthRadiusKm * Math.asin(Math.sqrt(a));
 };
 
-export const buildLetterRoute = (sender, recipient) => {
-    const from = toCityPoint(sender);
-    const to = toCityPoint(recipient);
+// The bird flies from where the sender was when they sent it (sentFrom), or their saved
+// location, to the recipient's saved location. A missing end keeps the route decorative; the
+// end that is known is kept so the route can be completed later.
+export const buildLetterRoute = (sender, recipient, sentFrom = null, knownTo = null) => {
+    const from = sentFrom || toCityPoint(sender);
+    const to = knownTo || toCityPoint(recipient);
     if (!from || !to) {
-        return { from: null, to: null, distanceKm: null, isDecorative: true };
+        return { from: from || null, to: to || null, distanceKm: null, isDecorative: true };
     }
     return { from, to, distanceKm: Math.round(haversineKm(from, to)), isDecorative: false };
 };
@@ -95,6 +108,8 @@ export const serializeLetter = (letter, viewerId, now = new Date()) => {
         senderId: idOf(letter.senderId),
         recipientId: idOf(letter.recipientId),
         bird: letter.bird,
+        paper: letter.paper || null,
+        textSize: letter.textSize || null,
         status: letter.status,
         body: canReadBody ? letter.body : null,
         sentAt: letter.sentAt,
