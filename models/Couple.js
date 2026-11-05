@@ -47,6 +47,11 @@ const coupleSchema = new mongoose.Schema({
         max: 23,
         default: 5,
     },
+    // Ritual date (YYYY-MM-DD) we last sent the "challenge is ready" push for.
+    ritualOpenNotifiedDate: {
+        type: String,
+        default: null,
+    },
     // Status of the relationship
     status: {
         type: String,

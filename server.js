@@ -39,6 +39,7 @@ import gameRequestRoutes from './routes/gameRequests.js';
 import initializeSocket from './socket/index.js';
 import { restoreWordSearchTurnTimers } from './services/wordSearch/turnTimer.js';
 import { startLetterDeliveryLoop } from './services/letters/delivery.js';
+import { startDailyChallengeOpenLoop } from './services/dailyChallengeOpenNotifier.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +72,10 @@ if (!MONGODB_URI) {
             }
             // Letters that came due while the server was down land on the first sweep.
             startLetterDeliveryLoop();
+            // Push "today's Daily Challenge is ready" as each couple's day opens.
+            if (process.env.DAILY_CHALLENGE_OPEN_NOTIFICATIONS !== 'false') {
+                startDailyChallengeOpenLoop();
+            }
         })
         .catch((err) => console.error('❌ MongoDB connection error:', err));
 }
